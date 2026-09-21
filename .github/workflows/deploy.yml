@@ -47,11 +47,11 @@ jobs:
       # Deploy to VPS
       #
       - name: Deploy to VPS
-        uses: appleboy/rsync-action@v0.1.10
+        uses: easingthemes/ssh-deploy@v5.1.0
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: "dist/kuv-client/browser"
-          target: "/var/www/kuv-client"
-          delete: true
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
+          REMOTE_HOST: ${{ secrets.VPS_HOST }}
+          REMOTE_USER: ${{ secrets.VPS_USER }}
+          SOURCE: "dist/kuv-client/browser"
+          TARGET: "/var/www/kuv-client"
+          ARGS: "-rlgoDzP --delete"
