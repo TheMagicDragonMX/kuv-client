@@ -2,11 +2,12 @@
 	"$schema": "./node_modules/@angular/cli/lib/config/schema.json",
 	"version": 1,
 	"cli": {
-		"packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": false
 	},
 	"newProjectRoot": "projects",
 	"projects": {
-		"kuv": {
+		"kuv-client": {
 			"projectType": "application",
 			"schematics": {},
 			"root": "",
@@ -54,19 +55,16 @@
 					"builder": "@angular/build:dev-server",
 					"configurations": {
 						"production": {
-							"buildTarget": "kuv:build:production"
+							"buildTarget": "kuv-client:build:production"
 						},
 						"development": {
-							"buildTarget": "kuv:build:development"
+							"buildTarget": "kuv-client:build:development"
 						}
 					},
 					"defaultConfiguration": "development"
 				},
 				"test": {
 					"builder": "@angular/build:unit-test"
-				},
-				"deploy": {
-					"builder": "angular-cli-ghpages:deploy"
 				}
 			}
 		}

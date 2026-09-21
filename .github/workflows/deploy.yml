@@ -1,6 +1,7 @@
 name: Automatic deployment ✨
 
 on:
+
   # Trigger workflow when pushing to "dev"
   push:
     branches:
@@ -14,21 +15,43 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      #
+      # Checkout source code
+      #
       - name: Checkout source code
         uses: actions/checkout@v4
 
+      #
+      # Setup Node JS
+      #
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: 'npm'
 
+      #
+      # Install dependencies
+      #
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and Deploy
-        run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "Publisher O.o"
-          npx ng deploy --base-href=/${{ github.event.repository.name }}/ --no-silent
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #
+      # Build
+      #
+      - name: Build code
+        run: npm run build -- --configuration production
+
+      #
+      # Deploy to VPS
+      #
+      - name: Deploy to VPS
+        uses: appleboy/rsync-action@v0.1.10
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "dist/kuv-client/browser"
+          target: "/var/www/kuv-client"
+          delete: true
