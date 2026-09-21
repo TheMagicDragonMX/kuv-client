@@ -59,7 +59,7 @@ jobs:
       #
       # Notify about deploy in discord
       #
-      - name: Send Discord Notification
+      - name: Tell discord everything OK
         if: always()
         uses: rjstone/discord-webhook-notify@v2
         with:
