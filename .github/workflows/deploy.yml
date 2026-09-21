@@ -56,9 +56,9 @@ jobs:
           TARGET: "/var/www/kuv-client"
           ARGS: "-rlgoDzP --delete"
 
-	  #
-	  # Notify about deploy in discord
-	  #
+      #
+      # Notify about deploy in discord
+      #
       - name: Send Discord Notification
         if: always()
         uses: rjstone/discord-webhook-notify@v2
