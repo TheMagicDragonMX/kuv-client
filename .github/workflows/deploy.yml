@@ -61,9 +61,9 @@ jobs:
       #
       - name: Tell discord everything OK
         if: always()
-        uses: rjstone/discord-webhook-notify@v2
+        uses: tsickert/discord-webhook@v7.0.0
         with:
-          webhookUrl: ${{ vars.DISCORD_FRONT_WEBHOOK }}
-          title: "🚀 Ready"
-          description: "KuV client is now deployed"
-          color: 3066993
+          webhook-url: ${{ vars.DISCORD_FRONT_WEBHOOK }}
+          embed-title: "🚀 Ready"
+          embed-description: "KuV client is now deployed"
+          embed-color: 3066993
