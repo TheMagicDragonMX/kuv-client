@@ -52,6 +52,6 @@ jobs:
           SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_KEY }}
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
-          SOURCE: "dist/kuv-client/browser"
+          SOURCE: "dist/kuv-client/browser/"
           TARGET: "/var/www/kuv-client"
           ARGS: "-rlgoDzP --delete"
