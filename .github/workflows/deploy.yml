@@ -55,3 +55,15 @@ jobs:
           SOURCE: "dist/kuv-client/browser/"
           TARGET: "/var/www/kuv-client"
           ARGS: "-rlgoDzP --delete"
+
+	  #
+	  # Notify about deploy in discord
+	  #
+      - name: Send Discord Notification
+        if: always()
+        uses: rjstone/discord-webhook-notify@v2
+        with:
+          webhookUrl: ${{ vars.DISCORD_FRONT_WEBHOOK }}
+          title: "🚀 Ready"
+          description: "KuV client is now deployed"
+          color: 3066993
