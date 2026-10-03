@@ -301,18 +301,28 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 			roughness: 0.72,
 		});
 
+		// Layout along each face's local Z (outward normal), relative to the face plane:
+		//   frame:  [-frameDepth, 0]  -> outer surface flush with the cube shell
+		//   panel:  [0, panelDepth]
+		//   LEDs:   just above the panel surface
+		const faceOffset = 1.45;
 		const faceSize = 2.85;
-		const faceThickness = 0.13;
+		const frameDepth = 0.2;
+		const panelDepth = 0.04;
 		const gridSize = 64;
-		const ledGeometry = new THREE.BoxGeometry(0.04, 0.04, 0.08);
 		const edgePadding = 0.05;
+		const ledSpan = faceSize - edgePadding * 2;
+		const ledPitch = ledSpan / gridSize;
+		const ledSize = ledPitch * 0.7;
+		const ledDepth = 0.02;
+		const ledGeometry = new THREE.BoxGeometry(ledSize, ledSize, ledDepth);
 
 		const panelConfigs = [
-			{ position: new THREE.Vector3(0, 0, 1.45), rotation: new THREE.Euler(0, 0, 0) },
-			{ position: new THREE.Vector3(1.45, 0, 0), rotation: new THREE.Euler(0, Math.PI / 2, 0) },
-			{ position: new THREE.Vector3(-1.45, 0, 0), rotation: new THREE.Euler(0, -Math.PI / 2, 0) },
-			{ position: new THREE.Vector3(0, 0, -1.45), rotation: new THREE.Euler(0, Math.PI, 0) },
-			{ position: new THREE.Vector3(0, 1.45, 0), rotation: new THREE.Euler(-Math.PI / 2, 0, 0) },
+			{ position: new THREE.Vector3(0, 0, faceOffset), rotation: new THREE.Euler(0, 0, 0) },
+			{ position: new THREE.Vector3(faceOffset, 0, 0), rotation: new THREE.Euler(0, Math.PI / 2, 0) },
+			{ position: new THREE.Vector3(-faceOffset, 0, 0), rotation: new THREE.Euler(0, -Math.PI / 2, 0) },
+			{ position: new THREE.Vector3(0, 0, -faceOffset), rotation: new THREE.Euler(0, Math.PI, 0) },
+			{ position: new THREE.Vector3(0, faceOffset, 0), rotation: new THREE.Euler(-Math.PI / 2, 0, 0) },
 		];
 
 		for (const config of panelConfigs) {
@@ -321,16 +331,16 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 			faceGroup.rotation.copy(config.rotation);
 
 			const frame = new THREE.Mesh(
-				new THREE.BoxGeometry(faceSize + 0.16, faceSize + 0.16, faceThickness + 0.08),
+				new THREE.BoxGeometry(faceOffset * 2, faceOffset * 2, frameDepth),
 				frameMaterial,
 			);
-			frame.position.z = -0.04;
+			frame.position.z = -frameDepth / 2;
 			frame.castShadow = true;
 			frame.receiveShadow = true;
 			faceGroup.add(frame);
 
 			const panel = new THREE.Mesh(
-				new THREE.BoxGeometry(faceSize, faceSize, 0.06),
+				new THREE.BoxGeometry(faceSize, faceSize, panelDepth),
 				new THREE.MeshStandardMaterial({
 					color: 0x2c323b,
 					emissive: 0x1f2937,
@@ -339,7 +349,7 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 					metalness: 0.15,
 				}),
 			);
-			panel.position.z = 0.02;
+			panel.position.z = panelDepth / 2 + 0.001;
 			panel.castShadow = true;
 			panel.receiveShadow = true;
 			faceGroup.add(panel);
@@ -356,15 +366,14 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 			});
 			const ledMatrix = new THREE.InstancedMesh(ledGeometry, ledMaterial, gridSize * gridSize);
 			const dummy = new THREE.Object3D();
-			const visibleFaceSpan = faceSize - edgePadding * 2;
-			const spacing = visibleFaceSpan / (gridSize - 1) + 0.005;
+			const ledZ = panelDepth + ledDepth / 2 + 0.002;
 			let ledIndex = 0;
 
 			for (let row = 0; row < gridSize; row += 1) {
 				for (let col = 0; col < gridSize; col += 1) {
-					const x = -faceSize / 2 + edgePadding + col * spacing;
-					const y = -faceSize / 2 + edgePadding + row * spacing;
-					dummy.position.set(x, y, 0.01);
+					const x = -ledSpan / 2 + (col + 0.5) * ledPitch;
+					const y = -ledSpan / 2 + (row + 0.5) * ledPitch;
+					dummy.position.set(x, y, ledZ);
 					dummy.rotation.set(0, 0, 0);
 					dummy.updateMatrix();
 					ledMatrix.setMatrixAt(ledIndex, dummy.matrix);
@@ -395,9 +404,10 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		this.panelMeshes.forEach((panel, index) => {
 			const material = panel.material as THREE.MeshStandardMaterial;
 			if (this.panelsEnabled) {
-				material.color.setHex(this.panelColors[index] ?? 0xf8fafc);
-				material.emissive.setHex(this.panelColors[index] ?? 0xf8fafc);
-				material.emissiveIntensity = 1.2;
+				// Dark backing so the lit LEDs read as individual pixels.
+				material.color.setHex(0x0b0d10);
+				material.emissive.setHex(0x000000);
+				material.emissiveIntensity = 0;
 				material.opacity = 1;
 				material.transparent = false;
 			} else {
