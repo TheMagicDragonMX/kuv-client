@@ -12,7 +12,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 @Component({
 	selector: 'app-test-cube',
 	standalone: true,
-	imports: [RouterLink],
+	imports: [ RouterLink ],
 	templateUrl: './test-cube.html',
 	styleUrl: './test-cube.css',
 })
@@ -32,13 +32,13 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 	panelsEnabled = false;
 	private resizeListener = () => this.handleResize();
 
-	ngAfterViewInit(): void {
+	ngAfterViewInit (): void {
 		this.initScene();
 		this.handleResize();
 		window.addEventListener('resize', this.resizeListener);
 	}
 
-	ngOnDestroy(): void {
+	ngOnDestroy (): void {
 		window.removeEventListener('resize', this.resizeListener);
 		if (this.animationFrameId) {
 			cancelAnimationFrame(this.animationFrameId);
@@ -47,7 +47,7 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		this.renderer?.dispose();
 	}
 
-	private initScene(): void {
+	private initScene (): void {
 		const host = this.cubeHost.nativeElement;
 
 		this.scene = new THREE.Scene();
@@ -96,7 +96,7 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		this.animate();
 	}
 
-	private addBase(): void {
+	private addBase (): void {
 		if (!this.scene) {
 			return;
 		}
@@ -123,7 +123,7 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		this.scene.add(centerStem);
 	}
 
-	private addFiveFaces(): void {
+	private addFiveFaces (): void {
 		if (!this.cubeGroup) {
 			return;
 		}
@@ -226,14 +226,14 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		this.applyPanelState();
 	}
 
-	private randomPastelColor(): number {
+	private randomPastelColor (): number {
 		const color = new THREE.Color();
 		const hue = 150 + Math.random() * 160;
 		color.setHSL(hue / 360, 0.55 + Math.random() * 0.2, 0.72 + Math.random() * 0.08);
 		return color.getHex();
 	}
 
-	private applyPanelState(): void {
+	private applyPanelState (): void {
 		this.panelMeshes.forEach((panel, index) => {
 			const material = panel.material as THREE.MeshStandardMaterial;
 			if (this.panelsEnabled) {
@@ -261,12 +261,12 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		});
 	}
 
-	togglePanels(): void {
+	togglePanels (): void {
 		this.panelsEnabled = !this.panelsEnabled;
 		this.applyPanelState();
 	}
 
-	private animate(): void {
+	private animate (): void {
 		if (!this.renderer || !this.scene || !this.camera || !this.controls) {
 			return;
 		}
@@ -280,7 +280,7 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		this.animationFrameId = requestAnimationFrame(render);
 	}
 
-	private handleResize(): void {
+	private handleResize (): void {
 		if (!this.renderer || !this.camera || !this.cubeHost) {
 			return;
 		}
