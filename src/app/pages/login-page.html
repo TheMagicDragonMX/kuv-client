@@ -1,0 +1,32 @@
+<main class="auth-page">
+	<nav class="corner-nav" aria-label="Navegación principal">
+		<a routerLink="/login" class="nav-button active">Login</a>
+		<a routerLink="/register" class="nav-button">Register</a>
+		<a routerLink="/test-cube" class="nav-button">Cube</a>
+	</nav>
+	<section class="auth-panel" aria-labelledby="page-title">
+		<p class="brand">Kuv</p>
+		<h1 id="page-title">Iniciar sesión</h1>
+		<p class="auth-intro">Accede con tu nombre de usuario y contraseña.</p>
+		<form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
+			<label class="field">
+				Nombre de usuario
+				<input formControlName="username" autocomplete="username" required />
+			</label>
+			<label class="field">
+				Contraseña
+				<input type="password" formControlName="password" autocomplete="current-password" required />
+			</label>
+			@if (errorMessage()) {
+				<p class="form-message error" role="alert">{{ errorMessage() }}</p>
+			}
+			@if (successMessage()) {
+				<p class="form-message success" role="status">{{ successMessage() }}</p>
+			}
+			<button class="submit-button" type="submit" [disabled]="isSubmitting()">
+				{{ isSubmitting() ? 'Ingresando...' : 'Iniciar sesión' }}
+			</button>
+		</form>
+		<p class="auth-switch">¿Aún no tienes cuenta? <a routerLink="/register">Crear cuenta</a></p>
+	</section>
+</main>

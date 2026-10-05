@@ -1,0 +1,16 @@
+<main class="cube-demo-page">
+	<nav class="corner-nav" aria-label="Navegación principal">
+		<a routerLink="/login" class="nav-button">Login</a>
+		<a routerLink="/test-cube" class="nav-button active">Cube</a>
+	</nav>
+	<div class="viewer-block">
+		<div #cubeHost class="cube-host" aria-label="Virtual LED cube preview"></div>
+		<div class="panel-toggle-wrap">
+			<label class="panel-toggle" for="panel-toggle">
+				<span class="toggle-label">Panels</span>
+				<input id="panel-toggle" type="checkbox" [checked]="panelsEnabled" (change)="togglePanels()" />
+				<span class="toggle-slider"></span>
+			</label>
+		</div>
+	</div>
+</main>
