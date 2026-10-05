@@ -14,7 +14,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 	standalone: true,
 	imports: [ RouterLink ],
 	templateUrl: './test-cube.html',
-	styleUrl: './test-cube.css',
 })
 export class TestCubePage implements AfterViewInit, OnDestroy {
 	@ViewChild('cubeHost', { static: true }) cubeHost!: ElementRef<HTMLDivElement>;

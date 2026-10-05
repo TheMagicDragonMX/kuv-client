@@ -1,32 +1,34 @@
-<main class="auth-page">
-	<nav class="corner-nav" aria-label="Navegación principal">
-		<a routerLink="/login" class="nav-button active">Login</a>
-		<a routerLink="/register" class="nav-button">Register</a>
-		<a routerLink="/test-cube" class="nav-button">Cube</a>
-	</nav>
-	<section class="auth-panel" aria-labelledby="page-title">
-		<p class="brand">Kuv</p>
-		<h1 id="page-title">Iniciar sesión</h1>
-		<p class="auth-intro">Accede con tu nombre de usuario y contraseña.</p>
-		<form class="auth-form" [formGroup]="form" (ngSubmit)="submit()">
-			<label class="field">
-				Nombre de usuario
-				<input formControlName="username" autocomplete="username" required />
-			</label>
-			<label class="field">
-				Contraseña
-				<input type="password" formControlName="password" autocomplete="current-password" required />
-			</label>
-			@if (errorMessage()) {
-				<p class="form-message error" role="alert">{{ errorMessage() }}</p>
-			}
-			@if (successMessage()) {
-				<p class="form-message success" role="status">{{ successMessage() }}</p>
-			}
-			<button class="submit-button" type="submit" [disabled]="isSubmitting()">
-				{{ isSubmitting() ? 'Ingresando...' : 'Iniciar sesión' }}
-			</button>
-		</form>
-		<p class="auth-switch">¿Aún no tienes cuenta? <a routerLink="/register">Crear cuenta</a></p>
-	</section>
-</main>
+<div class="block h-screen w-screen bg-[#0b0f14] text-[#e5eef7]">
+	<main class="relative grid h-full place-items-center bg-[radial-gradient(circle_at_top,rgba(96,165,250,0.12),transparent_38%),linear-gradient(180deg,#111922_0%,#090c10_100%)] p-8">
+		<nav class="absolute top-[1.1rem] left-[1.1rem] z-10 flex gap-2 rounded-full border border-slate-400/20 bg-[rgba(10,13,18,0.78)] p-[0.4rem] shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-[6px]" aria-label="Navegación principal">
+			<a routerLink="/login" class="inline-flex items-center justify-center rounded-full bg-slate-400/15 px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)] transition duration-150">Login</a>
+			<a routerLink="/register" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Register</a>
+			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
+		</nav>
+		<section class="w-full max-w-[420px] rounded-3xl border border-slate-400/20 bg-slate-900/80 px-8 py-9 shadow-[0_22px_50px_rgba(2,6,23,0.5)]" aria-labelledby="page-title">
+			<p class="mb-4 text-[0.82rem] font-bold tracking-[0.24em] text-blue-300 uppercase">Kuv</p>
+			<h1 id="page-title" class="mb-2 text-[clamp(2rem,4vw,2.6rem)] font-bold">Iniciar sesión</h1>
+			<p class="mb-[1.4rem] text-slate-300">Accede con tu nombre de usuario y contraseña.</p>
+			<form class="grid gap-4" [formGroup]="form" (ngSubmit)="submit()">
+				<label class="grid gap-[0.45rem] text-[0.9rem] text-[#dfeaf6]">
+					Nombre de usuario
+					<input class="w-full rounded-[0.85rem] border border-slate-400/20 bg-slate-900/90 px-[0.9rem] py-[0.85rem] text-slate-50 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400/60" formControlName="username" autocomplete="username" required />
+				</label>
+				<label class="grid gap-[0.45rem] text-[0.9rem] text-[#dfeaf6]">
+					Contraseña
+					<input class="w-full rounded-[0.85rem] border border-slate-400/20 bg-slate-900/90 px-[0.9rem] py-[0.85rem] text-slate-50 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400/60" type="password" formControlName="password" autocomplete="current-password" required />
+				</label>
+				@if (errorMessage()) {
+					<p class="rounded-xl bg-red-500/10 px-[0.9rem] py-3 text-[0.92rem] text-red-200" role="alert">{{ errorMessage() }}</p>
+				}
+				@if (successMessage()) {
+					<p class="rounded-xl bg-green-500/10 px-[0.9rem] py-3 text-[0.92rem] text-green-200" role="status">{{ successMessage() }}</p>
+				}
+				<button class="mt-[0.4rem] cursor-pointer rounded-full bg-[linear-gradient(135deg,#60a5fa,#a78bfa)] px-[1.2rem] py-[0.9rem] text-[0.95rem] font-bold text-[#08111b] transition duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_12px_25px_rgba(96,165,250,0.32)] disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
+					{{ isSubmitting() ? 'Ingresando...' : 'Iniciar sesión' }}
+				</button>
+			</form>
+			<p class="mt-[1.2rem] text-slate-300">¿Aún no tienes cuenta? <a class="text-blue-300 no-underline" routerLink="/register">Crear cuenta</a></p>
+		</section>
+	</main>
+</div>

@@ -9,7 +9,6 @@ import { SessionApi } from '../services/session-api';
 	standalone: true,
 	imports: [ ReactiveFormsModule, RouterLink ],
 	templateUrl: './register-page.html',
-	styleUrl: './register-page.css',
 })
 export class RegisterPage {
 	private readonly formBuilder = inject(FormBuilder);
