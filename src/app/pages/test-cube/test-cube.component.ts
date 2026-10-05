@@ -13,7 +13,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 	selector: 'app-test-cube',
 	standalone: true,
 	imports: [ RouterLink ],
-	templateUrl: './test-cube.html',
+	templateUrl: './test-cube.component.html',
 })
 export class TestCubePage implements AfterViewInit, OnDestroy {
 	@ViewChild('cubeHost', { static: true }) cubeHost!: ElementRef<HTMLDivElement>;
