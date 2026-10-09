@@ -138,14 +138,15 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 		//   panel:  [0, panelDepth]
 		//   LEDs:   just above the panel surface
 		const faceOffset = 1.45;
-		const faceSize = 2.85;
+		const faceSize = faceOffset * 2;
 		const frameDepth = 0.2;
 		const panelDepth = 0.04;
 		const gridSize = 64;
-		const edgePadding = 0.05;
+		const edgePadding = 0.015;
 		const ledSpan = faceSize - edgePadding * 2;
-		const ledPitch = ledSpan / gridSize;
-		const ledSize = ledPitch * 0.7;
+		const ledSize = (ledSpan / gridSize) * 0.7;
+		// Outer LEDs sit flush with the panel edge so neighbouring faces' LEDs end up one pitch apart.
+		const ledPitch = (ledSpan - ledSize) / (gridSize - 1);
 		const ledDepth = 0.02;
 		const ledGeometry = new THREE.BoxGeometry(ledSize, ledSize, ledDepth);
 
@@ -181,7 +182,7 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 					metalness: 0.15,
 				}),
 			);
-			panel.position.z = panelDepth / 2 + 0.001;
+			panel.position.z = -panelDepth / 2 + 0.001;
 			panel.castShadow = true;
 			panel.receiveShadow = true;
 			faceGroup.add(panel);
@@ -198,13 +199,13 @@ export class TestCubePage implements AfterViewInit, OnDestroy {
 			});
 			const ledMatrix = new THREE.InstancedMesh(ledGeometry, ledMaterial, gridSize * gridSize);
 			const dummy = new THREE.Object3D();
-			const ledZ = panelDepth + ledDepth / 2 + 0.002;
+			const ledZ = ledDepth / 2 + 0.002;
 			let ledIndex = 0;
 
 			for (let row = 0; row < gridSize; row += 1) {
 				for (let col = 0; col < gridSize; col += 1) {
-					const x = -ledSpan / 2 + (col + 0.5) * ledPitch;
-					const y = -ledSpan / 2 + (row + 0.5) * ledPitch;
+					const x = -ledSpan / 2 + ledSize / 2 + col * ledPitch;
+					const y = -ledSpan / 2 + ledSize / 2 + row * ledPitch;
 					dummy.position.set(x, y, ledZ);
 					dummy.rotation.set(0, 0, 0);
 					dummy.updateMatrix();
