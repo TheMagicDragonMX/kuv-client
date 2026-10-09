@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { CubeState, FACE_RESOLUTION } from './cube-state';
 
 /**
  * Color shared by the scene background, fog and renderer clear color so they blend seamlessly.
@@ -44,7 +45,8 @@ const LED_DEPTH = 0.02;
 /**
  * 3D representation of the LED cube (five lit faces on a base).
  * Owns the three.js scene and render loop; a component only needs to
- * provide a host element and call dispose() when it goes away.
+ * provide a host element and a CubeState to display, and call dispose()
+ * when it goes away. It only reads the state, never changes it.
  */
 export class VirtualCube {
 	/**
@@ -78,19 +80,14 @@ export class VirtualCube {
 	private panelMeshes: THREE.Mesh[] = [];
 
 	/**
-	 * Current LED color (hex) of each face, indexed like `ledMatrices`.
-	 */
-	private panelColors: number[] = [];
-
-	/**
 	 * One instanced mesh per face holding its 64x64 LEDs in a single draw call.
 	 */
 	private ledMatrices: THREE.InstancedMesh[] = [];
 
 	/**
-	 * Material of each face's LEDs, indexed like `ledMatrices`; controls color and glow.
+	 * Material of each face's LEDs, indexed like `ledMatrices`; unlit so each LED shows exactly its own color.
 	 */
-	private ledMaterials: THREE.MeshStandardMaterial[] = [];
+	private ledMaterials: THREE.MeshBasicMaterial[] = [];
 
 	/**
 	 * Id of the pending requestAnimationFrame, kept so the render loop can be cancelled.
@@ -103,6 +100,16 @@ export class VirtualCube {
 	private panelsEnabled = false;
 
 	/**
+	 * `CubeState.version` last copied to the LEDs, so unchanged frames skip the copy.
+	 */
+	private renderedVersion = -1;
+
+	/**
+	 * Scratch color reused while copying the state to the LEDs.
+	 */
+	private scratchColor = new THREE.Color();
+
+	/**
 	 * Bound window resize handler, stored so the same reference can be removed on dispose.
 	 */
 	private resizeListener = () => this.resize();
@@ -110,8 +117,12 @@ export class VirtualCube {
 	/**
 	 * Builds the scene inside `host` and starts rendering.
 	 * @param host Element the canvas is appended to; its size determines the render size.
+	 * @param state Pixel buffer to display; the cube redraws whenever it changes.
 	 */
-	constructor (private readonly host: HTMLElement) {
+	constructor (
+		private readonly host: HTMLElement,
+		private readonly state: CubeState,
+	) {
 		this.scene.background = new THREE.Color(BACKGROUND);
 		this.scene.fog = new THREE.Fog(BACKGROUND, 8, 18);
 
@@ -288,15 +299,7 @@ export class VirtualCube {
 			faceGroup.add(panel);
 			this.panelMeshes.push(panel);
 
-			const ledColor = this.randomPastelColor();
-			this.panelColors.push(ledColor);
-			const ledMaterial = new THREE.MeshStandardMaterial({
-				color: ledColor,
-				emissive: ledColor,
-				emissiveIntensity: 1.4,
-				roughness: 0.08,
-				metalness: 0.02,
-			});
+			const ledMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 			const ledMatrix = new THREE.InstancedMesh(ledGeometry, ledMaterial, GRID_SIZE * GRID_SIZE);
 			const dummy = new THREE.Object3D();
 			const ledZ = LED_DEPTH / 2 + 0.002;
@@ -316,6 +319,7 @@ export class VirtualCube {
 			}
 
 			ledMatrix.instanceMatrix.needsUpdate = true;
+			ledMatrix.setColorAt(0, this.scratchColor.setHex(0x000000));
 			ledMatrix.visible = false;
 			this.ledMatrices.push(ledMatrix);
 			this.ledMaterials.push(ledMaterial);
@@ -326,17 +330,7 @@ export class VirtualCube {
 	}
 
 	/**
-	 * Returns a random light green-to-purple hex color, used as placeholder LED color.
-	 */
-	private randomPastelColor (): number {
-		const color = new THREE.Color();
-		const hue = 150 + Math.random() * 160;
-		color.setHSL(hue / 360, 0.55 + Math.random() * 0.2, 0.72 + Math.random() * 0.08);
-		return color.getHex();
-	}
-
-	/**
-	 * Syncs panel backing and LED visibility, color and glow with `panelsEnabled`.
+	 * Syncs panel backing and LED visibility with `panelsEnabled`.
 	 */
 	private applyPanelState (): void {
 		for (const panel of this.panelMeshes) {
@@ -353,14 +347,29 @@ export class VirtualCube {
 			}
 		}
 
-		this.ledMatrices.forEach((ledMatrix, index) => {
-			const material = this.ledMaterials[index];
-			const color = this.panelColors[index] ?? 0xf8fafc;
+		for (const ledMatrix of this.ledMatrices) {
 			ledMatrix.visible = this.panelsEnabled;
-			material.color.setHex(color);
-			material.emissive.setHex(color);
-			material.emissiveIntensity = this.panelsEnabled ? 1.4 : 0;
+		}
+	}
+
+	/**
+	 * Copies the colors of the cube state to the LEDs of every face.
+	 */
+	private syncLeds (): void {
+		this.ledMatrices.forEach((ledMatrix, face) => {
+			for (let y = 0; y < FACE_RESOLUTION; y += 1) {
+				// Instances are laid out from the bottom row up, the state from the top row down.
+				const rowStart = (FACE_RESOLUTION - 1 - y) * FACE_RESOLUTION;
+				for (let x = 0; x < FACE_RESOLUTION; x += 1) {
+					this.scratchColor.setHex(this.state.get(face, x, y));
+					ledMatrix.setColorAt(rowStart + x, this.scratchColor);
+				}
+			}
+
+			ledMatrix.instanceColor!.needsUpdate = true;
 		});
+
+		this.renderedVersion = this.state.version;
 	}
 
 	/**
@@ -368,6 +377,10 @@ export class VirtualCube {
 	 */
 	private startRenderLoop (): void {
 		const render = () => {
+			if (this.renderedVersion !== this.state.version) {
+				this.syncLeds();
+			}
+
 			this.controls.update();
 			this.renderer.render(this.scene, this.camera);
 			this.animationFrameId = requestAnimationFrame(render);
