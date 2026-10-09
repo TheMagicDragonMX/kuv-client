@@ -54,6 +54,11 @@ export class SimulationPage implements AfterViewInit, OnDestroy {
 	protected readonly history = signal<Command[]>([]);
 
 	/**
+	 * Camera mode: a face being shown, or 'spin' for the continuous rotation.
+	 */
+	protected readonly view = signal<Face | 'spin'>('spin');
+
+	/**
 	 * History shown newest first.
 	 */
 	protected readonly recentHistory = computed(() => [ ...this.history() ].reverse());
@@ -98,6 +103,16 @@ export class SimulationPage implements AfterViewInit, OnDestroy {
 	protected reset (): void {
 		this.state.fill(0);
 		this.history.set([]);
+	}
+
+	protected showFace (face: Face): void {
+		this.cube?.lookAtFace(face);
+		this.view.set(face);
+	}
+
+	protected spin (): void {
+		this.cube?.spin();
+		this.view.set('spin');
 	}
 
 	protected describe (command: Command): string {

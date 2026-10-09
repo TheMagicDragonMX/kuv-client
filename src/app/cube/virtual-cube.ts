@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { CubeState, FACE_RESOLUTION } from './cube-state';
+import { CubeState, FACE_RESOLUTION, Face } from './cube-state';
 
 /**
  * Fog color; matches the page background so the far end of the scene fades into it.
@@ -41,6 +41,43 @@ const EDGE_PADDING = 0.015;
  * Thickness of each LED box, which sits on top of the panel surface.
  */
 const LED_DEPTH = 0.02;
+
+/**
+ * Duration of the camera animation when switching to a face, in milliseconds.
+ */
+const VIEW_TRANSITION_MS = 900;
+
+/**
+ * Camera angle from the vertical axis when looking at a side face (slightly above the horizon).
+ */
+const SIDE_VIEW_POLAR = Math.PI * 0.43;
+
+/**
+ * Camera angle from the vertical axis when looking down at the top face.
+ */
+const TOP_VIEW_POLAR = Math.PI * 0.08;
+
+/**
+ * Camera angle around the vertical axis (0 = looking from +Z) that frames each face head-on.
+ */
+const FACE_AZIMUTH: Record<Face, number> = {
+	[Face.FRONT]: 0,
+	[Face.RIGHT]: Math.PI / 2,
+	[Face.BACK]: Math.PI,
+	[Face.LEFT]: -Math.PI / 2,
+	[Face.TOP]: 0,
+};
+
+/**
+ * An in-progress camera move, interpolated from the starting angles to the target ones.
+ */
+interface ViewTransition {
+	startTime: number;
+	fromTheta: number;
+	fromPhi: number;
+	toTheta: number;
+	toPhi: number;
+}
 
 /**
  * 3D representation of the LED cube (five lit faces on a base).
@@ -90,6 +127,11 @@ export class VirtualCube {
 	private animationFrameId?: number;
 
 	/**
+	 * Camera move currently playing, or undefined when the camera is free.
+	 */
+	private transition?: ViewTransition;
+
+	/**
 	 * `CubeState.version` last copied to the LEDs, so unchanged frames skip the copy.
 	 */
 	private renderedVersion = -1;
@@ -132,11 +174,16 @@ export class VirtualCube {
 		this.controls.enableZoom = true;
 		this.controls.minDistance = 5.4;
 		this.controls.maxDistance = 12;
-		this.controls.minPolarAngle = Math.PI * 0.28;
+		this.controls.minPolarAngle = Math.PI * 0.05;
 		this.controls.maxPolarAngle = Math.PI * 0.75;
 		this.controls.autoRotate = true;
 		this.controls.autoRotateSpeed = 1.1;
 		this.controls.target.set(0, 0.6, 0);
+
+		// Grabbing the cube cancels any camera animation that is still playing.
+		this.controls.addEventListener('start', () => {
+			this.transition = undefined;
+		});
 
 		this.addLights();
 		this.cubeGroup.position.y = 0.4;
@@ -147,6 +194,37 @@ export class VirtualCube {
 		this.resize();
 		window.addEventListener('resize', this.resizeListener);
 		this.startRenderLoop();
+	}
+
+	/**
+	 * Smoothly orbits the camera until the given face is shown head-on, and stops the auto-rotation.
+	 */
+	lookAtFace (face: Face): void {
+		const offset = this.camera.position.clone().sub(this.controls.target);
+		const spherical = new THREE.Spherical().setFromVector3(offset);
+		const toTheta = FACE_AZIMUTH[face];
+
+		// Top view keeps the current azimuth so the camera does not swing around for nothing.
+		const targetTheta = face === Face.TOP ? spherical.theta : toTheta;
+		// Take the shortest way around instead of unwinding a full turn.
+		const delta = Math.atan2(Math.sin(targetTheta - spherical.theta), Math.cos(targetTheta - spherical.theta));
+
+		this.controls.autoRotate = false;
+		this.transition = {
+			startTime: performance.now(),
+			fromTheta: spherical.theta,
+			fromPhi: spherical.phi,
+			toTheta: spherical.theta + delta,
+			toPhi: face === Face.TOP ? TOP_VIEW_POLAR : SIDE_VIEW_POLAR,
+		};
+	}
+
+	/**
+	 * Goes back to the slow continuous rotation around the cube.
+	 */
+	spin (): void {
+		this.transition = undefined;
+		this.controls.autoRotate = true;
 	}
 
 	/**
@@ -321,6 +399,33 @@ export class VirtualCube {
 	}
 
 	/**
+	 * Moves the camera one step along the current transition, if any.
+	 */
+	private advanceTransition (): void {
+		if (!this.transition) {
+			return;
+		}
+
+		const { startTime, fromTheta, fromPhi, toTheta, toPhi } = this.transition;
+		const progress = Math.min((performance.now() - startTime) / VIEW_TRANSITION_MS, 1);
+		// Ease in and out so the motion starts and ends gently.
+		const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+
+		const offset = this.camera.position.clone().sub(this.controls.target);
+		const radius = offset.length();
+		offset.setFromSphericalCoords(
+			radius,
+			fromPhi + (toPhi - fromPhi) * eased,
+			fromTheta + (toTheta - fromTheta) * eased,
+		);
+		this.camera.position.copy(this.controls.target).add(offset);
+
+		if (progress === 1) {
+			this.transition = undefined;
+		}
+	}
+
+	/**
 	 * Starts the per-frame loop that updates the controls and renders the scene.
 	 */
 	private startRenderLoop (): void {
@@ -329,6 +434,7 @@ export class VirtualCube {
 				this.syncLeds();
 			}
 
+			this.advanceTransition();
 			this.controls.update();
 			this.renderer.render(this.scene, this.camera);
 			this.animationFrameId = requestAnimationFrame(render);
