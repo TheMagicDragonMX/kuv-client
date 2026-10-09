@@ -1,13 +1,44 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
+/**
+ * Color shared by the scene background, fog and renderer clear color so they blend seamlessly.
+ */
 const BACKGROUND = '#090d12';
+
+/**
+ * Distance from the cube center to each face plane (half the cube edge length), in scene units.
+ */
 const FACE_OFFSET = 1.45;
+
+/**
+ * Edge length of one face, in scene units.
+ */
 const FACE_SIZE = FACE_OFFSET * 2;
+
+/**
+ * Thickness of the gray frame block behind each panel; it extends inward from the face plane.
+ */
 const FRAME_DEPTH = 0.2;
+
+/**
+ * Thickness of the dark panel slab that backs the LEDs.
+ */
 const PANEL_DEPTH = 0.04;
+
+/**
+ * Number of LEDs per side on each face (the physical panels are 64x64).
+ */
 const GRID_SIZE = 64;
+
+/**
+ * Margin between the panel edge and the outermost LEDs, in scene units.
+ */
 const EDGE_PADDING = 0.015;
+
+/**
+ * Thickness of each LED box, which sits on top of the panel surface.
+ */
 const LED_DEPTH = 0.02;
 
 /**
@@ -16,19 +47,70 @@ const LED_DEPTH = 0.02;
  * provide a host element and call dispose() when it goes away.
  */
 export class VirtualCube {
+	/**
+	 * WebGL renderer; draws the scene into a canvas appended to the host element.
+	 */
 	private renderer: THREE.WebGLRenderer;
+
+	/**
+	 * Root of everything drawn: lights, base and cube.
+	 */
 	private scene = new THREE.Scene();
+
+	/**
+	 * Viewpoint the scene is rendered from; orbited by the user via `controls`.
+	 */
 	private camera: THREE.PerspectiveCamera;
+
+	/**
+	 * Mouse/touch orbit and zoom around the cube, with slow auto-rotation.
+	 */
 	private controls: OrbitControls;
+
+	/**
+	 * Parent of the five faces, so the cube can be positioned or transformed as one unit.
+	 */
 	private cubeGroup = new THREE.Group();
+
+	/**
+	 * Dark backing slab of each face, indexed like `ledMatrices`; restyled when panels toggle.
+	 */
 	private panelMeshes: THREE.Mesh[] = [];
+
+	/**
+	 * Current LED color (hex) of each face, indexed like `ledMatrices`.
+	 */
 	private panelColors: number[] = [];
+
+	/**
+	 * One instanced mesh per face holding its 64x64 LEDs in a single draw call.
+	 */
 	private ledMatrices: THREE.InstancedMesh[] = [];
+
+	/**
+	 * Material of each face's LEDs, indexed like `ledMatrices`; controls color and glow.
+	 */
 	private ledMaterials: THREE.MeshStandardMaterial[] = [];
+
+	/**
+	 * Id of the pending requestAnimationFrame, kept so the render loop can be cancelled.
+	 */
 	private animationFrameId?: number;
+
+	/**
+	 * Whether the LEDs are lit (true) or the cube shows its inert, unpowered look (false).
+	 */
 	private panelsEnabled = false;
+
+	/**
+	 * Bound window resize handler, stored so the same reference can be removed on dispose.
+	 */
 	private resizeListener = () => this.resize();
 
+	/**
+	 * Builds the scene inside `host` and starts rendering.
+	 * @param host Element the canvas is appended to; its size determines the render size.
+	 */
 	constructor (private readonly host: HTMLElement) {
 		this.scene.background = new THREE.Color(BACKGROUND);
 		this.scene.fog = new THREE.Fog(BACKGROUND, 8, 18);
@@ -67,15 +149,24 @@ export class VirtualCube {
 		this.startRenderLoop();
 	}
 
+	/**
+	 * True when the LED panels are currently lit.
+	 */
 	get isPanelsEnabled (): boolean {
 		return this.panelsEnabled;
 	}
 
+	/**
+	 * Turns the LED panels on or off.
+	 */
 	setPanelsEnabled (enabled: boolean): void {
 		this.panelsEnabled = enabled;
 		this.applyPanelState();
 	}
 
+	/**
+	 * Fits the renderer and camera aspect to the host's current size. Also runs on window resize.
+	 */
 	resize (): void {
 		const width = this.host.clientWidth;
 		const height = this.host.clientHeight;
@@ -88,6 +179,9 @@ export class VirtualCube {
 		this.renderer.setSize(width, height);
 	}
 
+	/**
+	 * Stops rendering, removes listeners and the canvas, and frees the renderer. Call when done with the cube.
+	 */
 	dispose (): void {
 		window.removeEventListener('resize', this.resizeListener);
 		if (this.animationFrameId !== undefined) {
@@ -98,6 +192,9 @@ export class VirtualCube {
 		this.renderer.domElement.remove();
 	}
 
+	/**
+	 * Adds ambient fill plus a warm key light and a bluish rim light for depth.
+	 */
 	private addLights (): void {
 		this.scene.add(new THREE.AmbientLight(0xffffff, 0.95));
 
@@ -110,6 +207,9 @@ export class VirtualCube {
 		this.scene.add(rimLight);
 	}
 
+	/**
+	 * Adds the pedestal (wide plate plus narrower stem) the cube stands on.
+	 */
 	private addBase (): void {
 		const base = new THREE.Mesh(
 			new THREE.BoxGeometry(3.4, 0.7, 3.4),
@@ -130,6 +230,9 @@ export class VirtualCube {
 		this.scene.add(centerStem);
 	}
 
+	/**
+	 * Creates the five visible faces (front, right, left, back, top), each with frame, panel and LED grid.
+	 */
 	private addFaces (): void {
 		const frameMaterial = new THREE.MeshStandardMaterial({
 			color: 0x4c4f56,
@@ -222,6 +325,9 @@ export class VirtualCube {
 		}
 	}
 
+	/**
+	 * Returns a random light green-to-purple hex color, used as placeholder LED color.
+	 */
 	private randomPastelColor (): number {
 		const color = new THREE.Color();
 		const hue = 150 + Math.random() * 160;
@@ -229,6 +335,9 @@ export class VirtualCube {
 		return color.getHex();
 	}
 
+	/**
+	 * Syncs panel backing and LED visibility, color and glow with `panelsEnabled`.
+	 */
 	private applyPanelState (): void {
 		for (const panel of this.panelMeshes) {
 			const material = panel.material as THREE.MeshStandardMaterial;
@@ -254,6 +363,9 @@ export class VirtualCube {
 		});
 	}
 
+	/**
+	 * Starts the per-frame loop that updates the controls and renders the scene.
+	 */
 	private startRenderLoop (): void {
 		const render = () => {
 			this.controls.update();
