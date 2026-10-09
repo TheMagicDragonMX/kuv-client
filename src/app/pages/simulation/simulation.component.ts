@@ -54,11 +54,6 @@ export class SimulationPage implements AfterViewInit, OnDestroy {
 	protected readonly history = signal<Command[]>([]);
 
 	/**
-	 * Whether the LED panels are lit; mirrors the state inside the cube.
-	 */
-	protected readonly panelsEnabled = signal(false);
-
-	/**
 	 * History shown newest first.
 	 */
 	protected readonly recentHistory = computed(() => [ ...this.history() ].reverse());
@@ -103,12 +98,6 @@ export class SimulationPage implements AfterViewInit, OnDestroy {
 	protected reset (): void {
 		this.state.fill(0);
 		this.history.set([]);
-	}
-
-	protected togglePanels (): void {
-		const enabled = !this.panelsEnabled();
-		this.cube?.setPanelsEnabled(enabled);
-		this.panelsEnabled.set(enabled);
 	}
 
 	protected describe (command: Command): string {

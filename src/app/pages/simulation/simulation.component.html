@@ -2,9 +2,10 @@
 	<div #cubeHost class="absolute inset-y-0 right-0 left-0 lg:left-[22rem]" aria-label="Virtual LED cube preview"></div>
 
 	<nav class="absolute top-4 left-4 z-20 flex gap-2 rounded-full border border-slate-400/20 bg-[rgba(10,13,18,0.82)] p-[0.4rem] shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-[6px]" aria-label="Navegación principal">
-		<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100">Login</a>
-		<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100">Cube</a>
-		<a routerLink="/simulation" class="inline-flex items-center justify-center rounded-full bg-slate-400/15 px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)] transition duration-150">Simulation</a>
+		<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Login</a>
+		<a routerLink="/register" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Register</a>
+		<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
+		<a routerLink="/simulation" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline transition duration-150 bg-slate-400/15 opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Simulation</a>
 	</nav>
 
 	<aside class="absolute top-20 bottom-4 left-4 z-10 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-4 overflow-y-auto rounded-[22px] border border-slate-400/20 bg-[rgba(10,13,18,0.82)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-[10px]" aria-label="Cube commands">
@@ -65,12 +66,6 @@
 				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="reset()">Reset</button>
 			</div>
 		</section>
-
-		<label class="relative inline-flex cursor-pointer items-center justify-between gap-3 rounded-full border border-slate-400/20 bg-slate-900/90 py-2 pr-[0.9rem] pl-[0.8rem] select-none" for="panel-toggle">
-			<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-200 uppercase">Panels</span>
-			<input id="panel-toggle" class="peer sr-only" type="checkbox" [checked]="panelsEnabled()" (change)="togglePanels()" />
-			<span class="relative h-[1.55rem] w-[2.9rem] rounded-full bg-slate-600/80 transition duration-200 before:absolute before:top-[0.17rem] before:left-[0.2rem] before:h-[1.1rem] before:w-[1.1rem] before:rounded-full before:bg-slate-50 before:shadow-[0_2px_8px_rgba(15,23,42,0.35)] before:transition before:duration-200 before:content-[''] peer-checked:bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] peer-checked:before:translate-x-[1.28rem]"></span>
-		</label>
 
 		<section class="flex min-h-0 flex-col gap-2">
 			<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">History ({{ history().length }})</h2>

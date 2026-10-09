@@ -75,11 +75,6 @@ export class VirtualCube {
 	private cubeGroup = new THREE.Group();
 
 	/**
-	 * Dark backing slab of each face, indexed like `ledMatrices`; restyled when panels toggle.
-	 */
-	private panelMeshes: THREE.Mesh[] = [];
-
-	/**
 	 * One instanced mesh per face holding its 64x64 LEDs in a single draw call.
 	 */
 	private ledMatrices: THREE.InstancedMesh[] = [];
@@ -93,11 +88,6 @@ export class VirtualCube {
 	 * Id of the pending requestAnimationFrame, kept so the render loop can be cancelled.
 	 */
 	private animationFrameId?: number;
-
-	/**
-	 * Whether the LEDs are lit (true) or the cube shows its inert, unpowered look (false).
-	 */
-	private panelsEnabled = false;
 
 	/**
 	 * `CubeState.version` last copied to the LEDs, so unchanged frames skip the copy.
@@ -153,26 +143,10 @@ export class VirtualCube {
 		this.scene.add(this.cubeGroup);
 		this.addBase();
 		this.addFaces();
-		this.applyPanelState();
 
 		this.resize();
 		window.addEventListener('resize', this.resizeListener);
 		this.startRenderLoop();
-	}
-
-	/**
-	 * True when the LED panels are currently lit.
-	 */
-	get isPanelsEnabled (): boolean {
-		return this.panelsEnabled;
-	}
-
-	/**
-	 * Turns the LED panels on or off.
-	 */
-	setPanelsEnabled (enabled: boolean): void {
-		this.panelsEnabled = enabled;
-		this.applyPanelState();
 	}
 
 	/**
@@ -286,9 +260,8 @@ export class VirtualCube {
 			const panel = new THREE.Mesh(
 				new THREE.BoxGeometry(FACE_SIZE, FACE_SIZE, PANEL_DEPTH),
 				new THREE.MeshStandardMaterial({
-					color: 0x2c323b,
-					emissive: 0x1f2937,
-					emissiveIntensity: 0.4,
+					// Dark backing so the lit LEDs read as individual pixels.
+					color: 0x0b0d10,
 					roughness: 0.55,
 					metalness: 0.15,
 				}),
@@ -297,7 +270,6 @@ export class VirtualCube {
 			panel.castShadow = true;
 			panel.receiveShadow = true;
 			faceGroup.add(panel);
-			this.panelMeshes.push(panel);
 
 			const ledMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
 			const ledMatrix = new THREE.InstancedMesh(ledGeometry, ledMaterial, GRID_SIZE * GRID_SIZE);
@@ -320,35 +292,11 @@ export class VirtualCube {
 
 			ledMatrix.instanceMatrix.needsUpdate = true;
 			ledMatrix.setColorAt(0, this.scratchColor.setHex(0x000000));
-			ledMatrix.visible = false;
 			this.ledMatrices.push(ledMatrix);
 			this.ledMaterials.push(ledMaterial);
 			faceGroup.add(ledMatrix);
 
 			this.cubeGroup.add(faceGroup);
-		}
-	}
-
-	/**
-	 * Syncs panel backing and LED visibility with `panelsEnabled`.
-	 */
-	private applyPanelState (): void {
-		for (const panel of this.panelMeshes) {
-			const material = panel.material as THREE.MeshStandardMaterial;
-			if (this.panelsEnabled) {
-				// Dark backing so the lit LEDs read as individual pixels.
-				material.color.setHex(0x0b0d10);
-				material.emissive.setHex(0x000000);
-				material.emissiveIntensity = 0;
-			} else {
-				material.color.setHex(0x2c323b);
-				material.emissive.setHex(0x1f2937);
-				material.emissiveIntensity = 0.25;
-			}
-		}
-
-		for (const ledMatrix of this.ledMatrices) {
-			ledMatrix.visible = this.panelsEnabled;
 		}
 	}
 
