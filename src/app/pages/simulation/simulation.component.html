@@ -1,19 +1,87 @@
-<div class="block h-screen w-screen bg-[radial-gradient(circle_at_center,#171b22_0%,#0d1016_42%,#07090d_100%)] font-[Inter,'Segoe_UI',sans-serif] text-slate-100">
-	<main class="grid h-full w-full place-items-center p-8">
-		<nav class="absolute top-4 left-4 z-20 flex gap-2 rounded-full border border-slate-400/20 bg-[rgba(10,13,18,0.82)] p-[0.4rem] shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-[6px]" aria-label="Navegación principal">
-			<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Login</a>
-			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
-			<a routerLink="/simulation" class="inline-flex items-center justify-center rounded-full bg-slate-400/15 px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)] transition duration-150">Simulation</a>
-		</nav>
-		<div class="flex flex-col items-center gap-4">
-			<div #cubeHost class="relative h-[min(72vh,720px)] min-h-[420px] w-[min(72vw,820px)] overflow-hidden rounded-[22px] border-2 border-slate-400/35 bg-[rgba(17,20,27,0.75)] shadow-[0_28px_70px_rgba(0,0,0,0.55),inset_0_0_0_1px_rgba(148,163,184,0.2),0_0_30px_rgba(96,165,250,0.08)]" aria-label="Virtual LED cube preview"></div>
-			<div class="flex w-full justify-center">
-				<label class="relative inline-flex cursor-pointer items-center gap-3 rounded-full border border-slate-400/20 bg-slate-900/90 py-2 pr-[0.9rem] pl-[0.8rem] shadow-[0_10px_25px_rgba(15,23,42,0.25)] select-none" for="panel-toggle">
-					<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-200 uppercase">Panels</span>
-					<input id="panel-toggle" class="peer sr-only" type="checkbox" [checked]="cube?.isPanelsEnabled" (change)="togglePanels()" />
-					<span class="relative h-[1.55rem] w-[2.9rem] rounded-full bg-slate-600/80 transition duration-200 before:absolute before:top-[0.17rem] before:left-[0.2rem] before:h-[1.1rem] before:w-[1.1rem] before:rounded-full before:bg-slate-50 before:shadow-[0_2px_8px_rgba(15,23,42,0.35)] before:transition before:duration-200 before:content-[''] peer-checked:bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] peer-checked:before:translate-x-[1.28rem]"></span>
-				</label>
+<div class="relative block h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_70%_50%,#171b22_0%,#0d1016_45%,#07090d_100%)] font-[Inter,'Segoe_UI',sans-serif] text-slate-100">
+	<div #cubeHost class="absolute inset-y-0 right-0 left-0 lg:left-[22rem]" aria-label="Virtual LED cube preview"></div>
+
+	<nav class="absolute top-4 left-4 z-20 flex gap-2 rounded-full border border-slate-400/20 bg-[rgba(10,13,18,0.82)] p-[0.4rem] shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-[6px]" aria-label="Navegación principal">
+		<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100">Login</a>
+		<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-80 transition duration-150 hover:bg-slate-400/15 hover:opacity-100">Cube</a>
+		<a routerLink="/simulation" class="inline-flex items-center justify-center rounded-full bg-slate-400/15 px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-[#dfeaf6] uppercase no-underline opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)] transition duration-150">Simulation</a>
+	</nav>
+
+	<aside class="absolute top-20 bottom-4 left-4 z-10 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-4 overflow-y-auto rounded-[22px] border border-slate-400/20 bg-[rgba(10,13,18,0.82)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-[10px]" aria-label="Cube commands">
+		<section class="flex flex-col gap-2">
+			<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Commands</h2>
+			<div class="flex flex-wrap gap-2">
+				@for (spec of specs; track spec.op) {
+					<button
+						type="button"
+						class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.76rem] font-semibold transition duration-150"
+						[class]="spec === selected() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/20 bg-transparent text-slate-300 hover:bg-slate-400/10'"
+						(click)="select(spec)"
+					>{{ spec.label }}</button>
+				}
 			</div>
-		</div>
-	</main>
+		</section>
+
+		<section class="flex flex-col gap-3">
+			<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">{{ selected().label }}</h2>
+			<div class="grid grid-cols-2 gap-3">
+				@for (field of selected().fields; track field.key) {
+					<label class="flex flex-col gap-1 text-[0.7rem] font-semibold text-slate-300" [class.col-span-2]="field.type !== 'number'">
+						{{ field.label }}
+						@switch (field.type) {
+							@case ('face') {
+								<select
+									class="rounded-[0.7rem] border border-slate-400/20 bg-slate-900/90 px-3 py-2 text-[0.85rem] text-slate-50"
+									[value]="valueOf(field.key, field.defaultValue)"
+									(change)="setValue(field.key, $any($event.target).value)"
+								>
+									@for (face of faces; track face.value) {
+										<option [value]="face.value">{{ face.label }}</option>
+									}
+								</select>
+							}
+							@case ('color') {
+								<input
+									type="color"
+									class="h-9 w-full cursor-pointer rounded-[0.7rem] border border-slate-400/20 bg-slate-900/90 p-1"
+									[value]="valueOf(field.key, field.defaultValue)"
+									(input)="setValue(field.key, $any($event.target).value)"
+								/>
+							}
+							@default {
+								<input
+									type="number"
+									class="w-full rounded-[0.7rem] border border-slate-400/20 bg-slate-900/90 px-3 py-2 text-[0.85rem] text-slate-50"
+									[value]="valueOf(field.key, field.defaultValue)"
+									(input)="setValue(field.key, $any($event.target).value)"
+								/>
+							}
+						}
+					</label>
+				}
+			</div>
+			<div class="flex gap-2">
+				<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-slate-900 uppercase" (click)="run()">Run</button>
+				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="reset()">Reset</button>
+			</div>
+		</section>
+
+		<label class="relative inline-flex cursor-pointer items-center justify-between gap-3 rounded-full border border-slate-400/20 bg-slate-900/90 py-2 pr-[0.9rem] pl-[0.8rem] select-none" for="panel-toggle">
+			<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-200 uppercase">Panels</span>
+			<input id="panel-toggle" class="peer sr-only" type="checkbox" [checked]="panelsEnabled()" (change)="togglePanels()" />
+			<span class="relative h-[1.55rem] w-[2.9rem] rounded-full bg-slate-600/80 transition duration-200 before:absolute before:top-[0.17rem] before:left-[0.2rem] before:h-[1.1rem] before:w-[1.1rem] before:rounded-full before:bg-slate-50 before:shadow-[0_2px_8px_rgba(15,23,42,0.35)] before:transition before:duration-200 before:content-[''] peer-checked:bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] peer-checked:before:translate-x-[1.28rem]"></span>
+		</label>
+
+		<section class="flex min-h-0 flex-col gap-2">
+			<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">History ({{ history().length }})</h2>
+			@if (history().length === 0) {
+				<p class="text-[0.76rem] text-slate-500">Nothing executed yet.</p>
+			}
+			<ul class="flex flex-col gap-1 font-mono text-[0.7rem] text-slate-300">
+				@for (command of recentHistory(); track $index) {
+					<li class="truncate rounded-lg bg-slate-900/70 px-2 py-1" [title]="describe(command)">{{ describe(command) }}</li>
+				}
+			</ul>
+		</section>
+	</aside>
 </div>

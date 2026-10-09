@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CubeState, FACE_RESOLUTION } from './cube-state';
 
 /**
- * Color shared by the scene background, fog and renderer clear color so they blend seamlessly.
+ * Fog color; matches the page background so the far end of the scene fades into it.
  */
 const BACKGROUND = '#090d12';
 
@@ -123,15 +123,15 @@ export class VirtualCube {
 		private readonly host: HTMLElement,
 		private readonly state: CubeState,
 	) {
-		this.scene.background = new THREE.Color(BACKGROUND);
 		this.scene.fog = new THREE.Fog(BACKGROUND, 8, 18);
 
 		this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
 		this.camera.position.set(0, 2.2, 7.5);
 
-		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 		this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-		this.renderer.setClearColor(BACKGROUND);
+		// Transparent canvas so the cube blends with whatever is behind it.
+		this.renderer.setClearColor(BACKGROUND, 0);
 		this.renderer.shadowMap.enabled = true;
 		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		host.appendChild(this.renderer.domElement);

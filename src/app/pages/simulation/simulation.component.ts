@@ -4,11 +4,14 @@ import {
 	ElementRef,
 	OnDestroy,
 	ViewChild,
+	computed,
+	signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { Command, executeCommand } from '../../cube/command';
 import { CubeState, Face } from '../../cube/cube-state';
-import { Command, executeProgram } from '../../cube/command';
 import { VirtualCube } from '../../cube/virtual-cube';
+import { COMMAND_SPECS, CommandSpec, buildCommand } from './command-specs';
 
 @Component({
 	selector: 'app-simulation',
@@ -19,34 +22,100 @@ import { VirtualCube } from '../../cube/virtual-cube';
 export class SimulationPage implements AfterViewInit, OnDestroy {
 	@ViewChild('cubeHost', { static: true }) cubeHost!: ElementRef<HTMLDivElement>;
 
-	cube?: VirtualCube;
+	/**
+	 * Commands offered in the menu.
+	 */
+	protected readonly specs = COMMAND_SPECS;
+
+	/**
+	 * Faces selectable in the face inputs.
+	 */
+	protected readonly faces = [
+		{ value: Face.FRONT, label: 'Front' },
+		{ value: Face.RIGHT, label: 'Right' },
+		{ value: Face.LEFT, label: 'Left' },
+		{ value: Face.BACK, label: 'Back' },
+		{ value: Face.TOP, label: 'Top' },
+	];
+
+	/**
+	 * Command currently being edited in the menu.
+	 */
+	protected readonly selected = signal<CommandSpec>(COMMAND_SPECS[0]);
+
+	/**
+	 * Raw input values of the selected command; missing keys fall back to the field default.
+	 */
+	protected readonly values = signal<Record<string, string>>({});
+
+	/**
+	 * Commands executed so far, oldest first.
+	 */
+	protected readonly history = signal<Command[]>([]);
+
+	/**
+	 * Whether the LED panels are lit; mirrors the state inside the cube.
+	 */
+	protected readonly panelsEnabled = signal(false);
+
+	/**
+	 * History shown newest first.
+	 */
+	protected readonly recentHistory = computed(() => [ ...this.history() ].reverse());
+
+	private cube?: VirtualCube;
 
 	private state = new CubeState();
 
 	ngAfterViewInit (): void {
 		this.cube = new VirtualCube(this.cubeHost.nativeElement, this.state);
-		executeProgram(this.state, this.demoProgram());
 	}
 
 	ngOnDestroy (): void {
 		this.cube?.dispose();
 	}
 
-	togglePanels (): void {
-		this.cube?.setPanelsEnabled(!this.cube.isPanelsEnabled);
+	protected select (spec: CommandSpec): void {
+		this.selected.set(spec);
+		this.values.set({});
+	}
+
+	protected valueOf (key: string, defaultValue: string): string {
+		return this.values()[key] ?? defaultValue;
+	}
+
+	protected setValue (key: string, value: string): void {
+		this.values.update((values) => ({ ...values, [key]: value }));
 	}
 
 	/**
-	 * Placeholder program that exercises the drawing commands on every face.
+	 * Executes the selected command with the entered values and records it.
 	 */
-	private demoProgram (): Command[] {
-		const faces = [ Face.FRONT, Face.RIGHT, Face.LEFT, Face.BACK, Face.TOP ];
-		const colors = [ 0xff4d6d, 0xffd166, 0x06d6a0, 0x4cc9f0, 0xc77dff ];
+	protected run (): void {
+		const command = buildCommand(this.selected(), this.values());
+		executeCommand(this.state, command);
+		this.history.update((history) => [ ...history, command ]);
+	}
 
-		return faces.flatMap((face, index): Command[] => [
-			{ op: 'drawRect', face, x: 0, y: 0, width: 64, height: 64, color: colors[index] },
-			{ op: 'drawLine', face, x0: 0, y0: 0, x1: 63, y1: 63, color: colors[index] },
-			{ op: 'fillCircle', face, cx: 32, cy: 32, radius: 10, color: colors[index] },
-		]);
+	/**
+	 * Blanks the cube and forgets the executed commands.
+	 */
+	protected reset (): void {
+		this.state.fill(0);
+		this.history.set([]);
+	}
+
+	protected togglePanels (): void {
+		const enabled = !this.panelsEnabled();
+		this.cube?.setPanelsEnabled(enabled);
+		this.panelsEnabled.set(enabled);
+	}
+
+	protected describe (command: Command): string {
+		const { op, ...params } = command as Command & Record<string, unknown>;
+		const args = Object.entries(params)
+			.map(([ key, value ]) => key === 'color' ? `#${(value as number).toString(16).padStart(6, '0')}` : String(value))
+			.join(', ');
+		return `${op}(${args})`;
 	}
 }
