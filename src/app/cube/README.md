@@ -2,7 +2,7 @@
 
 Everything about how the cube works lives in this folder, and nothing outside it knows. If you are looking for how something about the cube works, find its layer below and open that file.
 
-Design and reasoning: [CUBE_DESIGN.md](../../../CUBE_DESIGN.md). This file is the map of the code.
+Design and reasoning: [CUBE_DESIGN.md](../../../CUBE_DESIGN.md). To understand how it all works, step by step, read [ENGINE_MANUAL.md](../../../ENGINE_MANUAL.md). This file is the map of the code.
 
 ## Using the cube
 
