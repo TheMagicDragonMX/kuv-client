@@ -211,6 +211,22 @@ describe('CubeGeometry', () => {
 			expect(geometry.offset(strip(10, 63), 0, 1)).toBeNull();
 		});
 
+		it('gives the same cell as walking step by step', () => {
+			for (const heading of [ Heading.NORTH, Heading.EAST, Heading.SOUTH, Heading.WEST ])
+				for (const [ dx, dy ] of [ [ 5, 3 ], [ -7, 2 ], [ 130, -4 ], [ -200, 9 ], [ 0, 6 ] ]) {
+					const start = strip(250, 20, heading);
+					const walked = geometry.move(geometry.move(start, 0 < dx ? 'right' : 'left', Math.abs(dx)), 0 < dy ? 'down' : 'up', Math.abs(dy));
+
+					const found = geometry.offset(start, dx, dy);
+
+					// A walk blocked by the floor gives null here, but `move` just stops early.
+					if (found)
+						expect(found).toEqual(walked);
+					else
+						expect(walked.y).toBe(geometry.floor);
+				}
+		});
+
 		it('rejects offsets that are not whole numbers', () => {
 			expect(() => geometry.offset(strip(10, 10), 0.5, 0)).toThrow(RangeError);
 		});

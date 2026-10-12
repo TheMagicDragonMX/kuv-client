@@ -6,6 +6,7 @@
  * by the tests, so they always stay valid.
  */
 
+import { formatColor, parseColor } from '../program/names';
 import { Block, ColorValue, Program, Script, ShapePixelDefinition, SideName } from '../program/program';
 
 /**
@@ -157,6 +158,61 @@ const BELT_STEPS: Block[] = BELT_COLORS.flatMap((color): Block[] => [
 	{ op: 'wait', seconds: BELT_SECONDS },
 ]);
 
+/**
+ * Number of in-between colors from one belt color to the next, and the time each one lasts.
+ * A full turn of the color wheel takes 6 * FADE_STEPS * FADE_SECONDS seconds.
+ */
+const FADE_STEPS = 20;
+const FADE_SECONDS = 0.05;
+
+/**
+ * Mixes two `#RRGGBB` colors; `amount` goes from 0 (all `from`) to 1 (all `to`).
+ */
+function mixColors (from: ColorValue, to: ColorValue, amount: number): ColorValue {
+	const channels = [ 16, 8, 0 ].map((shift) => {
+		const start = (parseColor(from) >> shift) & 0xff;
+		const end = (parseColor(to) >> shift) & 0xff;
+
+		return Math.round(start + (end - start) * amount);
+	});
+
+	return formatColor((channels[0] << 16) | (channels[1] << 8) | channels[2]);
+}
+
+/**
+ * The belt colors with `FADE_STEPS` colors between each pair, ending back at the first so
+ * the loop has no jump.
+ */
+const FADE_COLORS: ColorValue[] = BELT_COLORS.flatMap((color, index) => {
+	const next = BELT_COLORS[(index + 1) % BELT_COLORS.length];
+
+	return Array.from({ length: FADE_STEPS }, (_, step) => mixColors(color, next, step / FADE_STEPS));
+});
+
+const FADE_BELT_STEPS: Block[] = FADE_COLORS.flatMap((color): Block[] => [
+	...BELT_SIDES.map((face): Block => ({ op: 'fillRect', face, x: 0, y: 28, width: 64, height: 8, color })),
+	{ op: 'wait', seconds: FADE_SECONDS },
+]);
+
+/**
+ * Colors of the traveling belt, one for each of the 256 columns around the cube: the belt
+ * colors fading into each other and back to the first, so the ends of the strip meet.
+ */
+const WAVE_COLORS: ColorValue[] = Array.from({ length: 4 * 64 }, (_, column) => {
+	const position = column / (4 * 64) * BELT_COLORS.length;
+	const index = Math.floor(position);
+
+	return mixColors(BELT_COLORS[index], BELT_COLORS[(index + 1) % BELT_COLORS.length], position - index);
+});
+
+/**
+ * The belt as the pixels of one object: 4 rows tall and as wide as the whole strip, with
+ * the center in the middle column, so `dx` goes from -128 to 127. Every column has its own
+ * color.
+ */
+const WAVE_PIXELS: ShapePixelDefinition[] = WAVE_COLORS.flatMap((color, column) =>
+	Array.from({ length: 4 }, (_, dy) => ({ dx: column - 128, dy, color })));
+
 export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 	{
 		id: 'around',
@@ -281,6 +337,43 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 				{
 					trigger: { type: 'start' },
 					blocks: [ { op: 'forever', body: BELT_STEPS } ],
+				},
+			],
+		},
+	},
+	{
+		id: 'smooth-belt',
+		name: 'Smooth RGB belt',
+		description: 'The same belt, but it fades from one color to the next like an LED strip instead of jumping.',
+		program: {
+			version: 1,
+			scripts: [
+				{
+					trigger: { type: 'start' },
+					blocks: [ { op: 'forever', body: FADE_BELT_STEPS } ],
+				},
+			],
+		},
+	},
+	{
+		id: 'wave-belt',
+		name: 'Traveling RGB belt',
+		description: 'A rainbow belt whose colors travel around the four sides, so each column is a little behind its neighbor.',
+		program: {
+			version: 1,
+			scripts: [
+				{
+					trigger: { type: 'start' },
+					blocks: [
+						{ op: 'create', name: 'belt', face: 'BACK', x: 0, y: 28, color: '#ffffff', pixels: WAVE_PIXELS },
+						{
+							op: 'forever',
+							body: [
+								{ op: 'move', target: 'belt', step: 'right' },
+								{ op: 'wait', seconds: 0.03 },
+							],
+						},
+					],
 				},
 			],
 		},

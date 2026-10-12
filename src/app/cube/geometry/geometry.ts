@@ -260,6 +260,21 @@ export class CubeGeometry {
 		if (!Number.isInteger(dx) || !Number.isInteger(dy))
 			throw new RangeError(`The offset must be whole numbers, got (${dx}, ${dy})`);
 
+		if ('strip' === pose.surface) {
+			// On the strip, the walk only needs to follow the edges when it goes over the top.
+			// Anywhere else the answer is plain arithmetic on the cell.
+			const [ sideX, sideY ] = OFFSETS[turn(pose.heading, 0 < dx ? STEP_TURNS.right : STEP_TURNS.left)];
+			const [ downX, downY ] = OFFSETS[turn(pose.heading, 0 < dy ? STEP_TURNS.down : STEP_TURNS.up)];
+			const x = pose.x + sideX * Math.abs(dx) + downX * Math.abs(dy);
+			const y = pose.y + sideY * Math.abs(dx) + downY * Math.abs(dy);
+
+			if (y > this.floor)
+				return null;
+
+			if (0 <= y)
+				return { ...pose, x: ((x % STRIP_WIDTH) + STRIP_WIDTH) % STRIP_WIDTH, y };
+		}
+
 		const sideways = this.walk(pose, 0 < dx ? 'right' : 'left', Math.abs(dx));
 
 		return sideways && this.walk(sideways, 0 < dy ? 'down' : 'up', Math.abs(dy));
