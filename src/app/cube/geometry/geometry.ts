@@ -250,6 +250,22 @@ export class CubeGeometry {
 	}
 
 	/**
+	 * Finds the pose of the cell `dx` cells to the right and `dy` cells down from a pose, in
+	 * the frame of the pose: a negative `dx` is to the left and a negative `dy` is up. The
+	 * walk goes sideways first and then vertically, crossing edges like `move` does, so the
+	 * result is the cell a shape pixel at that offset covers. Returns null if the walk is
+	 * blocked by the floor.
+	 */
+	offset (pose: Pose, dx: number, dy: number): Pose | null {
+		if (!Number.isInteger(dx) || !Number.isInteger(dy))
+			throw new RangeError(`The offset must be whole numbers, got (${dx}, ${dy})`);
+
+		const sideways = this.walk(pose, 0 < dx ? 'right' : 'left', Math.abs(dx));
+
+		return sideways && this.walk(sideways, 0 < dy ? 'down' : 'up', Math.abs(dy));
+	}
+
+	/**
 	 * Resets the heading of a pose to "up" as the user sees it. On the strip that is north.
 	 * On the top face it is north of the addressed top face, which depends on the top anchor.
 	 */
@@ -277,6 +293,18 @@ export class CubeGeometry {
 			x: pose.x % FACE_RESOLUTION,
 			y: pose.y,
 		};
+	}
+
+	/**
+	 * Like `move`, but returns null instead of stopping early when the floor is in the way.
+	 */
+	private walk (pose: Pose, step: Step, count: number): Pose | null {
+		let current: Pose | null = pose;
+
+		for (let i = 0; current && i < count; i += 1)
+			current = this.advance(current, turn(current.heading, STEP_TURNS[step]));
+
+		return current;
 	}
 
 	/**

@@ -23,6 +23,7 @@ import { Block } from './program';
  *   count     whole number, zero or more
  *   seconds   number, zero or more
  *   colors    list of '#RRGGBB'
+ *   shape     non-empty list of { dx, dy, color? }: the pixels of an object
  *   blocks    nested list of blocks
  */
 export type FieldKind =
@@ -35,6 +36,7 @@ export type FieldKind =
 	| 'count'
 	| 'seconds'
 	| 'colors'
+	| 'shape'
 	| 'blocks';
 
 /**
@@ -59,7 +61,7 @@ const heading: FieldSchema = { kind: 'heading', optional: true };
 
 export const BLOCK_SCHEMAS = {
 	// Object commands
-	create: { name: text, face, x: integer, y: integer, color, heading },
+	create: { name: text, face, x: integer, y: integer, color, heading, pixels: { kind: 'shape', optional: true } },
 	move: { target: text, step: { kind: 'step' }, count: { kind: 'count', optional: true } },
 	moveTo: { target: text, face, x: integer, y: integer, heading },
 	setColor: { target: text, color },

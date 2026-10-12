@@ -189,6 +189,33 @@ describe('CubeGeometry', () => {
 		});
 	});
 
+	describe('offsets', () => {
+		it('finds cells right of and below a pose', () => {
+			expect(geometry.offset(strip(10, 10), 2, 3)).toEqual(strip(12, 13));
+		});
+
+		it('follows the heading of the pose', () => {
+			expect(geometry.offset(strip(10, 10, Heading.EAST), 0, -1)).toEqual(strip(11, 10, Heading.EAST));
+			expect(geometry.offset(strip(10, 10, Heading.EAST), 1, 0)).toEqual(strip(10, 11, Heading.EAST));
+		});
+
+		it('wraps around the strip', () => {
+			expect(geometry.offset(strip(0, 5), -1, 0)).toEqual(strip(STRIP_WIDTH - 1, 5));
+		});
+
+		it('crosses onto the top face', () => {
+			expect(geometry.offset(strip(10, 0), 0, -1)).toEqual(top(10, 63, Heading.NORTH));
+		});
+
+		it('returns null where the floor blocks it', () => {
+			expect(geometry.offset(strip(10, 63), 0, 1)).toBeNull();
+		});
+
+		it('rejects offsets that are not whole numbers', () => {
+			expect(() => geometry.offset(strip(10, 10), 0.5, 0)).toThrow(RangeError);
+		});
+	});
+
 	describe('drawing', () => {
 		it('maps strip poses to side faces', () => {
 			expect(geometry.toPixel(strip(64 + 3, 4))).toEqual({ face: Face.RIGHT, x: 3, y: 4 });

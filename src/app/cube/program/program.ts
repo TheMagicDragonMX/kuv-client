@@ -48,7 +48,22 @@ export interface ProgramConfig {
 // ---------------------------------------------------------------------------------------
 
 /**
+ * One pixel of an object's shape: `dx` cells to the right and `dy` cells down from the
+ * center of the object, as seen when it faces north (the shape turns with the object).
+ * Without a color it takes the color of the object.
+ */
+export interface ShapePixelDefinition {
+	dx: number;
+	dy: number;
+	color?: ColorValue;
+}
+
+/**
  * Creates an object. The name must be new. The heading defaults to north.
+ *
+ * `pixels` is the shape, around the center cell given by `face`, `x` and `y`. It defaults to
+ * a single pixel on the center. For a plus sign:
+ *   [ {dx: 0, dy: 0}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: 0, dy: 1}, {dx: -1, dy: 0} ]
  */
 export interface CreateCommand {
 	op: 'create';
@@ -58,6 +73,7 @@ export interface CreateCommand {
 	y: number;
 	color: ColorValue;
 	heading?: HeadingName;
+	pixels?: ShapePixelDefinition[];
 }
 
 /**

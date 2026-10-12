@@ -190,10 +190,33 @@ function validateField (kind: FieldKind, value: unknown, path: string): void {
 				fail(path, 'must be a list of colors written as #rrggbb');
 			}
 			return;
+		case 'shape':
+			validateShape(value, path);
+			return;
 		case 'blocks':
 			validateBlocks(value, path);
 			return;
 	}
+}
+
+/**
+ * Checks the pixels of an object: a non-empty list of offsets with an optional color each.
+ */
+function validateShape (value: unknown, path: string): void {
+	if (!Array.isArray(value) || 0 === value.length)
+		fail(path, 'must be a non-empty list of pixels');
+
+	value.forEach((item, index) => {
+		const pixel = expectObject(item, `${path}[${index}]`);
+		expectOnlyKeys(pixel, [ 'dx', 'dy', 'color' ], `${path}[${index}]`);
+
+		for (const axis of [ 'dx', 'dy' ])
+			if (!Number.isInteger(pixel[axis]))
+				fail(`${path}[${index}].${axis}`, 'must be a whole number');
+
+		if (undefined !== pixel['color'] && !isColorValue(pixel['color']))
+			fail(`${path}[${index}].color`, 'must be a color written as #rrggbb');
+	});
 }
 
 /**

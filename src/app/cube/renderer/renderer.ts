@@ -9,7 +9,7 @@
  * Each frame is built the same way:
  *
  *   1. start from the background layer (one bulk copy)
- *   2. draw every visible object on top, in the order they were created
+ *   2. draw every visible object on top, in the order they were created, pixel by pixel
  *
  * Nothing is erased pixel by pixel: because every frame starts from the background, an object
  * that moved simply is not drawn where it used to be.
@@ -50,10 +50,15 @@ export class Renderer {
 			if (!object.visible)
 				continue;
 
-			// Objects below the last visible row have no pixel, so they are simply not drawn.
-			const pixel = this.world.geometry.toPixel(object.pose);
-			if (pixel)
-				this.output.set(pixel.face, pixel.x, pixel.y, object.color);
+			for (const part of object.shape) {
+				// The geometry finds where each pixel of the shape lands, across edges too.
+				const pose = this.world.geometry.offset(object.pose, part.dx, part.dy);
+
+				// Pixels below the last visible row have no cell, so they are simply not drawn.
+				const pixel = pose && this.world.geometry.toPixel(pose);
+				if (pixel)
+					this.output.set(pixel.face, pixel.x, pixel.y, part.color ?? object.color);
+			}
 		}
 
 		this.renderedVersion = this.world.version;

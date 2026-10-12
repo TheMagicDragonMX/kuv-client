@@ -20,7 +20,7 @@ describe('object commands', () => {
 
 		expect(ball).toEqual({
 			name: 'ball',
-			shape: 'pixel',
+			shape: [ { dx: 0, dy: 0 } ],
 			pose: { surface: 'strip', x: 32, y: 32, heading: Heading.NORTH },
 			color: 0xff0000,
 			visible: true,

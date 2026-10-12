@@ -21,15 +21,20 @@ import {
 	ShowCommand,
 } from '../program/program';
 import { FACE_BY_NAME, HEADING_BY_NAME, parseColor } from '../program/names';
+import { SINGLE_PIXEL } from '../world/cube-object';
 import { World } from '../world/world';
 
 /**
- * Creates a new visible pixel object.
+ * Creates a new visible object. Without `pixels` it is a single pixel.
  */
 export function create (world: World, command: CreateCommand): void {
 	world.add({
 		name: command.name,
-		shape: 'pixel',
+		shape: command.pixels?.map((pixel) => ({
+			dx: pixel.dx,
+			dy: pixel.dy,
+			color: pixel.color === undefined ? undefined : parseColor(pixel.color),
+		})) ?? SINGLE_PIXEL,
 		pose: world.geometry.place({
 			face: FACE_BY_NAME[command.face],
 			x: command.x,

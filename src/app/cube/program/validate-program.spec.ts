@@ -113,6 +113,26 @@ describe('validateProgram', () => {
 				.not.toThrow();
 		});
 
+		it('accepts an object with a shape', () => {
+			const create = { op: 'create', name: 'a', face: 'FRONT', x: 5, y: 5, color: '#ffffff' };
+
+			expect(() => validateProgram(program({ ...create, pixels: [ { dx: 0, dy: -1 }, { dx: 1, dy: 0, color: '#ff0000' } ] })))
+				.not.toThrow();
+		});
+
+		it.each([
+			[ 'an empty shape', [] ],
+			[ 'a pixel without dy', [ { dx: 1 } ] ],
+			[ 'a pixel with a fractional offset', [ { dx: 0.5, dy: 0 } ] ],
+			[ 'a pixel with a bad color', [ { dx: 0, dy: 0, color: 'red' } ] ],
+			[ 'a pixel with an unknown field', [ { dx: 0, dy: 0, z: 1 } ] ],
+			[ 'a shape that is not a list', { dx: 0, dy: 0 } ],
+		])('rejects %s', (_name, pixels) => {
+			const create = { op: 'create', name: 'a', face: 'FRONT', x: 5, y: 5, color: '#ffffff', pixels };
+
+			expect(() => validateProgram(program(create))).toThrow(ProgramError);
+		});
+
 		it('checks the blocks nested in loops', () => {
 			const value = program({ op: 'forever', body: [ { op: 'repeat', times: 2, body: [ { op: 'wait', seconds: 'x' } ] } ] });
 

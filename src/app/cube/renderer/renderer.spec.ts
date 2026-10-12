@@ -29,6 +29,82 @@ describe('Renderer', () => {
 		expect(output.get(Face.TOP, 7, 8)).toBe(0x00ff00);
 	});
 
+	describe('shapes', () => {
+		const plus = [
+			{ dx: 0, dy: 0 },
+			{ dx: 0, dy: -1 },
+			{ dx: 1, dy: 0 },
+			{ dx: 0, dy: 1 },
+			{ dx: -1, dy: 0 },
+		];
+
+		it('draws every pixel of a shape around the center', () => {
+			const { world, output, renderer } = setup();
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 10, y: 10, color: '#ff0000', pixels: plus });
+
+			renderer.render();
+
+			for (const [ x, y ] of [ [ 10, 10 ], [ 10, 9 ], [ 11, 10 ], [ 10, 11 ], [ 9, 10 ] ])
+				expect(output.get(Face.FRONT, x, y)).toBe(0xff0000);
+			expect(output.get(Face.FRONT, 11, 11)).toBe(0);
+		});
+
+		it('draws the pixels that cross an edge on the other face', () => {
+			const { world, output, renderer } = setup();
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 10, y: 0, color: '#ff0000', pixels: plus });
+
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 10, 0)).toBe(0xff0000);
+			expect(output.get(Face.TOP, 10, 63)).toBe(0xff0000);
+		});
+
+		it('draws the pixels that cross from one side face to the next', () => {
+			const { world, output, renderer } = setup();
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 63, y: 10, color: '#ff0000', pixels: plus });
+
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 63, 10)).toBe(0xff0000);
+			expect(output.get(Face.RIGHT, 0, 10)).toBe(0xff0000);
+		});
+
+		it('turns the shape with the object', () => {
+			const { world, output, renderer } = setup();
+			applyCommand(world, {
+				op: 'create', name: 'a', face: 'FRONT', x: 10, y: 10, color: '#ff0000', heading: 'EAST',
+				pixels: [ { dx: 0, dy: -1 } ],
+			});
+
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 11, 10)).toBe(0xff0000);
+		});
+
+		it('uses the color of a pixel over the color of the object', () => {
+			const { world, output, renderer } = setup();
+			applyCommand(world, {
+				op: 'create', name: 'a', face: 'FRONT', x: 10, y: 10, color: '#ff0000',
+				pixels: [ { dx: 0, dy: 0 }, { dx: 1, dy: 0, color: '#0000ff' } ],
+			});
+
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 10, 10)).toBe(0xff0000);
+			expect(output.get(Face.FRONT, 11, 10)).toBe(0x0000ff);
+		});
+
+		it('skips the pixels blocked by the floor but draws the rest', () => {
+			const { world, output, renderer } = setup();
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 10, y: 63, color: '#ff0000', pixels: plus });
+
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 10, 63)).toBe(0xff0000);
+			expect(output.get(Face.FRONT, 10, 62)).toBe(0xff0000);
+		});
+	});
+
 	it('does not draw hidden objects', () => {
 		const { world, output, renderer } = setup();
 		applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 1, y: 1, color: '#ff0000' });

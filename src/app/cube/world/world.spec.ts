@@ -1,13 +1,13 @@
 import { EngineError } from '../errors';
 import { Heading } from '../geometry/geometry';
 import { Face } from '../state/cube-state';
-import { CubeObject } from './cube-object';
+import { CubeObject, SINGLE_PIXEL } from './cube-object';
 import { World } from './world';
 
 function pixel (name: string, x = 0): CubeObject {
 	return {
 		name,
-		shape: 'pixel',
+		shape: SINGLE_PIXEL,
 		pose: { surface: 'strip', x, y: 0, heading: Heading.NORTH },
 		color: 0xffffff,
 		visible: true,

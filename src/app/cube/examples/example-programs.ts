@@ -177,6 +177,38 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 		},
 	},
 	{
+		id: 'plus',
+		name: 'Plus sign',
+		description: 'An object made of five pixels. It climbs over the top face and the whole shape turns with it.',
+		program: {
+			version: 1,
+			scripts: [
+				{
+					trigger: { type: 'start' },
+					blocks: [
+						{
+							op: 'create', name: 'plus', face: 'FRONT', x: 32, y: 40, color: '#fb7185',
+							pixels: [
+								{ dx: 0, dy: 0, color: '#fde047' },
+								{ dx: 0, dy: -1 },
+								{ dx: 1, dy: 0 },
+								{ dx: 0, dy: 1 },
+								{ dx: -1, dy: 0 },
+							],
+						},
+						{
+							op: 'forever',
+							body: [
+								{ op: 'move', target: 'plus', step: 'up' },
+								{ op: 'wait', seconds: 0.05 },
+							],
+						},
+					],
+				},
+			],
+		},
+	},
+	{
 		id: 'blink',
 		name: 'Blinking lights',
 		description: 'A script that runs every second and a script that changes colors in a loop.',
