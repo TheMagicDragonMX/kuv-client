@@ -402,7 +402,7 @@ Making the primitives strip-aware, so a circle wraps around a corner, comes in a
 
 | Part | State |
 | --- | --- |
-| Geometry (strip, TOP, heading, floor, anchor) | Done: `src/app/engine/geometry.ts`, with tests |
+| Geometry (strip, TOP, heading, floor, anchor) | Done: `src/app/cube/geometry/geometry.ts`, with tests |
 | World, background layer, renderer | Planned |
 | Program format, interpreter, scheduler | Planned |
 | Blockly integration | Planned |

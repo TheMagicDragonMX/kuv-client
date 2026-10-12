@@ -1,4 +1,24 @@
-import { FACE_RESOLUTION, Face } from '../cube/cube-state';
+/**
+ * LAYER: geometry.
+ *
+ * Answers one question: "if an object steps this way, where does it end up?". It knows how
+ * the five faces connect, so nothing else has to think about edges, corners or rotations.
+ *
+ * The cube is modeled as two surfaces:
+ *
+ *   strip  the four sides (FRONT, RIGHT, BACK, LEFT) as one 256x64 band that wraps around
+ *   top    the top face, 64x64, stored as seen from above with FRONT at the bottom
+ *
+ * Every object has a Pose: a surface, a cell and a heading. The heading is the direction the
+ * object's own "up" points. Steps (up/right/down/left) are relative to it, and crossing an
+ * edge between a side and the top rotates the heading, so an object that keeps "going up"
+ * keeps going the same way. The full explanation, with the edge table, is in
+ * CUBE_DESIGN.md (sections 4 and 5).
+ *
+ * Pure logic: no Angular, no three.js, no state. Everything here is a function of its inputs.
+ */
+
+import { FACE_RESOLUTION, Face } from '../state/cube-state';
 
 /**
  * Direction on a surface, as seen from outside the cube. The values are quarter
@@ -230,6 +250,18 @@ export class CubeGeometry {
 		}
 
 		return current;
+	}
+
+	/**
+	 * Resets the heading of a pose to "up" as the user sees it. On the strip that is north.
+	 * On the top face it is north of the addressed top face, which depends on the top anchor.
+	 */
+	pointUp (pose: Pose): Pose {
+		const heading = pose.surface === 'top'
+			? turn(Heading.NORTH, this.anchorTurns)
+			: Heading.NORTH;
+
+		return { ...pose, heading };
 	}
 
 	/**

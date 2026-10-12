@@ -1,0 +1,33 @@
+<section class="flex h-full flex-col gap-3" aria-label="Program">
+	<div class="flex items-center justify-between gap-2">
+		<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Program</h2>
+		<select
+			class="rounded-[0.7rem] border border-slate-400/20 bg-slate-900/90 px-3 py-1.5 text-[0.76rem] text-slate-50"
+			aria-label="Load an example"
+			(change)="load($any($event.target).value)"
+		>
+			<option value="" selected disabled>Load an example…</option>
+			@for (example of examples; track example.id) {
+				<option [value]="example.id">{{ example.name }}</option>
+			}
+		</select>
+	</div>
+
+	<textarea
+		class="min-h-0 flex-1 resize-none rounded-[0.9rem] border border-slate-400/20 bg-slate-900/90 p-3 font-mono text-[0.7rem] leading-relaxed text-slate-200 outline-none focus:border-slate-300/40"
+		spellcheck="false"
+		aria-label="Program as JSON"
+		[value]="source()"
+		(input)="source.set($any($event.target).value)"
+	></textarea>
+
+	@if (syntaxProblem() ?? problem(); as message) {
+		<p class="rounded-lg border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-[0.76rem] text-rose-200" role="alert">{{ message }}</p>
+	}
+
+	<div class="flex gap-2">
+		<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-slate-900 uppercase" (click)="submit()">Run</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="!running()" (click)="stop.emit()">Stop</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="reset.emit()">Reset</button>
+	</div>
+</section>

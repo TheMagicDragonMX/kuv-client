@@ -1,4 +1,4 @@
-import { FACE_RESOLUTION, Face } from '../cube/cube-state';
+import { FACE_RESOLUTION, Face } from '../state/cube-state';
 import { CubeGeometry, Heading, Pose, STRIP_WIDTH, SIDES } from './geometry';
 
 /**
@@ -172,6 +172,20 @@ describe('CubeGeometry', () => {
 
 			expect(anchored.place({ face: Face.RIGHT, x: 3, y: 4 })).toEqual(strip(64 + 3, 4));
 			expect(anchored.move(strip(10, 0), 'up')).toEqual(geometry.move(strip(10, 0), 'up'));
+		});
+	});
+
+	describe('pointing up', () => {
+		it('resets the heading to north on the strip', () => {
+			expect(geometry.pointUp(strip(5, 5, Heading.WEST))).toEqual(strip(5, 5, Heading.NORTH));
+		});
+
+		it('resets the heading to the addressed north on the top face', () => {
+			const anchored = new CubeGeometry({ topAnchor: Face.LEFT });
+
+			expect(geometry.pointUp(top(5, 5, Heading.WEST))).toEqual(top(5, 5, Heading.NORTH));
+			expect(anchored.pointUp(top(5, 5, Heading.WEST)).heading)
+				.toBe(anchored.place({ face: Face.TOP, x: 5, y: 5 }).heading);
 		});
 	});
 

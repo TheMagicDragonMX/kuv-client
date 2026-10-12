@@ -1,4 +1,14 @@
-import { Color, CubeState, Face } from '../cube-state';
+/**
+ * LAYER: drawing primitives.
+ *
+ * Copies a small picture (a list of colors) onto a face.
+ *
+ * These write straight into a CubeState face. They do not know about objects or programs:
+ * the renderer uses them to draw objects, and the "advanced" program blocks use them to
+ * paint the background layer.
+ */
+
+import { Color, CubeState, Face } from '../state/cube-state';
 
 /**
  * Copies a bitmap onto a face with its top-left corner at (x, y).

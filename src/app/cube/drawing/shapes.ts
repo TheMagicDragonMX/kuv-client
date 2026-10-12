@@ -1,4 +1,15 @@
-import { Color, CubeState, Face } from '../cube-state';
+/**
+ * LAYER: drawing primitives.
+ *
+ * Lines, rectangles and circles (outline and filled), drawn on one face.
+ * Anything outside the face is clipped by CubeState, so shapes can safely overflow.
+ *
+ * These write straight into a CubeState face. They do not know about objects or programs:
+ * the renderer uses them to draw objects, and the "advanced" program blocks use them to
+ * paint the background layer.
+ */
+
+import { Color, CubeState, Face } from '../state/cube-state';
 
 /**
  * Draws a straight line between two points (Bresenham).

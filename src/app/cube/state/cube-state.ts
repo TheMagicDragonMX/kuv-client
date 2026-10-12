@@ -1,4 +1,15 @@
 /**
+ * LAYER: pixel buffer.
+ *
+ * The lowest layer of the cube: just a grid of colors, one 64x64 surface per face. It is
+ * the meeting point between the engine and whatever shows the result:
+ *
+ *   engine (renderer) --writes--> CubeState --is read by--> 3D view / Raspberry Pi output
+ *
+ * It knows nothing about objects, programs, three.js, panels or GPIO.
+ */
+
+/**
  * Faces of the cube. The numeric values are the order in which the renderer
  * builds its faces, so they double as indexes into the pixel buffer.
  */
@@ -82,6 +93,15 @@ export class CubeState {
 	 */
 	fill (color: Color): void {
 		this.pixels.fill(color);
+		this.version += 1;
+	}
+
+	/**
+	 * Copies every pixel of another state into this one. This is a single bulk copy, so it is
+	 * the cheap way to start a frame from a saved image (the renderer does it with the background).
+	 */
+	copyFrom (other: CubeState): void {
+		this.pixels.set(other.pixels);
 		this.version += 1;
 	}
 

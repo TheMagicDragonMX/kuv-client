@@ -1,4 +1,14 @@
-import { Color, CubeState, Face } from '../cube-state';
+/**
+ * LAYER: drawing primitives.
+ *
+ * Single pixel and whole-cube operations (clear, set, get).
+ *
+ * These write straight into a CubeState face. They do not know about objects or programs:
+ * the renderer uses them to draw objects, and the "advanced" program blocks use them to
+ * paint the background layer.
+ */
+
+import { Color, CubeState, Face } from '../state/cube-state';
 
 /**
  * Sets the whole cube to one color.
