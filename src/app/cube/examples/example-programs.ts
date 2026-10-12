@@ -6,7 +6,7 @@
  * by the tests, so they always stay valid.
  */
 
-import { Program } from '../program/program';
+import { ColorValue, Program, Script, SideName } from '../program/program';
 
 /**
  * A program with a name and a description for showing in a menu.
@@ -17,6 +17,60 @@ export interface ExampleProgram {
 	description: string;
 	program: Program;
 }
+
+/**
+ * One falling pixel for the rain example: where it falls, how fast, and when it starts.
+ */
+interface Drop {
+	face: SideName;
+	x: number;
+	color: ColorValue;
+	delay: number;
+	pace: number;
+}
+
+const RAIN_DROPS: Drop[] = [
+	{ face: 'FRONT', x: 6, color: '#7dd3fc', delay: 0, pace: 0.03 },
+	{ face: 'FRONT', x: 21, color: '#38bdf8', delay: 0.7, pace: 0.05 },
+	{ face: 'FRONT', x: 40, color: '#bae6fd', delay: 0.3, pace: 0.04 },
+	{ face: 'FRONT', x: 57, color: '#0ea5e9', delay: 1.1, pace: 0.06 },
+	{ face: 'RIGHT', x: 10, color: '#38bdf8', delay: 0.5, pace: 0.04 },
+	{ face: 'RIGHT', x: 27, color: '#bae6fd', delay: 0, pace: 0.06 },
+	{ face: 'RIGHT', x: 45, color: '#7dd3fc', delay: 0.9, pace: 0.03 },
+	{ face: 'BACK', x: 4, color: '#0ea5e9', delay: 0.2, pace: 0.05 },
+	{ face: 'BACK', x: 24, color: '#7dd3fc', delay: 1.3, pace: 0.03 },
+	{ face: 'BACK', x: 38, color: '#38bdf8', delay: 0.6, pace: 0.06 },
+	{ face: 'BACK', x: 55, color: '#bae6fd', delay: 0, pace: 0.04 },
+	{ face: 'LEFT', x: 13, color: '#bae6fd', delay: 0.8, pace: 0.05 },
+	{ face: 'LEFT', x: 31, color: '#0ea5e9', delay: 0.1, pace: 0.03 },
+	{ face: 'LEFT', x: 50, color: '#7dd3fc', delay: 1.0, pace: 0.04 },
+];
+
+/**
+ * One script per drop. Each drop starts at the top row, steps down to the floor and starts
+ * over. Going down never reaches the top face, so the rain falls on the four sides only.
+ */
+const RAIN_SCRIPTS: Script[] = RAIN_DROPS.map((drop, index) => ({
+	trigger: { type: 'start' },
+	blocks: [
+		{ op: 'create', name: `drop${index}`, face: drop.face, x: drop.x, y: 0, color: drop.color },
+		{ op: 'wait', seconds: drop.delay },
+		{
+			op: 'forever',
+			body: [
+				{ op: 'moveTo', target: `drop${index}`, face: drop.face, x: drop.x, y: 0 },
+				{
+					op: 'repeat',
+					times: 63,
+					body: [
+						{ op: 'move', target: `drop${index}`, step: 'down' },
+						{ op: 'wait', seconds: drop.pace },
+					],
+				},
+			],
+		},
+	],
+}));
 
 export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 	{
@@ -111,6 +165,15 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 					],
 				},
 			],
+		},
+	},
+	{
+		id: 'rain',
+		name: 'Rain',
+		description: 'Pixels fall from the top to the bottom of the four sides, each at its own speed. The top face stays dry.',
+		program: {
+			version: 1,
+			scripts: RAIN_SCRIPTS,
 		},
 	},
 	{
