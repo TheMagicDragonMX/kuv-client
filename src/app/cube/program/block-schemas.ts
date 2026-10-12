@@ -18,11 +18,11 @@ import { Block } from './program';
  *   face      a FaceName
  *   heading   a HeadingName
  *   step      'up' | 'right' | 'down' | 'left'
- *   color     '#rrggbb'
+ *   color     '#RRGGBB'
  *   integer   any whole number (cells can be negative: shapes may overflow a face)
  *   count     whole number, zero or more
  *   seconds   number, zero or more
- *   colors    list of '#rrggbb'
+ *   colors    list of '#RRGGBB'
  *   blocks    nested list of blocks
  */
 export type FieldKind =

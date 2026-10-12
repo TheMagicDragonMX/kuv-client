@@ -92,7 +92,7 @@ export class Scheduler {
 	 * True while there is anything left to run: a script mid-way, or a timer that will start one.
 	 */
 	get active (): boolean {
-		return this.tasks.length > 0 || this.timers.length > 0;
+		return 0 < this.tasks.length || 0 < this.timers.length;
 	}
 
 	/**
@@ -103,9 +103,10 @@ export class Scheduler {
 		this.stop();
 
 		this.scripts.forEach((script, index) => {
-			if (script.trigger.type === 'start') {
+			if ('start' === script.trigger.type)
 				this.spawn(index, now);
-			} else {
+
+			else {
 				const milliseconds = script.trigger.seconds * 1000;
 				this.timers.push({ script: index, milliseconds, nextAt: now + milliseconds });
 			}
@@ -118,11 +119,11 @@ export class Scheduler {
 	tick (now: number): void {
 		this.fireTimers(now);
 
-		for (const task of [ ...this.tasks ]) {
-			if (now >= task.wakeAt) {
+		for (const task of [ ...this.tasks ])
+			if (now >= task.wakeAt)
 				this.resume(task, now);
-			}
-		}
+
+
 	}
 
 	/**
@@ -145,18 +146,16 @@ export class Scheduler {
 	 */
 	private fireTimers (now: number): void {
 		for (const timer of this.timers) {
-			if (now < timer.nextAt) {
+			if (now < timer.nextAt)
 				continue;
-			}
 
-			if (!this.tasks.some((task) => task.script === timer.script)) {
+			if (!this.tasks.some((task) => task.script === timer.script))
 				this.spawn(timer.script, now);
-			}
 
 			// Skip any whole intervals that were missed instead of firing them all at once.
-			while (timer.nextAt <= now) {
+			while (timer.nextAt <= now)
 				timer.nextAt += timer.milliseconds;
-			}
+
 		}
 	}
 
@@ -171,7 +170,9 @@ export class Scheduler {
 		let result: IteratorResult<Pause, boolean>;
 		try {
 			result = task.run.next();
-		} catch (error) {
+		}
+
+		catch (error) {
 			this.tasks = this.tasks.filter((other) => other !== task);
 			this.onError({
 				script: task.script,
@@ -180,12 +181,15 @@ export class Scheduler {
 			return;
 		}
 
-		if (result.done) {
+		if (result.done)
 			this.tasks = this.tasks.filter((other) => other !== task);
-		} else if (result.value.kind === 'wait') {
+
+		else if ('wait' === result.value.kind) {
 			task.scheduledAt = resumedAt + result.value.milliseconds;
 			task.wakeAt = task.scheduledAt;
-		} else {
+		}
+
+		else {
 			task.scheduledAt = undefined;
 			task.wakeAt = now;
 		}

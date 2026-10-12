@@ -119,9 +119,9 @@ export class CubePlayer {
 	private sync (): void {
 		const running = this.engine.running;
 
-		if (!running) {
+		if (!running) 
 			this.loop.stop();
-		}
+		
 		if (running !== this.reportedRunning) {
 			this.reportedRunning = running;
 			this.options.onRunningChange?.(running);

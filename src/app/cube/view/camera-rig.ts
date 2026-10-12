@@ -119,14 +119,14 @@ export class CameraRig {
 	 * Moves the camera one step along the current transition, if any.
 	 */
 	private advanceTransition (): void {
-		if (!this.transition) {
+		if (!this.transition) 
 			return;
-		}
+		
 
 		const { startTime, fromTheta, fromPhi, toTheta, toPhi } = this.transition;
 		const progress = Math.min((performance.now() - startTime) / VIEW_TRANSITION_MS, 1);
 		// Ease in and out so the motion starts and ends gently.
-		const eased = progress < 0.5 ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+		const eased = 0.5 > progress ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
 
 		const offset = this.camera.position.clone().sub(this.controls.target);
 		const radius = offset.length();
@@ -137,8 +137,8 @@ export class CameraRig {
 		);
 		this.camera.position.copy(this.controls.target).add(offset);
 
-		if (progress === 1) {
+		if (1 === progress) 
 			this.transition = undefined;
-		}
+		
 	}
 }

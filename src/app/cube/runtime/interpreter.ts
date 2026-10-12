@@ -69,19 +69,19 @@ export function* runBlocks (blocks: Block[], world: World): Run {
 
 			case 'repeat':
 				for (let i = 0; i < block.times; i += 1) {
-					if (!(yield* runBlocks(block.body, world))) {
+					if (!(yield* runBlocks(block.body, world))) 
 						yield NEXT_TICK;
-					}
+					
 					paused = true;
 				}
 				break;
 
 			case 'forever':
-				for (;;) {
-					if (!(yield* runBlocks(block.body, world))) {
+				for (;;) 
+					if (!(yield* runBlocks(block.body, world))) 
 						yield NEXT_TICK;
-					}
-				}
+					
+				
 		}
 	}
 

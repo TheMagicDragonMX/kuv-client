@@ -32,26 +32,26 @@ export const HEADING_BY_NAME: Record<HeadingName, Heading> = {
 };
 
 /**
- * Matches a color written as `#rrggbb`.
+ * Matches a color written as `#RRGGBB`.
  */
 const COLOR_PATTERN = /^#[0-9a-fA-F]{6}$/;
 
 /**
- * Tells whether a value is a color written as `#rrggbb`.
+ * Tells whether a value is a color written as `#RRGGBB`.
  */
 export function isColorValue (value: unknown): value is ColorValue {
-	return typeof value === 'string' && COLOR_PATTERN.test(value);
+	return 'string' === typeof value && COLOR_PATTERN.test(value);
 }
 
 /**
- * Converts `#rrggbb` to the packed number the pixel buffer uses.
+ * Converts `#RRGGBB` to the packed number the pixel buffer uses.
  */
 export function parseColor (value: ColorValue): Color {
 	return Number.parseInt(value.slice(1), 16);
 }
 
 /**
- * Converts a packed color back to `#rrggbb`.
+ * Converts a packed color back to `#RRGGBB`.
  */
 export function formatColor (color: Color): ColorValue {
 	return `#${color.toString(16).padStart(6, '0')}`;

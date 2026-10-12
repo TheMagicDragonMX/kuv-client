@@ -11,6 +11,7 @@ export default tseslint.config(
 		files: ['**/*.ts'],
 		rules: {
 			'array-bracket-spacing': ['error', 'always'],
+			curly: ['error', 'multi'],
 			'object-curly-spacing': ['error', 'always'],
 			'space-before-blocks': ['error', 'always'],
 			'space-before-function-paren': ['error', 'always'],

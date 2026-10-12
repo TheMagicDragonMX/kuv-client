@@ -56,9 +56,9 @@ export class CubeModel {
 	 * Copies the state to the LEDs if it changed since the last call.
 	 */
 	syncIfChanged (): void {
-		if (this.renderedVersion !== this.state.version) {
+		if (this.renderedVersion !== this.state.version)
 			this.syncLeds();
-		}
+
 	}
 
 	/**
@@ -132,7 +132,7 @@ export class CubeModel {
 			const ledZ = LED_DEPTH / 2 + 0.002;
 			let ledIndex = 0;
 
-			for (let row = 0; row < FACE_RESOLUTION; row += 1) {
+			for (let row = 0; row < FACE_RESOLUTION; row += 1)
 				for (let col = 0; col < FACE_RESOLUTION; col += 1) {
 					dummy.position.set(
 						-ledSpan / 2 + ledSize / 2 + col * ledPitch,
@@ -143,7 +143,7 @@ export class CubeModel {
 					ledMatrix.setMatrixAt(ledIndex, dummy.matrix);
 					ledIndex += 1;
 				}
-			}
+
 
 			ledMatrix.instanceMatrix.needsUpdate = true;
 			// Setting one color creates the color buffer of the mesh, which syncLeds fills.

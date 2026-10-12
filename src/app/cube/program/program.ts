@@ -31,7 +31,7 @@ export type SideName = Exclude<FaceName, 'TOP'>;
 export type HeadingName = 'NORTH' | 'EAST' | 'SOUTH' | 'WEST';
 
 /**
- * A color written as `#rrggbb`.
+ * A color written as `#RRGGBB`.
  */
 export type ColorValue = string;
 

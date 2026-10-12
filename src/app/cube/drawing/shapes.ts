@@ -33,9 +33,8 @@ export function drawLine (
 
 	for (;;) {
 		state.set(face, x, y, color);
-		if (x === x1 && y === y1) {
+		if (x === x1 && y === y1)
 			return;
-		}
 
 		const doubled = 2 * error;
 		if (doubled >= dy) {
@@ -61,9 +60,8 @@ export function drawRect (
 	height: number,
 	color: Color,
 ): void {
-	if (width <= 0 || height <= 0) {
+	if (0 >= width || 0 >= height)
 		return;
-	}
 
 	drawLine(state, face, x, y, x + width - 1, y, color);
 	drawLine(state, face, x, y + height - 1, x + width - 1, y + height - 1, color);
@@ -83,11 +81,10 @@ export function fillRect (
 	height: number,
 	color: Color,
 ): void {
-	for (let row = y; row < y + height; row += 1) {
-		for (let col = x; col < x + width; col += 1) {
+	for (let row = y; row < y + height; row += 1)
+		for (let col = x; col < x + width; col += 1)
 			state.set(face, col, row, color);
-		}
-	}
+
 }
 
 /**
@@ -101,9 +98,8 @@ export function drawCircle (
 	radius: number,
 	color: Color,
 ): void {
-	if (radius < 0) {
+	if (0 > radius)
 		return;
-	}
 
 	let x = radius;
 	let y = 0;
@@ -120,9 +116,10 @@ export function drawCircle (
 		state.set(face, cx - y, cy - x, color);
 
 		y += 1;
-		if (error < 0) {
+		if (0 > error)
 			error += 2 * y + 1;
-		} else {
+
+		else {
 			x -= 1;
 			error += 2 * (y - x) + 1;
 		}
@@ -142,8 +139,7 @@ export function fillCircle (
 ): void {
 	for (let y = -radius; y <= radius; y += 1) {
 		const half = Math.floor(Math.sqrt(radius * radius - y * y));
-		for (let x = -half; x <= half; x += 1) {
+		for (let x = -half; x <= half; x += 1)
 			state.set(face, cx + x, cy + y, color);
-		}
 	}
 }

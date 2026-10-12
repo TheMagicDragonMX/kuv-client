@@ -101,9 +101,9 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 			const program = this.program();
 			const autoplay = this.autoplay();
 
-			if (autoplay && program) {
+			if (autoplay && program)
 				untracked(() => this.run(program));
-			}
+
 		});
 	}
 
@@ -126,10 +126,11 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 		try {
 			this.player.play(program);
 			return true;
-		} catch (error) {
-			if (!(error instanceof ProgramError)) {
+		}
+
+		catch (error) {
+			if (!(error instanceof ProgramError))
 				throw error;
-			}
 
 			this.problemState.set(error.message);
 			return false;

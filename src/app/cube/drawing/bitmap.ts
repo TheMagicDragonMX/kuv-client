@@ -23,9 +23,7 @@ export function drawBitmap (
 	height: number,
 	pixels: ArrayLike<Color>,
 ): void {
-	for (let row = 0; row < height; row += 1) {
-		for (let col = 0; col < width; col += 1) {
+	for (let row = 0; row < height; row += 1)
+		for (let col = 0; col < width; col += 1)
 			state.set(face, x + col, y + row, pixels[row * width + col]);
-		}
-	}
 }

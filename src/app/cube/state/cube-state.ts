@@ -45,6 +45,7 @@ export type Color = number;
  * from outside the cube, with (0, 0) at the top-left corner.
  */
 export class CubeState {
+
 	/**
 	 * Pixel colors of all faces, stored face after face and row after row.
 	 */
@@ -60,18 +61,17 @@ export class CubeState {
 	 */
 	inBounds (face: Face, x: number, y: number): boolean {
 		return Number.isInteger(x) && Number.isInteger(y)
-			&& face >= 0 && face < FACE_COUNT
-			&& x >= 0 && x < FACE_RESOLUTION
-			&& y >= 0 && y < FACE_RESOLUTION;
+			&& 0 <= face && face < FACE_COUNT
+			&& 0 <= x && x < FACE_RESOLUTION
+			&& 0 <= y && y < FACE_RESOLUTION;
 	}
 
 	/**
 	 * Sets one pixel. Writes outside the face are ignored, so shapes can safely overflow.
 	 */
 	set (face: Face, x: number, y: number, color: Color): void {
-		if (!this.inBounds(face, x, y)) {
+		if (!this.inBounds(face, x, y))
 			return;
-		}
 
 		this.pixels[this.indexOf(face, x, y)] = color;
 		this.version += 1;
@@ -81,9 +81,8 @@ export class CubeState {
 	 * Returns the color of one pixel, or black if the coordinates are outside the face.
 	 */
 	get (face: Face, x: number, y: number): Color {
-		if (!this.inBounds(face, x, y)) {
+		if (!this.inBounds(face, x, y))
 			return 0;
-		}
 
 		return this.pixels[this.indexOf(face, x, y)];
 	}

@@ -41,22 +41,19 @@ export class Renderer {
 	 * @returns Whether anything was drawn.
 	 */
 	render (): boolean {
-		if (this.renderedVersion === this.world.version) {
+		if (this.renderedVersion === this.world.version)
 			return false;
-		}
 
 		this.output.copyFrom(this.world.background);
 
 		for (const object of this.world.all()) {
-			if (!object.visible) {
+			if (!object.visible)
 				continue;
-			}
 
 			// Objects below the last visible row have no pixel, so they are simply not drawn.
 			const pixel = this.world.geometry.toPixel(object.pose);
-			if (pixel) {
+			if (pixel)
 				this.output.set(pixel.face, pixel.x, pixel.y, object.color);
-			}
 		}
 
 		this.renderedVersion = this.world.version;

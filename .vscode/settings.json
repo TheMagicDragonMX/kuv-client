@@ -4,6 +4,11 @@
 		"source.fixAll.eslint": "explicit"
 	},
     "cSpell.words": [
-        "github"
-    ]
+		"Blockly",
+		"Bresenham",
+		"github",
+		"metalness",
+		"neighbouring",
+		"RRGGBB"
+	]
 }

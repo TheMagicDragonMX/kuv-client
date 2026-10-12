@@ -49,9 +49,9 @@ export function move (world: World, command: MoveCommand): void {
 	const object = world.get(command.target);
 	const pose = world.geometry.move(object.pose, command.step, command.count ?? 1);
 
-	if (pose !== object.pose) {
+	if (pose !== object.pose) 
 		world.update(command.target, { pose });
-	}
+	
 }
 
 /**
@@ -76,27 +76,27 @@ export function moveTo (world: World, command: MoveToCommand): void {
 export function setColor (world: World, command: SetColorCommand): void {
 	const color = parseColor(command.color);
 
-	if (world.get(command.target).color !== color) {
+	if (world.get(command.target).color !== color) 
 		world.update(command.target, { color });
-	}
+	
 }
 
 /**
  * Makes an object visible.
  */
 export function show (world: World, command: ShowCommand): void {
-	if (!world.get(command.target).visible) {
+	if (!world.get(command.target).visible) 
 		world.update(command.target, { visible: true });
-	}
+	
 }
 
 /**
  * Hides an object.
  */
 export function hide (world: World, command: HideCommand): void {
-	if (world.get(command.target).visible) {
+	if (world.get(command.target).visible) 
 		world.update(command.target, { visible: false });
-	}
+	
 }
 
 /**
@@ -113,7 +113,7 @@ export function pointUp (world: World, command: PointUpCommand): void {
 	const object = world.get(command.target);
 	const pose = world.geometry.pointUp(object.pose);
 
-	if (pose.heading !== object.pose.heading) {
+	if (pose.heading !== object.pose.heading) 
 		world.update(command.target, { pose });
-	}
+	
 }

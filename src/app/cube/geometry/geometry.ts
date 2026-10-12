@@ -101,6 +101,7 @@ export interface FacePixel {
  * Settings of the geometry. Both are optional.
  */
 export interface GeometryConfig {
+
 	/**
 	 * Last row objects can reach on the sides. Rows below the last visible one exist but
 	 * are not drawn. Defaults to the last visible row.
@@ -149,9 +150,9 @@ function rotateCell (x: number, y: number, quarterTurns: number): [ number, numb
 	let rotatedX = x;
 	let rotatedY = y;
 
-	for (let i = 0; i < ((quarterTurns % 4) + 4) % 4; i += 1) {
+	for (let i = 0; i < ((quarterTurns % 4) + 4) % 4; i += 1)
 		[ rotatedX, rotatedY ] = [ FACE_RESOLUTION - 1 - rotatedY, rotatedX ];
-	}
+
 
 	return [ rotatedX, rotatedY ];
 }
@@ -161,6 +162,7 @@ function rotateCell (x: number, y: number, quarterTurns: number): [ number, numb
  * strip and the top face, keeping their sense of "up", and maps them to cube state pixels.
  */
 export class CubeGeometry {
+
 	/**
 	 * Last row objects can reach on the sides.
 	 */
@@ -180,12 +182,11 @@ export class CubeGeometry {
 		const floor = config.floor ?? FACE_RESOLUTION - 1;
 		const topAnchor = config.topAnchor ?? Face.FRONT;
 
-		if (!Number.isInteger(floor) || floor < 0) {
+		if (!Number.isInteger(floor) || 0 > floor)
 			throw new RangeError(`The floor must be a row number, got ${floor}`);
-		}
-		if (!SIDES.includes(topAnchor)) {
+
+		if (!SIDES.includes(topAnchor))
 			throw new RangeError('The top anchor must be a side face');
-		}
 
 		this.floor = floor;
 		this.topAnchor = topAnchor;
@@ -198,13 +199,11 @@ export class CubeGeometry {
 	place (placement: Placement): Pose {
 		const { face, x, y } = placement;
 		const heading = placement.heading ?? Heading.NORTH;
-		const isCell = Number.isInteger(x) && Number.isInteger(y)
-			&& x >= 0 && x < FACE_RESOLUTION && y >= 0;
+		const isCell = Number.isInteger(x) && Number.isInteger(y) && 0 <= x && x < FACE_RESOLUTION && 0 <= y;
 
 		if (face === Face.TOP) {
-			if (!isCell || y >= FACE_RESOLUTION) {
+			if (!isCell || y >= FACE_RESOLUTION)
 				throw new RangeError(`Cell (${x}, ${y}) is outside the top face`);
-			}
 
 			const [ storedX, storedY ] = rotateCell(x, y, this.anchorTurns);
 
@@ -217,12 +216,12 @@ export class CubeGeometry {
 		}
 
 		const sideIndex = SIDES.indexOf(face);
-		if (sideIndex < 0) {
+		if (0 > sideIndex)
 			throw new RangeError(`Unknown face ${face}`);
-		}
-		if (!isCell || y > this.floor) {
+
+		if (!isCell || y > this.floor)
 			throw new RangeError(`Cell (${x}, ${y}) is outside the side face`);
-		}
+
 
 		return { surface: 'strip', x: sideIndex * FACE_RESOLUTION + x, y, heading };
 	}
@@ -233,18 +232,16 @@ export class CubeGeometry {
 	 * changes with respect to the screen. The move stops early at the floor.
 	 */
 	move (pose: Pose, step: Step, count = 1): Pose {
-		if (!Number.isInteger(count) || count < 0) {
+		if (!Number.isInteger(count) || 0 > count)
 			throw new RangeError(`The number of cells must be a non-negative integer, got ${count}`);
-		}
 
 		const turns = STEP_TURNS[step];
 		let current = pose;
 
 		for (let i = 0; i < count; i += 1) {
 			const next = this.advance(current, turn(current.heading, turns));
-			if (!next) {
+			if (!next)
 				break;
-			}
 
 			current = next;
 		}
@@ -257,7 +254,7 @@ export class CubeGeometry {
 	 * On the top face it is north of the addressed top face, which depends on the top anchor.
 	 */
 	pointUp (pose: Pose): Pose {
-		const heading = pose.surface === 'top'
+		const heading = 'top' === pose.surface
 			? turn(Heading.NORTH, this.anchorTurns)
 			: Heading.NORTH;
 
@@ -268,12 +265,12 @@ export class CubeGeometry {
 	 * Finds the cube state pixel a pose is drawn on, or null if it is below the visible rows.
 	 */
 	toPixel (pose: Pose): FacePixel | null {
-		if (pose.surface === 'top') {
+		if ('top' === pose.surface)
 			return { face: Face.TOP, x: pose.x, y: pose.y };
-		}
-		if (pose.y >= FACE_RESOLUTION) {
+
+		if (pose.y >= FACE_RESOLUTION)
 			return null;
-		}
+
 
 		return {
 			face: SIDES[Math.floor(pose.x / FACE_RESOLUTION)],
@@ -290,20 +287,20 @@ export class CubeGeometry {
 		const x = pose.x + dx;
 		const y = pose.y + dy;
 
-		if (pose.surface === 'strip') {
-			if (y > this.floor) {
+		if ('strip' === pose.surface) {
+			if (y > this.floor)
 				return null;
-			}
-			if (y < 0) {
+
+			if (0 > y)
 				return this.enterTop(pose, direction);
-			}
+
 
 			return { ...pose, x: (x + STRIP_WIDTH) % STRIP_WIDTH, y };
 		}
 
-		if (x < 0 || x >= FACE_RESOLUTION || y < 0 || y >= FACE_RESOLUTION) {
+		if (0 > x || x >= FACE_RESOLUTION || 0 > y || y >= FACE_RESOLUTION)
 			return this.leaveTop(pose, direction);
-		}
+
 
 		return { ...pose, x, y };
 	}

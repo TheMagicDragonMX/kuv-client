@@ -29,7 +29,7 @@ import { create, hide, move, moveTo, pointUp, remove, setColor, show } from './o
  * Tells whether a block is a command (takes effect at once) and not a control block.
  */
 export function isCommand (block: Block): block is Command {
-	return block.op !== 'wait' && block.op !== 'repeat' && block.op !== 'forever';
+	return 'wait' !== block.op && 'repeat' !== block.op && 'forever' !== block.op;
 }
 
 /**
@@ -70,6 +70,7 @@ export function applyCommand (world: World, command: Command): void {
 		case 'drawBitmap':
 			return paintBitmap(world, command);
 		default: {
+
 			// Fails to compile if a command type exists that is not handled above.
 			const unhandled: never = command;
 			throw new EngineError(`Unknown command ${JSON.stringify(unhandled)}`);

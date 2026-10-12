@@ -22,6 +22,7 @@ import { CubeObject } from './cube-object';
 export type ObjectChanges = Partial<Pick<CubeObject, 'pose' | 'color' | 'visible'>>;
 
 export class World {
+
 	/**
 	 * How the surfaces of this world connect. Fixed for the life of the world, because the
 	 * poses of the objects only make sense with the settings they were created with.
@@ -60,9 +61,8 @@ export class World {
 	 * Adds an object. Its name must not be taken.
 	 */
 	add (object: CubeObject): void {
-		if (this.objects.has(object.name)) {
+		if (this.objects.has(object.name))
 			throw new EngineError(`There is already an object called "${object.name}"`);
-		}
 
 		this.objects.set(object.name, object);
 		this.objectChanges += 1;
@@ -73,9 +73,8 @@ export class World {
 	 */
 	get (name: string): CubeObject {
 		const object = this.objects.get(name);
-		if (!object) {
+		if (!object)
 			throw new EngineError(`There is no object called "${name}"`);
-		}
 
 		return object;
 	}

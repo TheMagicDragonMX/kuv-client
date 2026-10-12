@@ -86,9 +86,9 @@ export class CubeView {
 	 */
 	dispose (): void {
 		this.resizeObserver.disconnect();
-		if (this.animationFrameId !== undefined) {
+		if (this.animationFrameId !== undefined) 
 			cancelAnimationFrame(this.animationFrameId);
-		}
+		
 		this.rig.dispose();
 		this.model.dispose();
 		this.stage.dispose();
@@ -102,9 +102,9 @@ export class CubeView {
 	private resize (): void {
 		const width = this.host.clientWidth;
 		const height = this.host.clientHeight;
-		if (!width || !height) {
+		if (!width || !height) 
 			return;
-		}
+		
 
 		this.rig.resize(width, height);
 		this.renderer.setSize(width, height);
