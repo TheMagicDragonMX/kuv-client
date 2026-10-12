@@ -631,11 +631,13 @@ Two things worth understanding:
 
 ```
 1. model.syncIfChanged()   only copy colors if the pixel buffer's version changed
-2. rig.update()            move the camera
-3. renderer.render(...)    draw the scene
+2. rig.update()            move the camera, and say whether it moved
+3. renderer.render(...)    draw the scene, only if the LEDs changed, the camera moved or the canvas was resized
 ```
 
-Step 1 is why the version number from chapter 1 matters: if nothing changed, the 20,480-color copy is skipped, and only the camera (which is moving anyway) is redrawn.
+Step 1 is why the version number from chapter 1 matters: if nothing changed, the 20,480-color copy is skipped. Step 3 goes one further: a still picture seen from a still camera (looking at one face, program finished) is not drawn again at all, so it costs the GPU nothing.
+
+The copy in step 1 is the hottest loop of the view, so it is careful: it reads each face in bulk, converts colors with a 256-entry lookup table instead of `THREE.Color` (which would compute a `Math.pow` per channel per LED), and only writes the LEDs whose color changed. A face where nothing changed is not even sent to the GPU again.
 
 The view also watches its container with a `ResizeObserver`, so the canvas follows if the page layout changes.
 

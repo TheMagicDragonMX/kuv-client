@@ -9,6 +9,15 @@
  * Each face's 4096 LEDs are one *instanced mesh*: the GPU draws them all in a single call,
  * and the only per-LED data is a color. The model only reads the state and never changes it.
  * The order of the faces here is the order of the `Face` enum, so a face is also an index.
+ *
+ * Copying the colors is the hottest loop of the view (20480 LEDs, on every frame the state
+ * changed), so it is kept cheap on purpose:
+ *
+ *   - it reads each face in bulk (`CubeState.facePixels`) instead of pixel by pixel
+ *   - it converts colors with a lookup table instead of `THREE.Color`, which would compute
+ *     the sRGB to linear curve (a `Math.pow`) for every channel of every LED
+ *   - it remembers what it copied last time and only touches the LEDs that changed, so a
+ *     face where nothing changed is not even sent to the GPU again
  */
 
 import * as THREE from 'three';
@@ -26,6 +35,21 @@ const FACE_PLACEMENTS = [
 	{ position: new THREE.Vector3(0, FACE_OFFSET, 0), rotation: new THREE.Euler(-Math.PI / 2, 0, 0) },
 ];
 
+/**
+ * Linear value of each 0..255 sRGB channel, which is what three.js wants in the LED color
+ * buffer. It is computed with `THREE.Color` itself, so the LEDs get exactly the colors
+ * `setHex` would give them.
+ */
+const SRGB_TO_LINEAR = (() => {
+	const color = new THREE.Color();
+	const table = new Float32Array(256);
+
+	for (let value = 0; 256 > value; value += 1)
+		table[value] = color.setHex(value << 16).r;
+
+	return table;
+})();
+
 export class CubeModel {
 	/**
 	 * Parent of the five faces, so the cube can be positioned as one unit.
@@ -33,19 +57,20 @@ export class CubeModel {
 	readonly group = new THREE.Group();
 
 	/**
-	 * One instanced mesh per face holding its LEDs, indexed by `Face`.
+	 * Color buffer of each face's LEDs (r, g, b per LED, linear), indexed by `Face`.
 	 */
-	private readonly ledMatrices: THREE.InstancedMesh[] = [];
+	private readonly ledColors: THREE.InstancedBufferAttribute[] = [];
+
+	/**
+	 * Colors each face's LEDs show right now, in state order (0xRRGGBB), indexed by `Face`.
+	 * Comparing against it is how `syncLeds` finds the LEDs that changed.
+	 */
+	private readonly shownPixels: Uint32Array[] = [];
 
 	/**
 	 * `CubeState.version` last copied to the LEDs, so unchanged frames skip the copy.
 	 */
 	private renderedVersion = -1;
-
-	/**
-	 * Scratch color reused while copying the state to the LEDs.
-	 */
-	private readonly scratchColor = new THREE.Color();
 
 	constructor (private readonly state: CubeState) {
 		this.group.position.y = 0.4;
@@ -54,11 +79,10 @@ export class CubeModel {
 
 	/**
 	 * Copies the state to the LEDs if it changed since the last call.
+	 * @returns Whether any LED changed color, so the view knows the frame must be drawn.
 	 */
-	syncIfChanged (): void {
-		if (this.renderedVersion !== this.state.version)
-			this.syncLeds();
-
+	syncIfChanged (): boolean {
+		return this.renderedVersion !== this.state.version && this.syncLeds();
 	}
 
 	/**
@@ -146,9 +170,11 @@ export class CubeModel {
 
 
 			ledMatrix.instanceMatrix.needsUpdate = true;
-			// Setting one color creates the color buffer of the mesh, which syncLeds fills.
-			ledMatrix.setColorAt(0, this.scratchColor.setHex(0x000000));
-			this.ledMatrices.push(ledMatrix);
+			// Every LED starts black (all zeros) on both sides: the buffer and what it shows.
+			const ledColors = new THREE.InstancedBufferAttribute(new Float32Array(FACE_RESOLUTION * FACE_RESOLUTION * 3), 3);
+			ledMatrix.instanceColor = ledColors;
+			this.ledColors.push(ledColors);
+			this.shownPixels.push(new Uint32Array(FACE_RESOLUTION * FACE_RESOLUTION));
 			faceGroup.add(ledMatrix);
 
 			this.group.add(faceGroup);
@@ -156,22 +182,45 @@ export class CubeModel {
 	}
 
 	/**
-	 * Copies the colors of the cube state to the LEDs of every face.
+	 * Copies the colors of the cube state to the LEDs of every face, touching only the LEDs
+	 * whose color changed and uploading only the faces that have one.
+	 * @returns Whether any LED changed.
 	 */
-	private syncLeds (): void {
-		this.ledMatrices.forEach((ledMatrix, face: Face) => {
+	private syncLeds (): boolean {
+		let anyChanged = false;
+
+		this.ledColors.forEach((ledColors, face: Face) => {
+			const pixels = this.state.facePixels(face);
+			const shown = this.shownPixels[face];
+			const buffer = ledColors.array;
+			let faceChanged = false;
+
 			for (let y = 0; y < FACE_RESOLUTION; y += 1) {
+				const stateRow = y * FACE_RESOLUTION;
 				// Instances are laid out from the bottom row up, the state from the top row down.
-				const rowStart = (FACE_RESOLUTION - 1 - y) * FACE_RESOLUTION;
+				const ledRow = (FACE_RESOLUTION - 1 - y) * FACE_RESOLUTION;
+
 				for (let x = 0; x < FACE_RESOLUTION; x += 1) {
-					this.scratchColor.setHex(this.state.get(face, x, y));
-					ledMatrix.setColorAt(rowStart + x, this.scratchColor);
+					const color = pixels[stateRow + x];
+					if (color === shown[stateRow + x])
+						continue;
+
+					const offset = (ledRow + x) * 3;
+					buffer[offset] = SRGB_TO_LINEAR[(color >>> 16) & 0xff];
+					buffer[offset + 1] = SRGB_TO_LINEAR[(color >>> 8) & 0xff];
+					buffer[offset + 2] = SRGB_TO_LINEAR[color & 0xff];
+					shown[stateRow + x] = color;
+					faceChanged = true;
 				}
 			}
 
-			ledMatrix.instanceColor!.needsUpdate = true;
+			if (faceChanged) {
+				ledColors.needsUpdate = true;
+				anyChanged = true;
+			}
 		});
 
 		this.renderedVersion = this.state.version;
+		return anyChanged;
 	}
 }

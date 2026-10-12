@@ -137,10 +137,12 @@ const SIDE_DIRECTION_ON_TOP: Partial<Record<Face, Heading>> = {
 };
 
 /**
- * Rotates a direction by quarter turns clockwise.
+ * Rotates a direction by quarter turns clockwise. Keeping the last two bits is the same as
+ * a positive modulo 4, negative turns included, and it is cheap enough for the renderer to
+ * call for every pixel.
  */
 export function turn (heading: Heading, quarterTurns: number): Heading {
-	return (((heading + quarterTurns) % 4) + 4) % 4;
+	return (heading + quarterTurns) & 3;
 }
 
 /**
@@ -155,6 +157,22 @@ function rotateCell (x: number, y: number, quarterTurns: number): [ number, numb
 
 
 	return [ rotatedX, rotatedY ];
+}
+
+/**
+ * Where the cell `dx` right and `dy` down from a pose would be if the surface had no edges:
+ * plain arithmetic in the frame of the pose, as [x, y] on the pose's surface, without
+ * wrapping. While the walk stays on its surface (the strip below its top row, or inside the
+ * top face) this is the right answer, because the heading only changes when an edge is
+ * crossed. The sideways and the vertical part of the walk are perpendicular, so if the end
+ * is still on the surface, every cell on the way was too.
+ */
+function straightOffset (pose: Pose, dx: number, dy: number): [ number, number ] {
+	// Left is minus right and up is minus down, so a negative dx or dy needs no case of its own.
+	const [ rightX, rightY ] = OFFSETS[turn(pose.heading, STEP_TURNS.right)];
+	const [ downX, downY ] = OFFSETS[turn(pose.heading, STEP_TURNS.down)];
+
+	return [ pose.x + rightX * dx + downX * dy, pose.y + rightY * dx + downY * dy ];
 }
 
 /**
@@ -260,20 +278,21 @@ export class CubeGeometry {
 		if (!Number.isInteger(dx) || !Number.isInteger(dy))
 			throw new RangeError(`The offset must be whole numbers, got (${dx}, ${dy})`);
 
-		if ('strip' === pose.surface) {
-			// On the strip, the walk only needs to follow the edges when it goes over the top.
-			// Anywhere else the answer is plain arithmetic on the cell.
-			const [ sideX, sideY ] = OFFSETS[turn(pose.heading, 0 < dx ? STEP_TURNS.right : STEP_TURNS.left)];
-			const [ downX, downY ] = OFFSETS[turn(pose.heading, 0 < dy ? STEP_TURNS.down : STEP_TURNS.up)];
-			const x = pose.x + sideX * Math.abs(dx) + downX * Math.abs(dy);
-			const y = pose.y + sideY * Math.abs(dx) + downY * Math.abs(dy);
+		// The walk only needs to follow the edges when it leaves the surface it started on:
+		// over the top of the strip, or off the top face. Anywhere else the answer is plain
+		// arithmetic on the cell (see `straightOffset`).
+		const [ x, y ] = straightOffset(pose, dx, dy);
 
+		if ('strip' === pose.surface) {
 			if (y > this.floor)
 				return null;
 
 			if (0 <= y)
 				return { ...pose, x: ((x % STRIP_WIDTH) + STRIP_WIDTH) % STRIP_WIDTH, y };
 		}
+
+		else if (0 <= x && x < FACE_RESOLUTION && 0 <= y && y < FACE_RESOLUTION)
+			return { ...pose, x, y };
 
 		const sideways = this.walk(pose, 0 < dx ? 'right' : 'left', Math.abs(dx));
 
@@ -286,18 +305,25 @@ export class CubeGeometry {
 	 * pose in between, because the renderer asks this for every pixel of every shape.
 	 */
 	pixelAt (pose: Pose, dx: number, dy: number): FacePixel | null {
-		if ('strip' === pose.surface) {
-			const [ sideX, sideY ] = OFFSETS[turn(pose.heading, 0 < dx ? STEP_TURNS.right : STEP_TURNS.left)];
-			const [ downX, downY ] = OFFSETS[turn(pose.heading, 0 < dy ? STEP_TURNS.down : STEP_TURNS.up)];
-			const y = pose.y + sideY * Math.abs(dx) + downY * Math.abs(dy);
+		// The same arithmetic as `straightOffset`, written out because this runs for every
+		// pixel of every shape and returning a pair from a function costs an allocation each.
+		const right = OFFSETS[turn(pose.heading, STEP_TURNS.right)];
+		const down = OFFSETS[turn(pose.heading, STEP_TURNS.down)];
+		const x = pose.x + right[0] * dx + down[0] * dy;
+		const y = pose.y + right[1] * dx + down[1] * dy;
 
+		if ('strip' === pose.surface) {
 			if (0 <= y && y < FACE_RESOLUTION && y <= this.floor) {
-				const x = pose.x + sideX * Math.abs(dx) + downX * Math.abs(dy);
-				const column = ((x % STRIP_WIDTH) + STRIP_WIDTH) % STRIP_WIDTH;
+				let column = x % STRIP_WIDTH;
+				if (0 > column)
+					column += STRIP_WIDTH;
 
 				return { face: SIDES[Math.floor(column / FACE_RESOLUTION)], x: column % FACE_RESOLUTION, y };
 			}
 		}
+
+		else if (0 <= x && x < FACE_RESOLUTION && 0 <= y && y < FACE_RESOLUTION)
+			return { face: Face.TOP, x, y };
 
 		const moved = this.offset(pose, dx, dy);
 

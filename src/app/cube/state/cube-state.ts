@@ -49,7 +49,7 @@ export class CubeState {
 	/**
 	 * Pixel colors of all faces, stored face after face and row after row.
 	 */
-	private pixels = new Uint32Array(FACE_COUNT * FACE_RESOLUTION * FACE_RESOLUTION);
+	private readonly pixels = new Uint32Array(FACE_COUNT * FACE_RESOLUTION * FACE_RESOLUTION);
 
 	/**
 	 * Increases on every write so renderers can tell cheaply whether they need to redraw.
@@ -102,6 +102,18 @@ export class CubeState {
 	copyFrom (other: CubeState): void {
 		this.pixels.set(other.pixels);
 		this.version += 1;
+	}
+
+	/**
+	 * The pixels of one face, row after row (index `y * FACE_RESOLUTION + x`), as a view into
+	 * the buffer, not a copy. It is meant for readers that copy a whole face at once (the 3D
+	 * view does it every frame), so they skip the bounds check `get` does for every pixel.
+	 * Only read it: writing through it would not bump `version`, so nobody would redraw.
+	 */
+	facePixels (face: Face): Uint32Array {
+		const size = FACE_RESOLUTION * FACE_RESOLUTION;
+
+		return this.pixels.subarray(face * size, (face + 1) * size);
 	}
 
 	/**

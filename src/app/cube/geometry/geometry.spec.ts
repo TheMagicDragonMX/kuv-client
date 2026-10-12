@@ -227,6 +227,20 @@ describe('CubeGeometry', () => {
 				}
 		});
 
+		it('gives the same cell as walking step by step on the top face, inside it and off its edges', () => {
+			// A floor far below the last row, so no walk is blocked and `move` is the exact reference.
+			const deep = new CubeGeometry({ floor: 300 });
+
+			for (const heading of [ Heading.NORTH, Heading.EAST, Heading.SOUTH, Heading.WEST ])
+				for (const [ dx, dy ] of [ [ 0, 0 ], [ 5, 3 ], [ -7, 2 ], [ 20, -30 ], [ -20, -40 ], [ 50, 1 ], [ -3, 70 ] ]) {
+					const start = top(20, 40, heading);
+					const walked = deep.move(deep.move(start, 0 < dx ? 'right' : 'left', Math.abs(dx)), 0 < dy ? 'down' : 'up', Math.abs(dy));
+
+					expect(deep.offset(start, dx, dy)).toEqual(walked);
+					expect(deep.pixelAt(start, dx, dy)).toEqual(deep.toPixel(walked));
+				}
+		});
+
 		it('finds the same pixel as offset followed by toPixel', () => {
 			const tall = new CubeGeometry({ floor: 70 });
 			const poses = [ strip(250, 20, Heading.EAST), strip(3, 0), strip(10, 66, Heading.SOUTH), top(5, 5, Heading.WEST) ];

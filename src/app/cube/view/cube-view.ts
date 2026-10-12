@@ -9,6 +9,9 @@
  * It only *reads* the state. Whoever owns the state decides what is on it; to show something
  * else, change the state and the view redraws by itself on the next frame.
  *
+ * A frame is only drawn when something on screen changed: the LEDs, the camera or the size.
+ * A cube that shows a still picture from a still camera costs the GPU nothing.
+ *
  *   const view = new CubeView(element, state);
  *   view.lookAtFace(Face.TOP);
  *   view.dispose();     // when the element goes away
@@ -39,6 +42,12 @@ export class CubeView {
 	 * Id of the pending requestAnimationFrame, kept so the render loop can be cancelled.
 	 */
 	private animationFrameId?: number;
+
+	/**
+	 * Whether the next frame must be drawn even if the LEDs and the camera did not change
+	 * (the first frame, and after a resize, which clears the canvas).
+	 */
+	private needsDraw = true;
 
 	/**
 	 * @param host Element the canvas is appended to; its size determines the render size.
@@ -108,16 +117,24 @@ export class CubeView {
 
 		this.rig.resize(width, height);
 		this.renderer.setSize(width, height);
+		this.needsDraw = true;
 	}
 
 	/**
-	 * Starts the per-frame loop: copy the state to the LEDs if it changed, move the camera, draw.
+	 * Starts the per-frame loop: copy the state to the LEDs if it changed, move the camera, and
+	 * draw if either of them (or the size) changed.
 	 */
 	private startRenderLoop (): void {
 		const render = () => {
-			this.model.syncIfChanged();
-			this.rig.update();
-			this.renderer.render(this.stage.scene, this.rig.camera);
+			// Both run every frame, so neither is skipped by the other short-circuiting.
+			const ledsChanged = this.model.syncIfChanged();
+			const cameraMoved = this.rig.update();
+
+			if (ledsChanged || cameraMoved || this.needsDraw) {
+				this.renderer.render(this.stage.scene, this.rig.camera);
+				this.needsDraw = false;
+			}
+
 			this.animationFrameId = requestAnimationFrame(render);
 		};
 		this.animationFrameId = requestAnimationFrame(render);

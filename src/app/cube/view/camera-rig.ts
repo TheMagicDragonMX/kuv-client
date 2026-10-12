@@ -102,10 +102,15 @@ export class CameraRig {
 
 	/**
 	 * Advances the camera by one frame: the current transition (if any) and the controls.
+	 * @returns Whether the camera moved, so the view knows the frame must be drawn. A still
+	 * camera (looking at a face, nothing being dragged) returns false.
 	 */
-	update (): void {
+	update (): boolean {
 		this.advanceTransition();
-		this.controls.update();
+
+		// The controls compare the camera with where it was last time they reported a move,
+		// so this also catches the moves `advanceTransition` just made.
+		return this.controls.update();
 	}
 
 	/**
