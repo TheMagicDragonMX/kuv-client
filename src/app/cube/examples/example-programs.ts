@@ -6,7 +6,7 @@
  * by the tests, so they always stay valid.
  */
 
-import { ColorValue, Program, Script, SideName } from '../program/program';
+import { Block, ColorValue, Program, Script, ShapePixelDefinition, SideName } from '../program/program';
 
 /**
  * A program with a name and a description for showing in a menu.
@@ -71,6 +71,91 @@ const RAIN_SCRIPTS: Script[] = RAIN_DROPS.map((drop, index) => ({
 		},
 	],
 }));
+
+/**
+ * The shape of a raindrop, around its center: a pointed tip on top that widens into a round
+ * belly, with a light spot on the belly.
+ *
+ *     . X .   dy -2
+ *     . X .   dy -1
+ *     X X X   dy  0   (the left one is the highlight)
+ *     X X X   dy  1
+ *     . X .   dy  2
+ */
+const DROP_SHAPE: ShapePixelDefinition[] = [
+	{ dx: 0, dy: -2 },
+	{ dx: 0, dy: -1 },
+	{ dx: -1, dy: 0, color: '#f0f9ff' },
+	{ dx: 0, dy: 0 },
+	{ dx: 1, dy: 0 },
+	{ dx: -1, dy: 1 },
+	{ dx: 0, dy: 1 },
+	{ dx: 1, dy: 1 },
+	{ dx: 0, dy: 2 },
+];
+
+const SHAPED_DROPS: Drop[] = [
+	{ face: 'FRONT', x: 8, color: '#38bdf8', delay: 0, pace: 0.05 },
+	{ face: 'FRONT', x: 30, color: '#0ea5e9', delay: 0.9, pace: 0.07 },
+	{ face: 'FRONT', x: 52, color: '#7dd3fc', delay: 0.4, pace: 0.04 },
+	{ face: 'RIGHT', x: 14, color: '#0ea5e9', delay: 0.6, pace: 0.06 },
+	{ face: 'RIGHT', x: 36, color: '#7dd3fc', delay: 0, pace: 0.04 },
+	{ face: 'RIGHT', x: 56, color: '#38bdf8', delay: 1.2, pace: 0.07 },
+	{ face: 'BACK', x: 6, color: '#7dd3fc', delay: 0.3, pace: 0.07 },
+	{ face: 'BACK', x: 27, color: '#38bdf8', delay: 1.0, pace: 0.04 },
+	{ face: 'BACK', x: 48, color: '#0ea5e9', delay: 0.1, pace: 0.05 },
+	{ face: 'LEFT', x: 10, color: '#38bdf8', delay: 0.8, pace: 0.06 },
+	{ face: 'LEFT', x: 33, color: '#7dd3fc', delay: 0.2, pace: 0.07 },
+	{ face: 'LEFT', x: 55, color: '#0ea5e9', delay: 1.1, pace: 0.04 },
+];
+
+/**
+ * One script per drop. A drop starts two rows down, so its tip is on the first row and not on
+ * the top face, and falls until it has slid out below the last visible row (see `floor` in
+ * the program config).
+ */
+const SHAPED_RAIN_SCRIPTS: Script[] = SHAPED_DROPS.map((drop, index) => ({
+	trigger: { type: 'start' },
+	blocks: [
+		{ op: 'create', name: `drop${index}`, face: drop.face, x: drop.x, y: 2, color: drop.color, pixels: DROP_SHAPE },
+		{ op: 'hide', target: `drop${index}` },
+		{ op: 'wait', seconds: drop.delay },
+		{ op: 'show', target: `drop${index}` },
+		{
+			op: 'forever',
+			body: [
+				{ op: 'moveTo', target: `drop${index}`, face: drop.face, x: drop.x, y: 2 },
+				{
+					op: 'repeat',
+					times: 63,
+					body: [
+						{ op: 'move', target: `drop${index}`, step: 'down' },
+						{ op: 'wait', seconds: drop.pace },
+					],
+				},
+			],
+		},
+	],
+}));
+
+/**
+ * Colors the belt goes through: red, yellow, green, cyan, blue and magenta.
+ */
+const BELT_COLORS: ColorValue[] = [ '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff' ];
+
+const BELT_SIDES: SideName[] = [ 'FRONT', 'RIGHT', 'BACK', 'LEFT' ];
+
+/**
+ * Every step paints the belt, a band of rows across each side, one color and then waits, so
+ * the color changes once per `BELT_SECONDS`. The belt is background, so it stays on its own
+ * between steps, and the top face is never touched.
+ */
+const BELT_SECONDS = 1;
+
+const BELT_STEPS: Block[] = BELT_COLORS.flatMap((color): Block[] => [
+	...BELT_SIDES.map((face): Block => ({ op: 'fillRect', face, x: 0, y: 28, width: 64, height: 8, color })),
+	{ op: 'wait', seconds: BELT_SECONDS },
+]);
 
 export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 	{
@@ -174,6 +259,30 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 		program: {
 			version: 1,
 			scripts: RAIN_SCRIPTS,
+		},
+	},
+	{
+		id: 'raindrops',
+		name: 'Raindrops',
+		description: 'Drop-shaped rain: every drop is a nine-pixel object that falls down the four sides and slides out at the bottom.',
+		program: {
+			version: 1,
+			config: { floor: 65 },
+			scripts: SHAPED_RAIN_SCRIPTS,
+		},
+	},
+	{
+		id: 'belt',
+		name: 'RGB belt',
+		description: 'A band around the four sides that changes color every second: red, yellow, green, cyan, blue, magenta.',
+		program: {
+			version: 1,
+			scripts: [
+				{
+					trigger: { type: 'start' },
+					blocks: [ { op: 'forever', body: BELT_STEPS } ],
+				},
+			],
 		},
 	},
 	{
