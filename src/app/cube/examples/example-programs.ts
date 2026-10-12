@@ -206,12 +206,39 @@ const WAVE_COLORS: ColorValue[] = Array.from({ length: 4 * 64 }, (_, column) => 
 });
 
 /**
- * The belt as the pixels of one object: 4 rows tall and as wide as the whole strip, with
- * the center in the middle column, so `dx` goes from -128 to 127. Every column has its own
- * color.
+ * The traveling belt as the pixels of one object: `height` rows tall and as wide as the
+ * whole strip, with the center in the middle column, so `dx` goes from -128 to 127 and `dy`
+ * from 0 to height - 1 (the object is created on the first row of the belt). Every column
+ * has its own color.
  */
-const WAVE_PIXELS: ShapePixelDefinition[] = WAVE_COLORS.flatMap((color, column) =>
-	Array.from({ length: 4 }, (_, dy) => ({ dx: column - 128, dy, color })));
+function wavePixels (height: number): ShapePixelDefinition[] {
+	return WAVE_COLORS.flatMap((color, column) =>
+		Array.from({ length: height }, (_, dy) => ({ dx: column - 128, dy, color })));
+}
+
+/**
+ * A program with one belt object that moves one column to the right every `seconds`.
+ */
+function waveProgram (y: number, height: number, seconds: number): Program {
+	return {
+		version: 1,
+		scripts: [
+			{
+				trigger: { type: 'start' },
+				blocks: [
+					{ op: 'create', name: 'belt', face: 'BACK', x: 0, y, color: '#ffffff', pixels: wavePixels(height) },
+					{
+						op: 'forever',
+						body: [
+							{ op: 'move', target: 'belt', step: 'right' },
+							{ op: 'wait', seconds },
+						],
+					},
+				],
+			},
+		],
+	};
+}
 
 export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 	{
@@ -359,24 +386,13 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 		id: 'wave-belt',
 		name: 'Traveling RGB belt',
 		description: 'A rainbow belt whose colors travel around the four sides, so each column is a little behind its neighbor.',
-		program: {
-			version: 1,
-			scripts: [
-				{
-					trigger: { type: 'start' },
-					blocks: [
-						{ op: 'create', name: 'belt', face: 'BACK', x: 0, y: 28, color: '#ffffff', pixels: WAVE_PIXELS },
-						{
-							op: 'forever',
-							body: [
-								{ op: 'move', target: 'belt', step: 'right' },
-								{ op: 'wait', seconds: 0.03 },
-							],
-						},
-					],
-				},
-			],
-		},
+		program: waveProgram(28, 4, 0.03),
+	},
+	{
+		id: 'wave-wall',
+		name: 'Full-height RGB belt',
+		description: 'The traveling rainbow, but covering the whole height of the cube. It is 16,384 pixels, so the source is long.',
+		program: waveProgram(0, 64, 0.03),
 	},
 	{
 		id: 'plus',

@@ -281,6 +281,30 @@ export class CubeGeometry {
 	}
 
 	/**
+	 * Finds the cube state pixel that the cell `dx` right and `dy` down from a pose is drawn
+	 * on, or null if there is none. It is `toPixel(offset(pose, dx, dy))` without making the
+	 * pose in between, because the renderer asks this for every pixel of every shape.
+	 */
+	pixelAt (pose: Pose, dx: number, dy: number): FacePixel | null {
+		if ('strip' === pose.surface) {
+			const [ sideX, sideY ] = OFFSETS[turn(pose.heading, 0 < dx ? STEP_TURNS.right : STEP_TURNS.left)];
+			const [ downX, downY ] = OFFSETS[turn(pose.heading, 0 < dy ? STEP_TURNS.down : STEP_TURNS.up)];
+			const y = pose.y + sideY * Math.abs(dx) + downY * Math.abs(dy);
+
+			if (0 <= y && y < FACE_RESOLUTION && y <= this.floor) {
+				const x = pose.x + sideX * Math.abs(dx) + downX * Math.abs(dy);
+				const column = ((x % STRIP_WIDTH) + STRIP_WIDTH) % STRIP_WIDTH;
+
+				return { face: SIDES[Math.floor(column / FACE_RESOLUTION)], x: column % FACE_RESOLUTION, y };
+			}
+		}
+
+		const moved = this.offset(pose, dx, dy);
+
+		return moved && this.toPixel(moved);
+	}
+
+	/**
 	 * Resets the heading of a pose to "up" as the user sees it. On the strip that is north.
 	 * On the top face it is north of the addressed top face, which depends on the top anchor.
 	 */

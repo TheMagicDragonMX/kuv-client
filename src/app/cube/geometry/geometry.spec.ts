@@ -227,6 +227,18 @@ describe('CubeGeometry', () => {
 				}
 		});
 
+		it('finds the same pixel as offset followed by toPixel', () => {
+			const tall = new CubeGeometry({ floor: 70 });
+			const poses = [ strip(250, 20, Heading.EAST), strip(3, 0), strip(10, 66, Heading.SOUTH), top(5, 5, Heading.WEST) ];
+
+			for (const pose of poses)
+				for (const [ dx, dy ] of [ [ 0, 0 ], [ 5, 3 ], [ -7, -2 ], [ 130, -4 ], [ -2, 9 ], [ 0, -3 ] ]) {
+					const moved = tall.offset(pose, dx, dy);
+
+					expect(tall.pixelAt(pose, dx, dy)).toEqual(moved && tall.toPixel(moved));
+				}
+		});
+
 		it('rejects offsets that are not whole numbers', () => {
 			expect(() => geometry.offset(strip(10, 10), 0.5, 0)).toThrow(RangeError);
 		});
