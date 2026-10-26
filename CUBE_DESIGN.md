@@ -29,7 +29,7 @@ The code is laid out in [src/app/cube/](src/app/cube/README.md), one folder per 
 - Moving across the edges of the cube must feel **intuitive**: an object that keeps going in one direction keeps going, even across the top face.
 - The **Raspberry Pi runs programs on its own**, without the browser connected.
 - Animations must be **efficient** on both devices.
-- The old pixel commands (`setPixel`, `drawLine`, and so on) are kept as an **advanced tier**.
+- The old pixel commands (`setPixel`, `drawLine`, and so on) are **not exposed to users for now**: the focus is the block scripts. The drawing primitives stay as internal tools.
 
 ## 2. What changed
 
@@ -40,7 +40,7 @@ The earlier design had a single virtual cube that the browser and the Pi both co
 | Engine | One virtual cube shared by the browser and the Pi | **Two engines**, one per platform, with the same logic |
 | Shared between platforms | The cube itself | The **program format** (JSON) and the **behavior** (defined in this document and checked with golden tests) |
 | Unit users work with | Pixels and drawing commands | **Objects** and commands that act on them |
-| Pixel commands | The main API | Internal drawing tools and an **advanced tier** |
+| Pixel commands | The main API | Internal drawing tools only (an advanced tier was dropped for now) |
 
 What stays from the earlier design:
 
@@ -244,14 +244,11 @@ All commands are plain data, so programs can be stored, sent to the Pi and repla
 | `repeat` | Runs its body a number of times |
 | `forever` | Runs its body repeatedly |
 
-### 6.3 Advanced tier: drawing on the background
+### 6.3 Drawing primitives and the background layer
 
-The pixel and shape commands (`setPixel`, `drawLine`, `drawRect`, `fillRect`, `drawCircle`, `fillCircle`, `drawBitmap`, text) have two roles:
+The pixel and shape primitives (`setPixel`, `drawLine`, `drawRect`, `fillRect`, `drawCircle`, `fillCircle`, `drawBitmap`) are **internal tools**. The renderer will use them to draw objects (a circle object calls `fillCircle`, a sprite calls `drawBitmap`). No program block exposes them: there was an "advanced tier" of blocks that painted on the background, and it was removed to focus on the block scripts.
 
-- **Internal:** the renderer uses them to draw objects. A circle object calls `fillCircle`, a sprite calls `drawBitmap`.
-- **Advanced:** they are exposed to the user and write into a persistent **background layer**.
-
-The background layer exists because the renderer redraws every frame. Without it, a pixel set directly would be erased on the next frame. Each frame, the renderer copies the background and draws the objects on top, so drawn pixels stay and can be used for trails.
+The **background layer** stays, with one job: it holds the **environment**, the pictures the user puts on the faces (see [ENGINE_MANUAL.md](ENGINE_MANUAL.md), section 9.1). The renderer redraws every frame, so the pictures live in a layer it starts each frame from. Each frame, the renderer copies the background and draws the objects on top. Nothing in a program writes to the background, so objects never change the pictures.
 
 The existing primitives work per face today. Making them strip-aware, so a circle wraps around a corner, is a later milestone.
 
@@ -322,7 +319,7 @@ t = 0.10s   tick: script wakes: move, hits wait → sleeps until t = 0.20
 ### 9.1 World
 
 - The set of objects, keyed by name.
-- The **background layer**, a `CubeState` that the advanced drawing commands write to.
+- The **background layer**, a `CubeState` that holds the pictures of the environment.
 - A version counter that increases on every change.
 
 ### 9.2 Renderer
@@ -370,7 +367,6 @@ To stop the two from drifting apart:
 
 - Blockly is only the editor. Its job is to produce the JSON program. It never generates or runs code.
 - Object commands and control blocks map to the blocks listed in [section 6](#6-commands).
-- The advanced tier appears as a separate block category.
 - Blockly integration comes after the TypeScript engine works.
 
 ## 12. Milestones
@@ -402,7 +398,7 @@ Milestone 1 uses pixel objects only, with `create`, `move`, `moveTo`, `setColor`
 | Bottom edge | A floor stops objects. Last visible row by default, configurable and can be deeper |
 | TOP addressing | Configurable with `topAnchor`. Default FRONT at the bottom of the TOP view |
 | Object shape | Pixel only at first. No size or velocity |
-| Background layer | Persistent layer for the advanced drawing commands |
+| Background layer | Persistent layer under the objects, written only by the environment (pictures on the faces) |
 | Execution | Generator-based scripts, one turn per tick, real-time waits, a loop yields at least once per iteration |
 | Editor | Blockly |
 

@@ -1,4 +1,5 @@
 import { applyCommand } from '../commands/apply-command';
+import { fillRect } from '../drawing/shapes';
 import { CubeState, Face } from '../state/cube-state';
 import { World } from '../world/world';
 import { Renderer } from './renderer';
@@ -127,7 +128,7 @@ describe('Renderer', () => {
 
 	it('starts from the background and draws objects on top', () => {
 		const { world, output, renderer } = setup();
-		applyCommand(world, { op: 'fillRect', face: 'FRONT', x: 0, y: 0, width: 4, height: 4, color: '#0000ff' });
+		fillRect(world.background, Face.FRONT, 0, 0, 4, 4, 0x0000ff);
 		applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 1, y: 1, color: '#ff0000' });
 
 		renderer.render();
@@ -138,7 +139,7 @@ describe('Renderer', () => {
 
 	it('leaves no trail: where an object was, the background shows again', () => {
 		const { world, output, renderer } = setup();
-		applyCommand(world, { op: 'setPixel', face: 'FRONT', x: 0, y: 0, color: '#0000ff' });
+		world.background.set(Face.FRONT, 0, 0, 0x0000ff);
 		applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 0, y: 0, color: '#ff0000' });
 		renderer.render();
 

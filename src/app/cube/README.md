@@ -44,9 +44,9 @@ environment (pictures on the faces) ──painted onto the world's background by
 | --- | --- | --- |
 | `state/` | `cube-state.ts` | The pixel buffer: one 64×64 grid of colors per face. The meeting point between the engine and whatever shows it |
 | `geometry/` | `geometry.ts` | Answers "if an object steps this way, where does it end up?": the strip, the top face, headings, edges, the floor |
-| `drawing/` | `pixel.ts`, `shapes.ts`, `bitmap.ts` | Draws pixels, lines, rectangles, circles and pictures on one face of a state |
-| `world/` | `cube-object.ts`, `world.ts` | Stores what exists: the objects and the background layer |
-| `blocks/` | `object/`, `background/`, `control/` | **One file per block**, in the folder of its category: its type, its fields and what it does. See [blocks/README.md](blocks/README.md) |
+| `drawing/` | `pixel.ts`, `shapes.ts`, `bitmap.ts` | Draws pixels, lines, rectangles, circles and pictures on one face of a state. Internal tools: only `drawBitmap` is used today (by the environment) |
+| `world/` | `cube-object.ts`, `world.ts` | Stores what exists: the objects and the background layer (which holds the environment's pictures) |
+| `blocks/` | `object/`, `control/` | **One file per block**, in the folder of its category: its type, its fields and what it does. See [blocks/README.md](blocks/README.md) |
 | | `index.ts` | Joins the categories: the `Block` types and the definition of a block by its `op` |
 | | `block-definition.ts`, `fields.ts` | What every block file must provide, and the kinds of field value |
 | `program/` | `program.ts` | The shape of a program: scripts, triggers and config (the JSON contract with Blockly and the Pi) |
@@ -55,7 +55,7 @@ environment (pictures on the faces) ──painted onto the world's background by
 | `commands/` | `apply-command.ts` | Looks up a command in `blocks/` and applies it to the world |
 | `runtime/` | `interpreter.ts` | Runs the blocks of one script, pausing at `wait` and between loop iterations |
 | | `scheduler.ts` | Decides when each script gets its turn |
-| `environment/` | `environment.ts` | The stage a program runs on: the picture of each face. Painted onto the background by the engine, and kept through runs and resets |
+| `environment/` | `environment.ts` | The stage a program runs on: the picture of each face. Painted onto the background layer by the engine, and kept through runs and resets. No block writes to the background, so programs never change the pictures |
 | | `pixelate.ts` | Shrinks a picture (raw RGBA bytes) to the 64×64 of a face the way the Raspberry Pi library does (box filter) |
 | `renderer/` | `renderer.ts` | Turns the world into pixels |
 | `engine/` | `cube-engine.ts` | Puts the layers together; pure, takes the time as an argument |

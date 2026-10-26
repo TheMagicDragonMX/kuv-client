@@ -8,8 +8,8 @@
  *
  *   environment --painted onto--> World.background <--read by-- renderer
  *
- * It goes through the background layer, so a script can paint over it (with `clearBackground`,
- * for example) like over anything else on the background.
+ * It goes through the background layer, which nothing else writes to: no program block paints
+ * there, so the objects of a program always draw over the pictures and never change them.
  *
  * To get the pixels of a face from a picture, see `pixelate.ts`.
  */

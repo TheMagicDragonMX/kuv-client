@@ -66,19 +66,6 @@ describe('CubeEngine', () => {
 		expect(engine.state.get(Face.FRONT, 2, 0)).toBe(0xffffff);
 	});
 
-	it('keeps what the background painted under the objects', () => {
-		const engine = new CubeEngine();
-		engine.load(script(
-			{ op: 'fillRect', face: 'FRONT', x: 0, y: 0, width: 64, height: 64, color: '#222222' },
-			{ op: 'create', name: 'a', face: 'FRONT', x: 3, y: 3, color: '#ffffff' },
-		));
-
-		engine.start(0);
-
-		expect(engine.state.get(Face.FRONT, 10, 10)).toBe(0x222222);
-		expect(engine.state.get(Face.FRONT, 3, 3)).toBe(0xffffff);
-	});
-
 	it('knows whether it is running', () => {
 		const engine = new CubeEngine();
 		engine.load(script({ op: 'wait', seconds: 1 }));
@@ -285,16 +272,6 @@ describe('CubeEngine', () => {
 
 			engine.setEnvironment(undefined);
 			expect(engine.state.get(Face.RIGHT, 0, 0)).toBe(0);
-		});
-
-		it('can be painted over by a program', () => {
-			const engine = new CubeEngine();
-			engine.setEnvironment({ background: { TOP: solid(0x00ff00) } });
-			engine.load(script({ op: 'clearBackground', color: '#000011' }));
-
-			engine.start(0);
-
-			expect(engine.state.get(Face.TOP, 0, 0)).toBe(0x000011);
 		});
 
 		it('rejects a picture that is not the size of a face, painting nothing', () => {

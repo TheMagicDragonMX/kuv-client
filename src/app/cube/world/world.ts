@@ -2,7 +2,7 @@
  * LAYER: world.
  *
  * The source of truth for *what exists* on the cube: the objects, and the background layer
- * that holds whatever the advanced drawing commands painted.
+ * that holds the pictures of the environment.
  *
  *   commands --change--> World <--read by-- renderer
  *
@@ -30,8 +30,9 @@ export class World {
 	readonly geometry: CubeGeometry;
 
 	/**
-	 * Persistent layer under the objects. The renderer copies it first on every frame, so
-	 * what is painted here stays on the cube.
+	 * Persistent layer under the objects. Only the environment writes to it (the pictures the
+	 * user puts on the faces); no program block does. The renderer copies it first on every
+	 * frame, so what is painted here stays on the cube.
 	 */
 	readonly background = new CubeState();
 

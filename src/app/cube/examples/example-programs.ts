@@ -145,17 +145,14 @@ const SHAPED_RAIN_SCRIPTS: Script[] = SHAPED_DROPS.map((drop, index) => ({
  */
 const BELT_COLORS: ColorValue[] = [ '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff', '#ff00ff' ];
 
-const BELT_SIDES: SideName[] = [ 'FRONT', 'RIGHT', 'BACK', 'LEFT' ];
-
 /**
- * Every step paints the belt, a band of rows across each side, one color and then waits, so
- * the color changes once per `BELT_SECONDS`. The belt is background, so it stays on its own
- * between steps, and the top face is never touched.
+ * Every step recolors the belt object (see `beltProgram`) and waits, so the color changes
+ * once per `BELT_SECONDS`.
  */
 const BELT_SECONDS = 1;
 
 const BELT_STEPS: Block[] = BELT_COLORS.flatMap((color): Block[] => [
-	...BELT_SIDES.map((face): Block => ({ op: 'fillRect', face, x: 0, y: 28, width: 64, height: 8, color })),
+	{ op: 'setColor', target: 'belt', color },
 	{ op: 'wait', seconds: BELT_SECONDS },
 ]);
 
@@ -191,9 +188,37 @@ const FADE_COLORS: ColorValue[] = BELT_COLORS.flatMap((color, index) => {
 });
 
 const FADE_BELT_STEPS: Block[] = FADE_COLORS.flatMap((color): Block[] => [
-	...BELT_SIDES.map((face): Block => ({ op: 'fillRect', face, x: 0, y: 28, width: 64, height: 8, color })),
+	{ op: 'setColor', target: 'belt', color },
 	{ op: 'wait', seconds: FADE_SECONDS },
 ]);
+
+/**
+ * A band across the four sides as a single object: `height` rows tall, as wide as the whole
+ * strip (256 columns), with no colors of its own so it takes the color of the object.
+ */
+function beltShape (height: number): ShapePixelDefinition[] {
+	return Array.from({ length: 4 * 64 }, (_, column) =>
+		Array.from({ length: height }, (_, dy) => ({ dx: column - 128, dy }))).flat();
+}
+
+/**
+ * A program where the belt, a band of rows across each side, is recolored forever by `steps`.
+ * The top face is never touched.
+ */
+function beltProgram (steps: Block[]): Program {
+	return {
+		version: 1,
+		scripts: [
+			{
+				trigger: { type: 'start' },
+				blocks: [
+					{ op: 'create', name: 'belt', face: 'BACK', x: 0, y: 28, color: BELT_COLORS[0], pixels: beltShape(8) },
+					{ op: 'forever', body: steps },
+				],
+			},
+		],
+	};
+}
 
 /**
  * Colors of the traveling belt, one for each of the 256 columns around the cube: the belt
@@ -310,33 +335,6 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 		},
 	},
 	{
-		id: 'background',
-		name: 'Painted background',
-		description: 'Frames and circles are painted on the background and stay. A pixel walks over them.',
-		program: {
-			version: 1,
-			scripts: [
-				{
-					trigger: { type: 'start' },
-					blocks: [
-						{ op: 'drawRect', face: 'FRONT', x: 4, y: 4, width: 56, height: 56, color: '#334155' },
-						{ op: 'fillCircle', face: 'FRONT', cx: 32, cy: 32, radius: 10, color: '#7c3aed' },
-						{ op: 'drawRect', face: 'TOP', x: 4, y: 4, width: 56, height: 56, color: '#334155' },
-						{ op: 'drawCircle', face: 'TOP', cx: 32, cy: 32, radius: 20, color: '#0ea5e9' },
-						{ op: 'create', name: 'spark', face: 'FRONT', x: 0, y: 32, color: '#fde047' },
-						{
-							op: 'forever',
-							body: [
-								{ op: 'move', target: 'spark', step: 'right' },
-								{ op: 'wait', seconds: 0.02 },
-							],
-						},
-					],
-				},
-			],
-		},
-	},
-	{
 		id: 'rain',
 		name: 'Rain',
 		description: 'Pixels fall from the top to the bottom of the four sides, each at its own speed. The top face stays dry.',
@@ -359,29 +357,13 @@ export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 		id: 'belt',
 		name: 'RGB belt',
 		description: 'A band around the four sides that changes color every second: red, yellow, green, cyan, blue, magenta.',
-		program: {
-			version: 1,
-			scripts: [
-				{
-					trigger: { type: 'start' },
-					blocks: [ { op: 'forever', body: BELT_STEPS } ],
-				},
-			],
-		},
+		program: beltProgram(BELT_STEPS),
 	},
 	{
 		id: 'smooth-belt',
 		name: 'Smooth RGB belt',
 		description: 'The same belt, but it fades from one color to the next like an LED strip instead of jumping.',
-		program: {
-			version: 1,
-			scripts: [
-				{
-					trigger: { type: 'start' },
-					blocks: [ { op: 'forever', body: FADE_BELT_STEPS } ],
-				},
-			],
-		},
+		program: beltProgram(FADE_BELT_STEPS),
 	},
 	{
 		id: 'wave-belt',

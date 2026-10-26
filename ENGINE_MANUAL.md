@@ -257,12 +257,12 @@ Walk around the corner of the top face and you come back facing a different way.
 
 ## 3. Remembering what exists
 
-**The problem.** The student said "create a ball at the front". A moment later they say "move the ball". Something must remember that the ball exists, where it is, and what color it is. And separately, the student might paint a pixel on the background and expect it to *stay*.
+**The problem.** The student said "create a ball at the front". A moment later they say "move the ball". Something must remember that the ball exists, where it is, and what color it is. And separately, the student might put a picture on a face and expect it to *stay* under the objects.
 
 **The idea.** A **world**: a container that stores two things.
 
 1. **Objects**: the things that can move.
-2. **A background layer**: a pixel buffer for painted pixels that are not objects.
+2. **A background layer**: a pixel buffer for what is not an object: the pictures of the environment (section 9.1).
 
 **How it works.**
 
@@ -285,7 +285,7 @@ Some rules the world enforces:
 - Asking for an object that does not exist fails with `There is no object called "ghost"`. This is the message a student would see when they mistype a name.
 - Updating an object replaces it with a modified copy but keeps its place in the drawing order.
 
-**Why a background layer?** Here is a trap. The renderer (chapter 9) redraws the whole cube from scratch every frame. If a student paints a pixel directly on the cube, the next frame would wipe it. So painted pixels go in a separate buffer, the background, and every frame *starts* from a copy of it. That is why painted pixels stay. It also gives a free feature: a trail effect, if you paint wherever an object has been.
+**Why a background layer?** Here is a trap. The renderer (chapter 9) redraws the whole cube from scratch every frame. If a picture were written directly on the cube, the next frame would wipe it. So pictures go in a separate buffer, the background, and every frame *starts* from a copy of it. That is why they stay. Only the environment writes there; no program block does, so objects can never damage a picture.
 
 **The version number.** Like the pixel buffer, the world has a `version` that rises whenever objects or the background change. The renderer uses it to skip work when nothing happened.
 
@@ -295,7 +295,7 @@ Some rules the world enforces:
 
 ## 4. Drawing shapes
 
-**The problem.** The advanced tier lets students (and the renderer) draw lines, rectangles and circles, not just single pixels.
+**The problem.** The renderer needs to draw more than single pixels (and the environment needs to copy whole pictures): lines, rectangles, circles, bitmaps.
 
 **The idea.** A small toolbox of functions that each draw one thing onto one face of a pixel buffer.
 
@@ -303,7 +303,7 @@ Some rules the world enforces:
 
 Right now they work **per face**: a circle that hangs over the edge of FRONT is cut off at that edge instead of continuing onto RIGHT. Making shapes aware of the strip (so they wrap around a corner) is a planned improvement. Those same functions will be reused; only the surface they draw on will change.
 
-**Where.** [drawing/](src/app/cube/drawing/): `pixel.ts`, `shapes.ts`, `bitmap.ts`. They were written before the engine existed and are still used, now as internal tools.
+**Where.** [drawing/](src/app/cube/drawing/): `pixel.ts`, `shapes.ts`, `bitmap.ts`. They were written before the engine existed. Today only `drawBitmap` is used (by the environment, to paint pictures); the rest are internal tools waiting for objects with more shapes. No block exposes them: there used to be an "advanced tier" of blocks that painted on the background, and it was removed to focus on the block scripts.
 
 ---
 
@@ -338,12 +338,11 @@ Read it as a recipe: "when the program starts, create a red ball in front, then 
 
 - A program has **scripts**. Each script has a **trigger** (when it starts: `start`, or `every N seconds`) and a list of **blocks**.
 - A **block** is a plain object with an `op` ("operation") plus its arguments. `forever` and `repeat` blocks contain other blocks in a `body`.
-- There are three kinds of blocks:
+- There are two kinds of blocks:
 
 | Kind | Blocks | What they are |
 | --- | --- | --- |
 | Object commands | `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete`, `pointUp` | Change the objects |
-| Background commands (advanced) | `clearBackground`, `setPixel`, `drawLine`, `drawRect`, `fillRect`, `drawCircle`, `fillCircle`, `drawBitmap` | Paint the background |
 | Control blocks | `wait`, `repeat`, `forever` | Decide *when* and *how many times* |
 
 **Why data and not code?** Because "a list of plain objects" can be saved, sent over the network to the Pi, shown in a UI, checked for mistakes before running, and interpreted by *any* language. If students wrote JavaScript, none of that would be true, and it would also be unsafe to run.
@@ -398,7 +397,6 @@ A small but valuable detail: if a command changes nothing, it does not touch the
 Each function lives in the file of its block, in the folder of its category under [blocks/](src/app/cube/blocks/):
 
 - **Object blocks:** what `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete` and `pointUp` do.
-- **Background blocks:** what each painting block does: convert the names, call a drawing primitive from chapter 4, aim it at the world's background layer.
 - **The dispatcher (`applyCommand`):** looks the command up by `op` in the blocks registry and runs its `apply`. It has no logic of its own, and adding a block does not change it. The registry is typed so that a block type without a definition does not compile.
 
 Control blocks (`wait`, `repeat`, `forever`) are not commands. They do not change the world; they decide *when* other blocks run, which is the next chapter's problem.
@@ -553,7 +551,7 @@ Notice there is no "erase the old position" step. Because every frame *starts ov
 
 **The problem.** The user wants to dress the stage: put a picture on a face and then play with objects over it. A program is the wrong place for that: a 64×64 picture is 4,096 colors, the user did not write it as code, and every run starts from a new world (rule 6), which would wipe it.
 
-**The idea.** An **environment**, passed to the engine next to the program and not inside it. For now it holds one picture (64×64 colors) per face. The engine paints it onto the world's *background layer* before any script runs, and again on every start and reset. Because it goes through the background, the renderer needs to know nothing about it, objects draw on top of it, and a script can still paint over it (`clearBackground` wipes it, like anything else on the background).
+**The idea.** An **environment**, passed to the engine next to the program and not inside it. For now it holds one picture (64×64 colors) per face. The engine paints it onto the world's *background layer* before any script runs, and again on every start and reset. Because it goes through the background, the renderer needs to know nothing about it and objects draw on top of it. Nothing in a program can write to the background, so a program can never erase or change a picture.
 
 Changing the environment (`setEnvironment`) shows at once, even with nothing running, and does **not** restart a running program: the new pictures are painted on its background. A face whose picture was removed goes black.
 
@@ -798,7 +796,7 @@ state ← geometry ← world ← commands ← interpreter ← scheduler ← engi
 | **Anchor** | Which side is at the bottom of the TOP face when you address it |
 | **Floor** | The lowest row objects can reach on the sides |
 | **Object** | A named thing in the world with a pose, a color and a visibility |
-| **Background** | The layer of painted pixels that sits under the objects |
+| **Background** | The layer under the objects. It holds the pictures of the environment |
 | **World** | All the objects plus the background |
 | **Program** | JSON: scripts made of blocks |
 | **Script** | A trigger plus a list of blocks |

@@ -97,11 +97,11 @@ describe('validateProgram', () => {
 		});
 
 		it.each([
-			[ 'a face', { op: 'setPixel', face: 'MIDDLE', x: 0, y: 0, color: '#000000' } ],
+			[ 'a face', { op: 'moveTo', target: 'a', face: 'MIDDLE', x: 0, y: 0 } ],
 			[ 'a heading', { op: 'create', name: 'a', face: 'FRONT', x: 0, y: 0, color: '#000000', heading: 'UP' } ],
 			[ 'a step', { op: 'move', target: 'a', step: 'forward' } ],
 			[ 'a color', { op: 'setColor', target: 'a', color: 'red' } ],
-			[ 'a cell', { op: 'setPixel', face: 'FRONT', x: 1.5, y: 0, color: '#000000' } ],
+			[ 'a cell', { op: 'moveTo', target: 'a', face: 'FRONT', x: 1.5, y: 0 } ],
 			[ 'a wait time', { op: 'wait', seconds: -1 } ],
 			[ 'an empty name', { op: 'show', target: '' } ],
 		])('rejects %s that is not valid', (_name, block) => {
@@ -109,7 +109,7 @@ describe('validateProgram', () => {
 		});
 
 		it('allows cells outside a face, so shapes can overflow', () => {
-			expect(() => validateProgram(program({ op: 'setPixel', face: 'FRONT', x: -3, y: 100, color: '#000000' })))
+			expect(() => validateProgram(program({ op: 'moveTo', target: 'a', face: 'FRONT', x: -3, y: 100 })))
 				.not.toThrow();
 		});
 
@@ -139,12 +139,5 @@ describe('validateProgram', () => {
 			expect(() => validateProgram(value)).toThrow('scripts[0].blocks[0].body[0].body[0].seconds');
 		});
 
-		it('checks that a bitmap has width * height colors', () => {
-			const bitmap = { op: 'drawBitmap', face: 'FRONT', x: 0, y: 0, width: 2, height: 2 };
-
-			expect(() => validateProgram(program({ ...bitmap, pixels: [ '#000000', '#ffffff' ] }))).toThrow('width * height');
-			expect(() => validateProgram(program({ ...bitmap, pixels: [ '#000000', '#ffffff', '#000000', '#ffffff' ] })))
-				.not.toThrow();
-		});
 	});
 });

@@ -16,7 +16,7 @@
  */
 
 import { ProgramError } from '../errors';
-import { Block, FieldKind, getBlockDefinition } from '../blocks';
+import { FieldKind, getBlockDefinition } from '../blocks';
 import { FACE_BY_NAME, HEADING_BY_NAME, isColorValue } from './names';
 import { Program } from './program';
 
@@ -138,11 +138,6 @@ function validateBlock (value: unknown, path: string): void {
 		validateField(field.kind, fieldValue, `${path}.${name}`);
 	}
 
-	const problem = definition.validate?.(block as unknown as Block);
-
-	if (problem !== undefined) {
-		fail(`${path}.${problem.field}`, problem.message);
-	}
 }
 
 /**
@@ -188,11 +183,6 @@ function validateField (kind: FieldKind, value: unknown, path: string): void {
 		case 'seconds':
 			if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
 				fail(path, 'must be a number of seconds, zero or more');
-			}
-			return;
-		case 'colors':
-			if (!Array.isArray(value) || !value.every(isColorValue)) {
-				fail(path, 'must be a list of colors written as #rrggbb');
 			}
 			return;
 		case 'shape':

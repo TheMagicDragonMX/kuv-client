@@ -1,7 +1,6 @@
 import { EngineError } from '../errors';
 import { Heading } from '../geometry/geometry';
 import { Command } from '../blocks';
-import { Face } from '../state/cube-state';
 import { World } from '../world/world';
 import { applyCommand, isCommand } from './apply-command';
 
@@ -131,49 +130,6 @@ describe('object commands', () => {
 		for (const command of commands) {
 			expect(() => applyCommand(world, command), command.op).toThrow(EngineError);
 		}
-	});
-});
-
-describe('background commands', () => {
-	it('paints the background and not the objects', () => {
-		const world = worldWithBall();
-
-		applyCommand(world, { op: 'setPixel', face: 'TOP', x: 1, y: 2, color: '#0000ff' });
-		applyCommand(world, { op: 'fillRect', face: 'BACK', x: 0, y: 0, width: 2, height: 2, color: '#00ff00' });
-
-		expect(world.background.get(Face.TOP, 1, 2)).toBe(0x0000ff);
-		expect(world.background.get(Face.BACK, 1, 1)).toBe(0x00ff00);
-		expect(world.get('ball').color).toBe(0xff0000);
-	});
-
-	it('draws lines, outlines, circles and bitmaps', () => {
-		const world = new World();
-
-		applyCommand(world, { op: 'drawLine', face: 'FRONT', x0: 0, y0: 0, x1: 3, y1: 0, color: '#ffffff' });
-		applyCommand(world, { op: 'drawRect', face: 'FRONT', x: 0, y: 10, width: 3, height: 3, color: '#ffffff' });
-		applyCommand(world, { op: 'drawCircle', face: 'FRONT', cx: 30, cy: 30, radius: 5, color: '#ffffff' });
-		applyCommand(world, { op: 'fillCircle', face: 'FRONT', cx: 50, cy: 50, radius: 2, color: '#ffffff' });
-		applyCommand(world, {
-			op: 'drawBitmap', face: 'LEFT', x: 0, y: 0, width: 2, height: 1, pixels: [ '#ff0000', '#00ff00' ],
-		});
-
-		expect(world.background.get(Face.FRONT, 3, 0)).toBe(0xffffff);
-		expect(world.background.get(Face.FRONT, 1, 11)).toBe(0);
-		expect(world.background.get(Face.FRONT, 0, 11)).toBe(0xffffff);
-		expect(world.background.get(Face.FRONT, 35, 30)).toBe(0xffffff);
-		expect(world.background.get(Face.FRONT, 50, 50)).toBe(0xffffff);
-		expect(world.background.get(Face.LEFT, 1, 0)).toBe(0x00ff00);
-	});
-
-	it('clears the background to a color', () => {
-		const world = new World();
-		applyCommand(world, { op: 'setPixel', face: 'FRONT', x: 0, y: 0, color: '#ffffff' });
-
-		applyCommand(world, { op: 'clearBackground', color: '#111111' });
-		expect(world.background.get(Face.RIGHT, 5, 5)).toBe(0x111111);
-
-		applyCommand(world, { op: 'clearBackground' });
-		expect(world.background.get(Face.RIGHT, 5, 5)).toBe(0);
 	});
 });
 

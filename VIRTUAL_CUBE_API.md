@@ -394,7 +394,7 @@ Rules:
 The pixel and shape commands (`setPixel`, `drawLine`, `fillRect`, `drawCircle`, `drawBitmap`, text) have two roles:
 
 - **Internal:** the renderer uses them to draw objects (a circle object calls `fillCircle`, a sprite calls `drawBitmap`).
-- **Advanced tier:** they are exposed to the user, writing into a persistent **background layer**. Every frame the renderer copies the background and draws the objects on top, so drawn pixels are not erased and can be used for trails.
+- **Not exposed to users for now.** An advanced tier of blocks that painted on a persistent **background layer** was dropped to focus on the block scripts. The background layer remains, and now holds the pictures the user puts on the faces (the environment). Every frame the renderer copies the background and draws the objects on top.
 
 Making the primitives strip-aware, so a circle wraps around a corner, comes in a later milestone.
 

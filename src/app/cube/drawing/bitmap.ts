@@ -4,8 +4,8 @@
  * Copies a small picture (a list of colors) onto a face.
  *
  * These write straight into a CubeState face. They do not know about objects or programs:
- * the renderer uses them to draw objects, and the "advanced" program blocks use them to
- * paint the background layer.
+ * the renderer uses them to draw objects, and the environment uses `drawBitmap` to paint the
+ * pictures of the faces onto the background layer.
  */
 
 import { Color, CubeState, Face } from '../state/cube-state';

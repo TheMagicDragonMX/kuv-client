@@ -5,16 +5,12 @@ Every block lives in its own file, inside the folder of its category. Open the f
 ```
 blocks/
 ├── index.ts              joins the categories; the rest of the engine only talks to this
-├── block-definition.ts   what every block file must provide (schema, validate, apply)
+├── block-definition.ts   what every block file must provide (schema, apply)
 ├── fields.ts             kinds of field value (color, face, count...) and ready-made fields
 │
 ├── object/               change the objects of the world
 │   ├── create.ts  move.ts  move-to.ts  set-color.ts
 │   ├── show.ts  hide.ts  delete.ts  point-up.ts
-│   └── index.ts
-├── background/           paint pixels that stay on the cube (the "advanced" tier)
-│   ├── clear-background.ts  set-pixel.ts  draw-line.ts  draw-bitmap.ts
-│   ├── draw-rect.ts  fill-rect.ts  draw-circle.ts  fill-circle.ts
 │   └── index.ts
 └── control/              decide when other blocks run
     ├── wait.ts  repeat.ts  forever.ts
@@ -33,12 +29,6 @@ blocks/
 | | `hide` | `target` | Hides an object without removing it |
 | | `delete` | `target` | Removes an object |
 | | `pointUp` | `target` | Resets the heading so "up" is the up of the screen |
-| background | `clearBackground` | `color?` | Paints the whole background (black by default) |
-| | `setPixel` | `face, x, y, color` | Paints one pixel |
-| | `drawLine` | `face, x0, y0, x1, y1, color` | Draws a line |
-| | `drawRect`, `fillRect` | `face, x, y, width, height, color` | Draws or fills a rectangle |
-| | `drawCircle`, `fillCircle` | `face, cx, cy, radius, color` | Draws or fills a circle |
-| | `drawBitmap` | `face, x, y, width, height, pixels` | Copies a picture (`width * height` colors) |
 | control | `wait` | `seconds` | Pauses the script |
 | | `repeat` | `times, body` | Runs `body` a fixed number of times |
 | | `forever` | `body` | Runs `body` until the program stops |
@@ -72,7 +62,6 @@ export const setColorBlock: CommandDefinition<SetColorCommand> = {
 | --- | --- | --- |
 | `schema` | always | The validator (`program/validate-program.ts`), and whoever builds the Blockly block: it is the list of that block's inputs |
 | `apply` | commands | The commands layer (`commands/apply-command.ts`). Control blocks have none |
-| `validate` | optional | The validator, for a rule between several fields. See [background/draw-bitmap.ts](background/draw-bitmap.ts) |
 
 The compiler keeps you honest: `schema` must have exactly the fields of the interface (a missing or extra field does not compile), and `optional(...)` in the schema should match `?` in the interface.
 
@@ -103,6 +92,7 @@ Example: `sound/`.
 - **One block per file**, named after its `op` in kebab-case (`moveTo` → `move-to.ts`). The definition is `<op>Block`; `delete` is `deleteBlock` because `delete` is a reserved word.
 - **A block file never imports another block.** If two blocks share logic, the logic belongs in a lower layer (`geometry/`, `drawing/`, `world/`).
 - **Blocks never compute edges, rotations or pixels themselves.** They call the geometry or the drawing primitives, like the existing ones.
+- **No block writes to the world's background layer.** That layer belongs to the environment (the pictures the user puts on the faces), so objects, which blocks create and move, always draw over it and never change it.
 - **A command that changes nothing must not touch the world**, so the world's `version` stays still and the renderer can skip the frame.
 - **Outside this folder, import from `blocks/index.ts`**, never from a block file.
 - Every file starts with a comment saying what the block is and does.

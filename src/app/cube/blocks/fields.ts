@@ -20,7 +20,6 @@
  *   integer   any whole number (cells can be negative: shapes may overflow a face)
  *   count     whole number, zero or more
  *   seconds   number, zero or more
- *   colors    list of '#RRGGBB'
  *   shape     non-empty list of { dx, dy, color? }: the pixels of an object
  *   blocks    nested list of blocks
  */
@@ -33,7 +32,6 @@ export type FieldKind =
 	| 'integer'
 	| 'count'
 	| 'seconds'
-	| 'colors'
 	| 'shape'
 	| 'blocks';
 
@@ -62,7 +60,6 @@ export const FIELD = {
 	integer: { kind: 'integer' },
 	count: { kind: 'count' },
 	seconds: { kind: 'seconds' },
-	colors: { kind: 'colors' },
 	shape: { kind: 'shape' },
 	blocks: { kind: 'blocks' },
 } satisfies Record<FieldKind, FieldSchema>;
