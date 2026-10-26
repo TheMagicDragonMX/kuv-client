@@ -30,11 +30,13 @@ import {
 	OnDestroy,
 	AfterViewInit,
 	effect,
+	inject,
 	input,
 	signal,
 	untracked,
 	viewChild,
 } from '@angular/core';
+import { ThemeService } from '../../services/theme.service';
 import { ProgramError } from '../errors';
 import { CubePlayer } from '../engine/cube-player';
 import { ProgramConfig } from '../program/program';
@@ -89,6 +91,8 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 	private view?: CubeView;
 
+	private readonly theme = inject(ThemeService);
+
 	private readonly player = new CubePlayer({
 		onRunningChange: (running) => this.runningState.set(running),
 		onError: (error) => this.problemState.set(`Script ${error.script + 1} stopped: ${error.message}`),
@@ -96,6 +100,11 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 	constructor () {
 		effect(() => this.player.setDefaults(this.config()));
+
+		effect(() => {
+			this.theme.theme();
+			this.applyFog();
+		});
 
 		effect(() => {
 			const program = this.program();
@@ -109,6 +118,17 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 	ngAfterViewInit (): void {
 		this.view = new CubeView(this.host().nativeElement, this.player.state);
+		this.applyFog();
+	}
+
+	/**
+	 * Matches the fog to the page background of the current theme.
+	 */
+	private applyFog (): void {
+		const fog = getComputedStyle(document.documentElement).getPropertyValue('--fog').trim();
+
+		if (fog)
+			this.view?.setFogColor(fog);
 	}
 
 	ngOnDestroy (): void {

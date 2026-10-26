@@ -90,6 +90,13 @@ export class CubeView {
 	}
 
 	/**
+	 * Sets the fog color, so the far end of the scene fades into the page background.
+	 */
+	setFogColor (color: string): void {
+		this.stage.setFogColor(color);
+	}
+
+	/**
 	 * Stops rendering, removes listeners and the canvas, and frees the GPU resources.
 	 * Call when done with the view.
 	 */

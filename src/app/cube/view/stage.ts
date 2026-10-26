@@ -18,6 +18,13 @@ export class Stage {
 	}
 
 	/**
+	 * Sets the fog color, so the far end of the scene fades into the page background.
+	 */
+	setFogColor (color: string): void {
+		this.scene.fog?.color.set(color);
+	}
+
+	/**
 	 * Adds an object (the cube) to the scene.
 	 */
 	add (object: THREE.Object3D): void {

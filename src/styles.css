@@ -1,1 +1,41 @@
 @import "tailwindcss";
+
+/* Dark is the default. Light mode flips the slate scale and a few accent shades, so the
+   existing slate-* utilities work in both themes. */
+:root {
+	--page: #0b0f14;
+	--page-gradient: radial-gradient(circle at top, rgba(96, 165, 250, 0.12), transparent 38%), linear-gradient(180deg, #111922 0%, #090c10 100%);
+	--editor-gradient: radial-gradient(circle at 70% 50%, #171b22 0%, #0d1016 45%, #07090d 100%);
+	--cube-gradient: radial-gradient(circle at center, #171b22 0%, #0d1016 42%, #07090d 100%);
+	--surface: rgba(10, 13, 18, 0.82);
+	--cube-frame: rgba(17, 20, 27, 0.75);
+	--nav-text: #dfeaf6;
+	--shadow: rgba(0, 0, 0, 0.35);
+	--fog: #090d12;
+	color-scheme: dark;
+}
+
+:root.light {
+	--page: #f1f5f9;
+	--page-gradient: radial-gradient(circle at top, rgba(96, 165, 250, 0.2), transparent 38%), linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+	--editor-gradient: radial-gradient(circle at 70% 50%, #ffffff 0%, #eef2f7 45%, #dde4ee 100%);
+	--cube-gradient: radial-gradient(circle at center, #ffffff 0%, #eef2f7 42%, #dde4ee 100%);
+	--surface: rgba(255, 255, 255, 0.85);
+	--cube-frame: rgba(255, 255, 255, 0.7);
+	--nav-text: #1e293b;
+	--shadow: rgba(30, 41, 59, 0.18);
+	--fog: #eef2f7;
+	color-scheme: light;
+
+	--color-slate-50: #0f172a;
+	--color-slate-100: #1e293b;
+	--color-slate-200: #334155;
+	--color-slate-300: #475569;
+	--color-slate-400: #64748b;
+	--color-slate-900: #f8fafc;
+	--color-blue-300: #1d4ed8;
+	--color-red-200: #991b1b;
+	--color-green-200: #166534;
+	--color-rose-200: #9f1239;
+	--color-rose-950: #ffe4e6;
+}
