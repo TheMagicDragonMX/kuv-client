@@ -43,6 +43,7 @@
 		<div class="min-h-0 flex-1" role="tabpanel" [hidden]="tab() !== 'blocks'">
 			<app-blocks-tab
 				#blocks
+				[(objects)]="objects"
 				class="block h-full"
 				[running]="cube.running()"
 				[problem]="cube.problem()"
@@ -54,6 +55,10 @@
 
 		<div class="min-h-0 flex-1" role="tabpanel" [hidden]="tab() !== 'program'">
 			<app-program-area class="block h-full" [program]="blocks.program()" [visible]="tab() === 'program'" />
+		</div>
+
+		<div class="min-h-0 flex-1" role="tabpanel" [hidden]="tab() !== 'objects'">
+			<app-objects-panel class="block h-full" [(objects)]="objects" />
 		</div>
 
 		<div class="min-h-0 flex-1 overflow-y-auto" role="tabpanel" [hidden]="tab() !== 'background'">

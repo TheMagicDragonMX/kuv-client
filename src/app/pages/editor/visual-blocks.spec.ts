@@ -1,6 +1,6 @@
 import { CubeEngine, Face, validateProgram } from '../../cube';
+import { BALL, withImages, workspaceOf } from './test-workspace';
 import { VISUAL_BLOCKS, specForOp, specOf } from './visual-blocks';
-import { workspaceOf, withImages } from './test-workspace';
 import { VisualBlock, Workspace, compileWorkspace } from './workspace';
 
 /**
@@ -16,17 +16,21 @@ describe('visual blocks', () => {
 		expect(new Set(VISUAL_BLOCKS.map((spec) => spec.op)).size).toBe(VISUAL_BLOCKS.length);
 	});
 
+	it('do not make objects: that is what the Objects tab is for', () => {
+		expect(VISUAL_BLOCKS.map((spec) => spec.op)).not.toContain('create');
+	});
+
 	it('start with values that make a valid program (once images are chosen)', () => {
 		for (const spec of VISUAL_BLOCKS) {
-			const workspace = withImages(workspaceOf('createObject', spec.type));
+			const workspace = withImages(workspaceOf(spec.type));
 
-			expect(() => validateProgram(compileWorkspace(workspace)), spec.type).not.toThrow();
+			expect(() => validateProgram(compileWorkspace(workspace, [ BALL ])), spec.type).not.toThrow();
 		}
 	});
 
 	it('read back what they compile to', () => {
 		for (const spec of VISUAL_BLOCKS) {
-			const [ , block ] = blocksOf(withImages(workspaceOf('createObject', spec.type)));
+			const [ block ] = blocksOf(withImages(workspaceOf(spec.type)));
 			const engineBlock = spec.compile(block.values, []);
 
 			expect(specForOp(engineBlock.op), spec.type).toBe(spec);
@@ -37,6 +41,7 @@ describe('visual blocks', () => {
 	it('refuse a type or an op nobody knows', () => {
 		expect(() => specOf('nope')).toThrow();
 		expect(() => specForOp('nope')).toThrow();
+		expect(() => specForOp('create')).toThrow('create');
 	});
 
 	it('carry the image inside the block, as the program writes colors', () => {
@@ -62,7 +67,7 @@ describe('visual blocks', () => {
 
 	it('draw objects over the background a block set before', () => {
 		const engine = new CubeEngine();
-		engine.load(compileWorkspace(withImages(workspaceOf('setBackgroundImage', 'createObject'))));
+		engine.load(compileWorkspace(withImages(workspaceOf('setBackgroundImage')), [ BALL ]));
 
 		engine.start(0);
 
@@ -70,12 +75,19 @@ describe('visual blocks', () => {
 		expect(engine.state.get(Face.FRONT, 33, 32)).toBe(0x336699);
 	});
 
-	it('leave out what is on its default, so programs stay short', () => {
-		const workspace = workspaceOf('createObject', 'moveObject', 'moveObjectTo');
-		const [ create, move, moveTo ] = compileWorkspace(workspace).scripts[0].blocks;
+	it('move the objects of the program', () => {
+		const engine = new CubeEngine();
+		engine.load(compileWorkspace(workspaceOf('moveObject'), [ BALL ]));
 
-		expect(create).not.toHaveProperty('heading');
-		expect(create).not.toHaveProperty('pixels');
+		engine.start(0);
+
+		expect(engine.state.get(Face.FRONT, 32, 32)).toBe(0);
+		expect(engine.state.get(Face.FRONT, 33, 32)).toBe(0xf9a8d4);
+	});
+
+	it('leave out what is on its default, so programs stay short', () => {
+		const [ move, moveTo ] = compileWorkspace(workspaceOf('moveObject', 'moveObjectTo'), [ BALL ]).scripts[0].blocks;
+
 		expect(move).not.toHaveProperty('count');
 		expect(moveTo).not.toHaveProperty('heading');
 	});

@@ -38,7 +38,7 @@ blocks/
 | | `repeat` | `times, body` | Runs `body` a fixed number of times |
 | | `forever` | `body` | Runs `body` until the program stops |
 
-`?` marks an optional field. Scripts are started by a *trigger* (`start`, `every`), which is not a block: it lives in [program/program.ts](../program/program.ts).
+`?` marks an optional field. The `create` block can also sit in a program's `objects` list, which creates them before any script runs. Scripts are started by a *trigger* (`start`, `every`), which is not a block: it lives in [program/program.ts](../program/program.ts).
 
 ## Anatomy of a block file
 

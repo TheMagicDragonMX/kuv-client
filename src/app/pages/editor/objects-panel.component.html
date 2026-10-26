@@ -1,0 +1,38 @@
+<section class="flex h-full flex-col gap-3" aria-label="Objects">
+	<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Objects</h2>
+	<p class="text-[0.76rem] leading-relaxed text-slate-300">Make the objects of your program here. They start in the middle of the front face; in the Blocks tab you move them.</p>
+
+	<ul class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
+		@for (object of objects(); track object.name) {
+			<li class="flex items-center gap-3 rounded-2xl border border-l-4 border-slate-400/25 border-l-pink-400 bg-slate-400/10 p-3">
+				<app-object-preview class="size-16 shrink-0 rounded-lg bg-slate-900/80 p-1" [object]="object" />
+				<div class="min-w-0 flex-1">
+					<h3 class="truncate text-[0.76rem] font-bold text-slate-100">{{ object.name }}</h3>
+					<p class="text-[0.7rem] text-slate-400">{{ object.pixels ? object.pixels.length + ' pixels' : 'One pixel' }} · starts at {{ object.face.toLowerCase() }} {{ object.x }}, {{ object.y }}</p>
+				</div>
+				@if (editable(object)) {
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" [attr.aria-label]="'Edit ' + object.name" (click)="edit(object)">Edit</button>
+				}
+				<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" [attr.aria-label]="'Delete ' + object.name" (click)="remove(object.name)">✕</button>
+			</li>
+		} @empty {
+			<li class="px-2 py-6 text-center text-[0.76rem] text-slate-400">No objects yet. Make the first one.</li>
+		}
+	</ul>
+
+	<button type="button" class="cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-[#0f172a] uppercase" (click)="create()">New object</button>
+</section>
+
+<!-- The popup with the pixel editor. -->
+<dialog #dialog class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-[22px] border border-slate-400/25 bg-slate-900 p-0 text-slate-100 shadow-[0_20px_50px_var(--shadow)] backdrop:bg-black/50" aria-labelledby="object-title" (close)="closed()">
+	<div class="flex max-h-[90vh] flex-col gap-3 overflow-y-auto p-4">
+		<div class="flex items-center justify-between">
+			<h2 id="object-title" class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">{{ session()?.original ? 'Edit the object' : 'New object' }}</h2>
+			<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" aria-label="Close" (click)="dialog.close()">✕</button>
+		</div>
+
+		@if (session(); as current) {
+			<app-object-editor [object]="current.original" [taken]="taken()" (saved)="save($event)" (cancelled)="dialog.close()" />
+		}
+	</div>
+</dialog>

@@ -20,6 +20,7 @@ import { OBJECT_BLOCKS, ObjectCommand } from './object';
 
 export type { BlockDefinition, CommandDefinition } from './block-definition';
 export type { BlockSchema, FieldKind, FieldSchema } from './fields';
+export type { CreateCommand } from './object/create';
 export type { BackgroundCommand, ControlBlock, ObjectCommand };
 
 /**

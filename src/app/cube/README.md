@@ -49,7 +49,7 @@ environment (pictures on the faces) ──painted onto the world's background by
 | `blocks/` | `object/`, `background/`, `control/` | **One file per block**, in the folder of its category: its type, its fields and what it does. See [blocks/README.md](blocks/README.md) |
 | | `index.ts` | Joins the categories: the `Block` types and the definition of a block by its `op` |
 | | `block-definition.ts`, `fields.ts` | What every block file must provide, and the kinds of field value |
-| `program/` | `program.ts` | The shape of a program: scripts, triggers and config (the JSON contract with Blockly and the Pi) |
+| `program/` | `program.ts` | The shape of a program: objects it starts with, scripts, triggers and config (the JSON contract with Blockly and the Pi) |
 | | `names.ts` | Converts readable names (`'FRONT'`, `'#ff0000'`) to engine values |
 | | `validate-program.ts` | Checks that something really is a program, with errors that say where. Reads each block's schema from `blocks/` |
 | `commands/` | `apply-command.ts` | Looks up a command in `blocks/` and applies it to the world |

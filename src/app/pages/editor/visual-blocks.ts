@@ -10,14 +10,13 @@
  * that engine block. To add a block, add an entry; nothing else needs to change.
  */
 
-import { Block, FACE_RESOLUTION, FaceName, HeadingName, ShapePixelDefinition, formatColor, parseColor } from '../../cube';
+import { Block, FACE_RESOLUTION, FaceName, HeadingName, formatColor, parseColor } from '../../cube';
 
 /**
  * Value of a field. Which one depends on the kind of the field:
- * faces → FaceName[], image → pixels (or null before choosing), shape → pixels of an object (or
- * null for a single pixel), number → number, the rest → string.
+ * faces → FaceName[], image → pixels (or null before choosing), number → number, the rest → string.
  */
-export type FieldValue = string | number | FaceName[] | Uint32Array | ShapePixelDefinition[] | null;
+export type FieldValue = string | number | FaceName[] | Uint32Array | null;
 
 export type Values = Record<string, FieldValue>;
 
@@ -35,12 +34,11 @@ interface FieldBase {
  *   number  a number (`integer` means whole numbers only)
  *   text    free text
  *   choice  one of a few options
- *   object  one of the objects created by blocks
+ *   object  one of the objects made in the Objects tab
  *   image   a picture the user picks and crops (becomes the pixels of a face)
- *   shape   the pixels of an object. It cannot be drawn yet: it is shown, and can be cleared
  */
 export type FieldSpec = FieldBase & (
-	| { kind: 'faces' | 'face' | 'color' | 'text' | 'object' | 'image' | 'shape' }
+	| { kind: 'faces' | 'face' | 'color' | 'text' | 'object' | 'image' }
 	| { kind: 'number'; min?: number; integer?: boolean; step?: number }
 	| { kind: 'choice'; options: { value: string; label: string }[] }
 );
@@ -52,15 +50,9 @@ export type Category = 'Background' | 'Objects' | 'Control';
  */
 export interface Context {
 	/**
-	 * Names of all the objects created by blocks, anywhere (scripts run side by side, so a
-	 * script can act on an object another one creates).
+	 * Names of the objects the user made in the Objects tab: what the blocks can act on.
 	 */
 	objects: string[];
-
-	/**
-	 * Names of the objects created by the blocks before this one.
-	 */
-	taken: string[];
 }
 
 export interface VisualBlockSpec {
@@ -151,16 +143,7 @@ function define<Op extends Block['op']> (definition: Definition<Op>): VisualBloc
 }
 
 /**
- * An object name nobody uses yet: object1, object2...
- */
-function freeName (objects: string[]): string {
-	for (let number = 1; ; number += 1)
-		if (!objects.includes(`object${number}`))
-			return `object${number}`;
-}
-
-/**
- * The last object created, which is what a new block most likely acts on. Empty when there is none.
+ * The last object made, which is what a new block most likely acts on. Empty when there is none.
  */
 function lastObject (objects: string[]): string {
 	return objects.at(-1) ?? '';
@@ -169,7 +152,7 @@ function lastObject (objects: string[]): string {
 function targetProblem (values: Values, context: Context): string | null {
 	return context.objects.includes(values['target'] as string)
 		? null
-		: 'Choose an object. Add a "Create object" block first.';
+		: 'Choose an object. Make one in the Objects tab first.';
 }
 
 /**
@@ -224,50 +207,6 @@ export const VISUAL_BLOCKS: VisualBlockSpec[] = [
 		defaults: () => ({ faces: [ 'FRONT' ], color: '#000000' }),
 		compile: (values) => ({ op: 'setBackgroundColor', faces: values['faces'] as FaceName[], color: values['color'] as string }),
 		read: (block) => ({ faces: block.faces, color: block.color }),
-	}),
-	define({
-		type: 'createObject',
-		op: 'create',
-		label: 'Create object',
-		category: 'Objects',
-		description: 'A pixel with a name, on a cell of a face.',
-		fields: [
-			{ key: 'name', label: 'Name', kind: 'text' },
-			FACE_FIELD,
-			X_FIELD,
-			Y_FIELD,
-			COLOR_FIELD,
-			HEADING_FIELD,
-			{ key: 'shape', label: 'Shape', kind: 'shape' },
-		],
-		defaults: (objects) => ({ name: freeName(objects), face: 'FRONT', x: 32, y: 32, color: '#f9a8d4', heading: '', shape: null }),
-		problem: (values, context) => {
-			const name = (values['name'] as string).trim();
-
-			if (!name)
-				return 'Give the object a name.';
-
-			return context.taken.includes(name) ? `There is already an object called "${name}".` : null;
-		},
-		compile: (values) => ({
-			op: 'create',
-			name: (values['name'] as string).trim(),
-			face: values['face'] as FaceName,
-			x: values['x'] as number,
-			y: values['y'] as number,
-			color: values['color'] as string,
-			...heading(values),
-			...values['shape'] ? { pixels: values['shape'] as ShapePixelDefinition[] } : {},
-		}),
-		read: (block) => ({
-			name: block.name,
-			face: block.face,
-			x: block.x,
-			y: block.y,
-			color: block.color,
-			heading: block.heading ?? '',
-			shape: block.pixels ?? null,
-		}),
 	}),
 	define({
 		type: 'moveObject',

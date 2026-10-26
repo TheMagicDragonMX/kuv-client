@@ -207,9 +207,9 @@ describe('CubeEngine', () => {
 			engine.load(example.program);
 			engine.start(0);
 
-			for (let now = 33; now <= 10000; now += 33) {
+			for (let now = 33; 10000 >= now; now += 33) 
 				engine.tick(now);
-			}
+			
 
 			expect(errors, example.id).toEqual([]);
 		}
@@ -279,6 +279,35 @@ describe('CubeEngine', () => {
 
 			expect(() => engine.setEnvironment({ background: { FRONT: solid(1), LEFT: new Uint32Array(10) } })).toThrow(EngineError);
 			expect(engine.state.get(Face.FRONT, 0, 0)).toBe(0);
+		});
+	});
+
+	describe('objects the program starts with', () => {
+		const program: Program = {
+			version: 1,
+			objects: [ { op: 'create', name: 'ball', face: 'FRONT', x: 10, y: 10, color: '#ff0000' } ],
+			scripts: [ { trigger: { type: 'start' }, blocks: [ { op: 'move', target: 'ball', step: 'right', count: 2 } ] } ],
+		};
+
+		it('exist before the scripts run, so scripts can act on them', () => {
+			const engine = new CubeEngine();
+			engine.load(program);
+
+			engine.start(0);
+
+			expect(engine.state.get(Face.FRONT, 12, 10)).toBe(0xff0000);
+			expect(engine.state.get(Face.FRONT, 10, 10)).toBe(0);
+		});
+
+		it('are on the cube again after a reset, where they began', () => {
+			const engine = new CubeEngine();
+			engine.load(program);
+			engine.start(0);
+
+			engine.reset();
+
+			expect(engine.state.get(Face.FRONT, 10, 10)).toBe(0xff0000);
+			expect(engine.state.get(Face.FRONT, 12, 10)).toBe(0);
 		});
 	});
 });

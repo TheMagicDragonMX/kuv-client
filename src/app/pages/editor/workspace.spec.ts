@@ -1,21 +1,20 @@
 import { CubeEngine, EXAMPLE_PROGRAMS, Face, validateProgram } from '../../cube';
-import { workspaceOf, withImages } from './test-workspace';
+import { BALL, withImages, workspaceOf } from './test-workspace';
 import {
 	VisualBlock,
 	addBlock,
 	addScript,
+	blocksFromProgram,
 	compileWorkspace,
 	countBlocks,
 	moveItem,
 	newBlock,
 	newScript,
-	objectNames,
 	problemsOf,
 	removeItem,
 	setConfig,
 	setTrigger,
 	setValue,
-	workspaceFromProgram,
 } from './workspace';
 
 function counter () {
@@ -24,36 +23,43 @@ function counter () {
 	return () => id++;
 }
 
+const NAMES = [ BALL.name ];
+
 describe('compileWorkspace', () => {
 	it('makes one script for each script of blocks, with its trigger', () => {
-		let workspace = workspaceOf('createObject', 'wait');
+		let workspace = workspaceOf('moveObject', 'wait');
 		workspace = addScript(workspace, newScript(50, { type: 'every', seconds: 2 }));
-		workspace = addBlock(workspace, 50, newBlock('hideObject', 51, workspace));
+		workspace = addBlock(workspace, 50, newBlock('hideObject', 51, NAMES));
 
-		const program = compileWorkspace(workspace);
+		const program = compileWorkspace(workspace, [ BALL ]);
 
 		expect(program.scripts.map((script) => script.trigger)).toEqual([ { type: 'start' }, { type: 'every', seconds: 2 } ]);
-		expect(program.scripts[0].blocks.map((block) => block.op)).toEqual([ 'create', 'wait' ]);
-		expect(program.scripts[1].blocks).toEqual([ { op: 'hide', target: 'object1' } ]);
+		expect(program.scripts[0].blocks.map((block) => block.op)).toEqual([ 'move', 'wait' ]);
+		expect(program.scripts[1].blocks).toEqual([ { op: 'hide', target: 'ball' } ]);
+	});
+
+	it('carries the objects the program starts with, only when there are some', () => {
+		expect(compileWorkspace(workspaceOf('wait'))).not.toHaveProperty('objects');
+		expect(compileWorkspace(workspaceOf('wait'), [ BALL ]).objects).toEqual([ BALL ]);
 	});
 
 	it('puts the blocks inside a repeat in its body, as deep as they go', () => {
-		let workspace = workspaceOf('createObject', 'forever');
-		workspace = addBlock(workspace, 3, newBlock('repeat', 10, workspace));
-		workspace = addBlock(workspace, 10, newBlock('moveObject', 11, workspace));
-		workspace = addBlock(workspace, 10, newBlock('wait', 12, workspace));
+		let workspace = workspaceOf('forever');
+		workspace = addBlock(workspace, 2, newBlock('repeat', 10, NAMES));
+		workspace = addBlock(workspace, 10, newBlock('moveObject', 11, NAMES));
+		workspace = addBlock(workspace, 10, newBlock('wait', 12, NAMES));
 
-		const [ , forever ] = compileWorkspace(workspace).scripts[0].blocks;
+		const [ forever ] = compileWorkspace(workspace, [ BALL ]).scripts[0].blocks;
 
 		expect(forever).toEqual({
 			op: 'forever',
 			body: [ {
 				op: 'repeat',
 				times: 2,
-				body: [ { op: 'move', target: 'object1', step: 'right' }, { op: 'wait', seconds: 1 } ],
+				body: [ { op: 'move', target: 'ball', step: 'right' }, { op: 'wait', seconds: 1 } ],
 			} ],
 		});
-		expect(() => validateProgram(compileWorkspace(workspace))).not.toThrow();
+		expect(() => validateProgram(compileWorkspace(workspace, [ BALL ]))).not.toThrow();
 	});
 
 	it('carries the settings only when there are some', () => {
@@ -65,24 +71,60 @@ describe('compileWorkspace', () => {
 	});
 });
 
-describe('the examples as blocks', () => {
-	for (const example of EXAMPLE_PROGRAMS) {
-		it(`"${example.name}" becomes blocks and back to the very same program`, () => {
-			const workspace = workspaceFromProgram(example.program, counter());
+describe('the examples as blocks and objects', () => {
+	/**
+	 * The cube after the program ran for a while, as its five faces.
+	 */
+	function picture (program: unknown, times: number[]): number[][] {
+		const engine = new CubeEngine();
+		engine.load(program);
+		engine.start(0);
 
-			expect(compileWorkspace(workspace)).toEqual(example.program);
-		});
+		return times.map((time) => {
+			engine.tick(time);
 
-		it(`"${example.name}" has blocks that are ready to run`, () => {
-			const workspace = workspaceFromProgram(example.program, counter());
-
-			expect(problemsOf(workspace)).toEqual(new Map());
-			expect(countBlocks(workspace)).toBeGreaterThan(0);
+			return [ Face.FRONT, Face.RIGHT, Face.BACK, Face.LEFT, Face.TOP ].flatMap((face) => [ ...engine.state.facePixels(face) ]);
 		});
 	}
 
+	for (const example of EXAMPLE_PROGRAMS) {
+		it(`"${example.name}" becomes objects and blocks that are ready to run`, () => {
+			const { workspace, objects } = blocksFromProgram(example.program, counter());
+
+			expect(objects.length).toBeGreaterThan(0);
+			expect(countBlocks(workspace)).toBeGreaterThan(0);
+			expect(problemsOf(workspace, objects.map((object) => object.name))).toEqual(new Map());
+			expect(() => validateProgram(compileWorkspace(workspace, objects))).not.toThrow();
+		});
+
+		it(`"${example.name}" runs the same as the example`, () => {
+			const { workspace, objects } = blocksFromProgram(example.program, counter());
+			const times = [ 0, 130, 500, 1700 ];
+
+			expect(picture(compileWorkspace(workspace, objects), times)).toEqual(picture(example.program, times));
+		});
+	}
+
+	it('moves the create blocks at the start of a script into objects, in order, and keeps the rest', () => {
+		const example = EXAMPLE_PROGRAMS.find((candidate) => 'around' === candidate.id)!;
+		const { workspace, objects } = blocksFromProgram(example.program, counter());
+
+		expect(objects.map((object) => object.name)).toEqual([ 'hare', 'tortoise' ]);
+		expect(workspace.scripts.map((script) => script.blocks.map((block) => block.type))).toEqual([ [ 'forever' ], [ 'forever' ] ]);
+	});
+
+	it('keeps the objects a program declares, before the ones in scripts', () => {
+		const program = {
+			version: 1 as const,
+			objects: [ BALL ],
+			scripts: [ { trigger: { type: 'start' as const }, blocks: [ { op: 'create' as const, name: 'b', face: 'FRONT' as const, x: 1, y: 1, color: '#000000' } ] } ],
+		};
+
+		expect(blocksFromProgram(program, counter()).objects.map((object) => object.name)).toEqual([ 'ball', 'b' ]);
+	});
+
 	it('give every block and script its own id', () => {
-		const workspace = workspaceFromProgram(EXAMPLE_PROGRAMS.find((example) => 'blink' === example.id)!.program, counter());
+		const { workspace } = blocksFromProgram(EXAMPLE_PROGRAMS.find((example) => 'blink' === example.id)!.program, counter());
 		const ids: number[] = [];
 
 		for (const script of workspace.scripts) {
@@ -97,98 +139,72 @@ describe('the examples as blocks', () => {
 		expect(new Set(ids).size).toBe(ids.length);
 	});
 
-	it('run the same as the program they came from', () => {
-		const example = EXAMPLE_PROGRAMS.find((candidate) => 'around' === candidate.id)!;
-		const fromProgram = new CubeEngine();
-		const fromBlocks = new CubeEngine();
-		fromProgram.load(example.program);
-		fromBlocks.load(compileWorkspace(workspaceFromProgram(example.program, counter())));
+	it('refuse a block that has no visual block, such as a create in the middle of a script', () => {
+		const program = {
+			version: 1 as const,
+			scripts: [ { trigger: { type: 'start' as const }, blocks: [ { op: 'wait' as const, seconds: 1 }, { op: 'create' as const, name: 'b', face: 'FRONT' as const, x: 1, y: 1, color: '#000000' } ] } ],
+		};
 
-		fromProgram.start(0);
-		fromBlocks.start(0);
-		fromProgram.tick(500);
-		fromBlocks.tick(500);
-
-		for (const face of [ Face.FRONT, Face.RIGHT, Face.BACK, Face.LEFT, Face.TOP ])
-			expect([ ...fromBlocks.state.facePixels(face) ]).toEqual([ ...fromProgram.state.facePixels(face) ]);
-	});
-
-	it('refuse a block that has no visual block', () => {
-		const program = { version: 1 as const, scripts: [ { trigger: { type: 'start' as const }, blocks: [ { op: 'nope' } as never ] } ] };
-
-		expect(() => workspaceFromProgram(program, counter())).toThrow('nope');
+		expect(() => blocksFromProgram(program, counter())).toThrow('create');
 	});
 });
 
 describe('problemsOf', () => {
 	it('is empty when every block is ready', () => {
-		expect(problemsOf(withImages(workspaceOf('setBackgroundImage', 'createObject', 'moveObject')))).toEqual(new Map());
+		expect(problemsOf(withImages(workspaceOf('setBackgroundImage', 'moveObject')), NAMES)).toEqual(new Map());
 	});
 
 	it('asks for an image that was not chosen', () => {
 		const workspace = workspaceOf('setBackgroundImage');
-		const block = workspace.scripts[0].blocks[0];
 
-		expect(problemsOf(workspace).get(block.id)).toBe('Choose an image.');
+		expect(problemsOf(workspace, NAMES).get(2)).toBe('Choose an image.');
 	});
 
 	it('asks for at least one face', () => {
 		const workspace = setValue(workspaceOf('setBackgroundColor'), 2, 'faces', []);
 
-		expect(problemsOf(workspace).get(2)).toBe('Choose at least one face.');
+		expect(problemsOf(workspace, NAMES).get(2)).toBe('Choose at least one face.');
 	});
 
 	it('refuses numbers that make no sense', () => {
 		const workspace = workspaceOf('wait');
 
-		expect(problemsOf(setValue(workspace, 2, 'seconds', Number.NaN)).get(2)).toBe('Seconds needs a number.');
-		expect(problemsOf(setValue(workspace, 2, 'seconds', -1)).get(2)).toBe('Seconds cannot be less than 0.');
+		expect(problemsOf(setValue(workspace, 2, 'seconds', Number.NaN), NAMES).get(2)).toBe('Seconds needs a number.');
+		expect(problemsOf(setValue(workspace, 2, 'seconds', -1), NAMES).get(2)).toBe('Seconds cannot be less than 0.');
 	});
 
 	it('wants whole numbers where cells are counted', () => {
-		const workspace = setValue(workspaceOf('createObject'), 2, 'x', 1.5);
+		const workspace = setValue(workspaceOf('moveObjectTo'), 2, 'x', 1.5);
 
-		expect(problemsOf(workspace).get(2)).toBe('X needs a whole number.');
+		expect(problemsOf(workspace, NAMES).get(2)).toBe('X needs a whole number.');
 	});
 
-	it('wants an object to exist before acting on it', () => {
-		expect(problemsOf(workspaceOf('moveObject')).get(2)).toContain('Create object');
-		expect(problemsOf(workspaceOf('createObject', 'moveObject')).size).toBe(0);
-	});
+	it('wants the object to exist, and notices when it is deleted', () => {
+		const workspace = workspaceOf('moveObject');
 
-	it('lets a script act on an object another script creates', () => {
-		let workspace = workspaceOf('createObject');
-		workspace = addScript(workspace, newScript(50));
-		workspace = addBlock(workspace, 50, newBlock('hideObject', 51, workspace));
-
-		expect(problemsOf(workspace).size).toBe(0);
-	});
-
-	it('does not allow two objects with the same name', () => {
-		const workspace = setValue(workspaceOf('createObject', 'createObject'), 3, 'name', 'object1');
-
-		expect(problemsOf(workspace).get(3)).toContain('already an object');
-		expect(problemsOf(workspace).has(2)).toBe(false);
+		expect(problemsOf(workspace, NAMES).size).toBe(0);
+		expect(problemsOf(workspace, []).get(2)).toContain('Objects tab');
+		expect(problemsOf(setValue(workspace, 2, 'target', 'other'), NAMES).get(2)).toContain('Objects tab');
 	});
 
 	it('asks for time between the runs of a script', () => {
 		const workspace = setTrigger(workspaceOf('wait'), 1, { type: 'every', seconds: 0 });
 
-		expect(problemsOf(workspace).get(1)).toBe('Seconds must be more than zero.');
+		expect(problemsOf(workspace, NAMES).get(1)).toBe('Seconds must be more than zero.');
 	});
 });
 
 describe('editing', () => {
-	it('names new objects after the ones that exist and acts on the last', () => {
-		const workspace = workspaceOf('createObject', 'createObject', 'moveObject');
+	it('acts on the last object made by default', () => {
+		const block = newBlock('moveObject', 1, [ 'a', 'b' ]);
 
-		expect(objectNames(workspace)).toEqual([ 'object1', 'object2' ]);
-		expect(workspace.scripts[0].blocks[2].values['target']).toBe('object2');
+		expect(block.values['target']).toBe('b');
+		expect(newBlock('moveObject', 1, []).values['target']).toBe('');
 	});
 
 	it('removes a block with what is inside it, and a script with its blocks', () => {
 		let workspace = workspaceOf('forever');
-		workspace = addBlock(workspace, 2, newBlock('wait', 3, workspace));
+		workspace = addBlock(workspace, 2, newBlock('wait', 3, NAMES));
 
 		expect(countBlocks(workspace)).toBe(2);
 		expect(countBlocks(removeItem(workspace, 2))).toBe(0);
@@ -197,8 +213,8 @@ describe('editing', () => {
 
 	it('moves a block among its neighbors only, inside its own list', () => {
 		let workspace = workspaceOf('forever', 'wait');
-		workspace = addBlock(workspace, 2, newBlock('createObject', 10, workspace));
-		workspace = addBlock(workspace, 2, newBlock('hideObject', 11, workspace));
+		workspace = addBlock(workspace, 2, newBlock('moveObject', 10, NAMES));
+		workspace = addBlock(workspace, 2, newBlock('hideObject', 11, NAMES));
 
 		const inside = (w: typeof workspace) => w.scripts[0].blocks[0].body!.map((block) => block.id);
 

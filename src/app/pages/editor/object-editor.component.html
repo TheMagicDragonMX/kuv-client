@@ -1,0 +1,63 @@
+<form class="flex flex-col gap-3" (submit)="$event.preventDefault(); save()">
+	<label class="flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
+		<span class="w-14 shrink-0">Name</span>
+		<input
+			type="text"
+			class="min-w-0 flex-1 rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case disabled:opacity-60"
+			[value]="name()"
+			[disabled]="object() !== null"
+			(input)="name.set($any($event.target).value)"
+		/>
+	</label>
+
+	<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Tools">
+		<input type="color" class="h-8 w-12 cursor-pointer rounded-lg border border-slate-400/25 bg-transparent" aria-label="Color to paint" [value]="color()" (input)="color.set($any($event.target).value); erasing.set(false)" />
+		<button
+			type="button"
+			class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.7rem] font-semibold uppercase transition duration-150"
+			[class]="!erasing() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
+			[attr.aria-pressed]="!erasing()"
+			(click)="erasing.set(false)"
+		>Paint</button>
+		<button
+			type="button"
+			class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.7rem] font-semibold uppercase transition duration-150"
+			[class]="erasing() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
+			[attr.aria-pressed]="erasing()"
+			(click)="erasing.set(true)"
+		>Erase</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="clear()">Clear</button>
+	</div>
+
+	<!-- The canvas: a grid of pixels. The highlighted one in the middle is the object itself. -->
+	<div
+		class="grid touch-none gap-px rounded-xl border border-slate-400/25 bg-slate-400/20 p-px select-none"
+		[style.grid-template-columns]="'repeat(' + grid + ', minmax(0, 1fr))'"
+		role="group"
+		aria-label="Pixels of the object. The highlighted one in the middle is the object itself."
+		(pointerup)="end()"
+		(pointerleave)="end()"
+		(pointercancel)="end()"
+	>
+		@for (cell of cells; track cell) {
+			<div
+				class="aspect-square bg-slate-900"
+				[class]="cell === center ? 'outline-2 -outline-offset-2 outline-amber-300' : ''"
+				[style.background-color]="paint(cell)"
+				[attr.data-cell]="cell"
+				(pointerdown)="begin(cell, $event)"
+				(pointerenter)="over(cell)"
+			></div>
+		}
+	</div>
+	<p class="text-[0.7rem] text-slate-400">The highlighted pixel is the object itself: blocks move it, and the pixels around it follow. Paint around it to give it a shape.</p>
+
+	@if (problem(); as text) {
+		<p class="text-[0.7rem] text-rose-200" role="alert">{{ text }}</p>
+	}
+
+	<div class="flex gap-2">
+		<button type="submit" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-[#0f172a] uppercase disabled:cursor-default disabled:opacity-40" [disabled]="problem() !== null">{{ object() ? 'Save' : 'Create object' }}</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="cancelled.emit()">Cancel</button>
+	</div>
+</form>

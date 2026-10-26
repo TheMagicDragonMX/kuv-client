@@ -24,6 +24,7 @@
  */
 
 import { Environment, paintEnvironment } from '../environment/environment';
+import { applyCommand } from '../commands/apply-command';
 import { GeometryConfig } from '../geometry/geometry';
 import { Program, ProgramConfig } from '../program/program';
 import { FACE_BY_NAME } from '../program/names';
@@ -153,7 +154,7 @@ export class CubeEngine {
 
 	/**
 	 * Creates a fresh world, renderer and scheduler for the loaded program and draws the
-	 * result, which is the environment alone because no script has run yet. Everything that changes while a program runs lives in those three, so
+	 * result: the environment and the objects the program starts with, because no script has run yet. Everything that changes while a program runs lives in those three, so
 	 * replacing them is what gives every run a clean start.
 	 */
 	private build (): void {
@@ -162,6 +163,9 @@ export class CubeEngine {
 		this.scheduler = new Scheduler(this.world, this.program.scripts, (error) => this.options.onError?.(error));
 
 		paintEnvironment(this.world, this.environment);
+
+		for (const object of this.program.objects ?? [])
+			applyCommand(this.world, object);
 
 		this.state.fill(0);
 		this.renderer.render();

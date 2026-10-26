@@ -6,11 +6,12 @@ import {
 	OnDestroy,
 	computed,
 	input,
+	model,
 	output,
 	signal,
 	viewChild,
 } from '@angular/core';
-import { EXAMPLE_PROGRAMS, FaceName, Program, RawImage, SideName, pixelate } from '../../cube';
+import { CreateCommand, EXAMPLE_PROGRAMS, FaceName, Program, RawImage, SideName, pixelate } from '../../cube';
 import { FACE_OPTIONS } from './faces';
 import { ImageCropperComponent } from './image-cropper.component';
 import { PixelPreviewComponent } from './pixel-preview.component';
@@ -27,13 +28,12 @@ import {
 	moveItem,
 	newBlock,
 	newScript,
-	objectNames,
 	problemsOf,
 	removeItem,
 	setConfig,
 	setTrigger,
 	setValue,
-	workspaceFromProgram,
+	blocksFromProgram,
 } from './workspace';
 
 /**
@@ -47,8 +47,8 @@ const ACCENTS: Record<Category, string> = {
 
 /**
  * Where the user builds a program out of blocks. The blocks are the source of truth: the
- * program (the JSON of the Program tab, and what the cube runs) is made from them, never the
- * other way round. They are stacked in scripts, a plus button adds the next one, and Run sends
+ * program (the JSON of the Program tab, and what the cube runs) is made from them and from the
+ * objects of the Objects tab, never the other way round. They are stacked in scripts, a plus button adds the next one, and Run sends
  * the program to the cube (see `workspace.ts`). The examples are programs turned into blocks.
  * When Blockly arrives this component is replaced by the block workspace, and the page does not
  * change: all that matters is that it emits a program on `run`.
@@ -107,14 +107,20 @@ export class BlocksTabComponent implements OnDestroy {
 	protected readonly workspace = signal<Workspace>(addScript(emptyWorkspace(), newScript(0)));
 
 	/**
-	 * What is missing in each block or script, by id.
+	 * The objects the user made in the Objects tab: what the blocks act on. Loading an example
+	 * replaces them along with the blocks.
 	 */
-	protected readonly problems = computed(() => problemsOf(this.workspace()));
+	readonly objects = model<CreateCommand[]>([]);
 
 	/**
-	 * The objects the blocks create: what a block can act on.
+	 * Their names.
 	 */
-	protected readonly objects = computed(() => objectNames(this.workspace()));
+	protected readonly names = computed(() => this.objects().map((object) => object.name));
+
+	/**
+	 * What is missing in each block or script, by id.
+	 */
+	protected readonly problems = computed(() => problemsOf(this.workspace(), this.names()));
 
 	protected readonly ready = computed(() => 0 < countBlocks(this.workspace()) && 0 === this.problems().size);
 
@@ -122,7 +128,7 @@ export class BlocksTabComponent implements OnDestroy {
 	 * The program the blocks stand for, or null while they are not ready to run. The page shows
 	 * it in the Program tab.
 	 */
-	readonly program = computed<Program | null>(() => this.ready() ? compileWorkspace(this.workspace()) : null);
+	readonly program = computed<Program | null>(() => this.ready() ? compileWorkspace(this.workspace(), this.objects()) : null);
 
 	/**
 	 * Where the picker adds the block: the id of the script or block it goes in.
@@ -175,7 +181,7 @@ export class BlocksTabComponent implements OnDestroy {
 	 * Adds a block at the end of the place the picker was opened from, and closes the picker.
 	 */
 	protected add (type: string): void {
-		this.workspace.update((workspace) => addBlock(workspace, this.pickerTarget, newBlock(type, this.nextId++, workspace)));
+		this.workspace.update((workspace) => addBlock(workspace, this.pickerTarget, newBlock(type, this.nextId++, this.names())));
 		this.picker().nativeElement.close();
 	}
 
@@ -220,15 +226,13 @@ export class BlocksTabComponent implements OnDestroy {
 	protected load (id: string): void {
 		const example = this.examples.find((candidate) => candidate.id === id);
 
-		if (example)
-			this.workspace.set(workspaceFromProgram(example.program, () => this.nextId++));
-	}
+		if (!example)
+			return;
 
-	/**
-	 * How many pixels the shape of an object has (a block can carry a shape it cannot draw).
-	 */
-	protected shapeSize (block: VisualBlock, key: string): number {
-		return (block.values[key] as unknown[]).length;
+		const { workspace, objects } = blocksFromProgram(example.program, () => this.nextId++);
+
+		this.workspace.set(workspace);
+		this.objects.set(objects);
 	}
 
 	protected hasFace (block: VisualBlock, key: string, name: FaceName): boolean {

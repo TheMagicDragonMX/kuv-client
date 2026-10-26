@@ -32,7 +32,7 @@ type Fields = Record<string, unknown>;
  */
 export function validateProgram (value: unknown): Program {
 	const program = expectObject(value, 'program');
-	expectOnlyKeys(program, [ 'version', 'config', 'scripts' ], 'program');
+	expectOnlyKeys(program, [ 'version', 'config', 'objects', 'scripts' ], 'program');
 
 	if (1 !== program['version']) 
 		fail('version', 'must be 1');
@@ -40,6 +40,9 @@ export function validateProgram (value: unknown): Program {
 	if (program['config'] !== undefined) 
 		validateConfig(program['config']);
 	
+
+	if (program['objects'] !== undefined)
+		validateObjects(program['objects']);
 
 	const scripts = program['scripts'];
 	if (!Array.isArray(scripts)) 
@@ -65,6 +68,31 @@ function validateConfig (value: unknown): void {
 	if (floor !== undefined && !isCount(floor)) 
 		fail('config.floor', 'must be a whole number, zero or more');
 	
+}
+
+/**
+ * Checks the objects a program starts with: `create` blocks with names that are not repeated.
+ */
+function validateObjects (value: unknown): void {
+	if (!Array.isArray(value))
+		fail('objects', 'must be a list of create blocks');
+
+	const names = new Set<unknown>();
+
+	value.forEach((object, index) => {
+		const path = `objects[${index}]`;
+		validateBlock(object, path);
+
+		if ('create' !== (object as Fields)['op'])
+			fail(`${path}.op`, "must be 'create'");
+
+		const name = (object as Fields)['name'];
+
+		if (names.has(name))
+			fail(`${path}.name`, `there is already an object called ${JSON.stringify(name)}`);
+
+		names.add(name);
+	});
 }
 
 /**

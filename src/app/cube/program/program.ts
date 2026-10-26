@@ -6,6 +6,7 @@
  *
  *   Program
  *    ├─ config    optional engine settings (top anchor, floor)
+ *    ├─ objects   optional objects that exist from the start, before any script runs
  *    └─ scripts   each one is a trigger plus a list of blocks
  *                  └─ blocks  commands (do something now) and control blocks (wait, repeat, forever);
  *                             every block has its own file in `blocks/`
@@ -14,7 +15,7 @@
  * by people. `names.ts` converts them to the engine's internal values.
  */
 
-import { Block } from '../blocks';
+import { Block, CreateCommand } from '../blocks';
 
 /**
  * Name of a face of the cube.
@@ -83,5 +84,11 @@ export interface Script {
 export interface Program {
 	version: 1;
 	config?: ProgramConfig;
+
+	/**
+	 * Objects that exist when the program starts, created in this order before any script runs.
+	 * They are `create` blocks, with names that are not repeated. Scripts act on them by name.
+	 */
+	objects?: CreateCommand[];
 	scripts: Script[];
 }

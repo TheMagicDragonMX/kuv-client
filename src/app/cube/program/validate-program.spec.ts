@@ -11,9 +11,9 @@ function program (...blocks: unknown[]): unknown {
 
 describe('validateProgram', () => {
 	it('accepts the example programs', () => {
-		for (const example of EXAMPLE_PROGRAMS) {
+		for (const example of EXAMPLE_PROGRAMS) 
 			expect(() => validateProgram(example.program), example.id).not.toThrow();
-		}
+		
 	});
 
 	it('accepts a program without scripts', () => {
@@ -158,5 +158,23 @@ describe('validateProgram', () => {
 			expect(() => validateProgram(program(block))).toThrow(`scripts[0].blocks[0].${field}`);
 		});
 	});
+	});
+
+	describe('objects', () => {
+		const ball = { op: 'create', name: 'ball', face: 'FRONT', x: 32, y: 32, color: '#ff0000' };
+
+		it('accepts objects the program starts with', () => {
+			expect(() => validateProgram({ version: 1, objects: [ ball, { ...ball, name: 'other' } ], scripts: [] })).not.toThrow();
+		});
+
+		it('rejects anything but create blocks, and repeated names', () => {
+			expect(() => validateProgram({ version: 1, objects: [ { op: 'wait', seconds: 1 } ], scripts: [] })).toThrow('objects[0].op');
+			expect(() => validateProgram({ version: 1, objects: [ ball, ball ], scripts: [] })).toThrow('objects[1].name');
+			expect(() => validateProgram({ version: 1, objects: 'ball', scripts: [] })).toThrow('objects');
+		});
+
+		it('checks them like any create block', () => {
+			expect(() => validateProgram({ version: 1, objects: [ { ...ball, color: 'red' } ], scripts: [] })).toThrow('objects[0].color');
+		});
 	});
 });

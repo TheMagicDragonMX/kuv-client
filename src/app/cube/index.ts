@@ -17,7 +17,7 @@ export type { RawImage } from './environment/pixelate';
 export { EXAMPLE_PROGRAMS } from './examples/example-programs';
 export type { ExampleProgram } from './examples/example-programs';
 export { formatColor, parseColor } from './program/names';
-export type { Block } from './blocks';
+export type { Block, CreateCommand } from './blocks';
 export type { FaceName, HeadingName, Program, ProgramConfig, Script, ShapePixelDefinition, SideName, Trigger } from './program/program';
 export { validateProgram } from './program/validate-program';
 export type { ScriptError } from './runtime/scheduler';

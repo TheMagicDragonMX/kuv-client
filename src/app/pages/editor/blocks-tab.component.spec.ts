@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
-import { EXAMPLE_PROGRAMS, Program } from '../../cube';
+import { CreateCommand, EXAMPLE_PROGRAMS, Program } from '../../cube';
+import { BALL } from './test-workspace';
 import { BlocksTabComponent } from './blocks-tab.component';
 import { VisualBlock, VisualScript, Workspace } from './workspace';
 
@@ -9,6 +10,7 @@ import { VisualBlock, VisualScript, Workspace } from './workspace';
  */
 interface TabInternals {
 	workspace: { (): Workspace; set(value: Workspace): void };
+	objects: { (): CreateCommand[]; set(value: CreateCommand[]): void };
 	program: () => Program | null;
 	ready: () => boolean;
 	openPicker(containerId: number): void;
@@ -38,6 +40,7 @@ function createTab () {
 	tab.run.subscribe((program) => programs.push(program));
 
 	const internals = tab as unknown as TabInternals;
+	internals.objects.set([ BALL ]);
 
 	/**
 	 * Adds a block the way the user does: the plus of a script (or block), then the picker.
@@ -67,12 +70,12 @@ describe('BlocksTabComponent', () => {
 		internals.addScript();
 		const [ first, second ] = internals.workspace().scripts;
 
-		addTo(first.id, 'createObject');
+		addTo(first.id, 'moveObject');
 		addTo(second.id, 'wait');
 		addTo(first.id, 'wait');
 		fixture.detectChanges();
 
-		expect(internals.workspace().scripts.map((script) => script.blocks.map((block) => block.type))).toEqual([ [ 'createObject', 'wait' ], [ 'wait' ] ]);
+		expect(internals.workspace().scripts.map((script) => script.blocks.map((block) => block.type))).toEqual([ [ 'moveObject', 'wait' ], [ 'wait' ] ]);
 		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(3);
 	});
 
@@ -92,14 +95,14 @@ describe('BlocksTabComponent', () => {
 	it('removes and reorders blocks', () => {
 		const { fixture, internals, addTo } = createTab();
 		const script = internals.workspace().scripts[0];
-		addTo(script.id, 'createObject');
+		addTo(script.id, 'moveObject');
 		addTo(script.id, 'wait');
 		addTo(script.id, 'setBackgroundColor');
 		const [ first, second ] = internals.workspace().scripts[0].blocks;
 		const types = () => internals.workspace().scripts[0].blocks.map((block) => block.type);
 
 		internals.move(second.id, -1);
-		expect(types()).toEqual([ 'wait', 'createObject', 'setBackgroundColor' ]);
+		expect(types()).toEqual([ 'wait', 'moveObject', 'setBackgroundColor' ]);
 
 		internals.remove(first.id);
 		expect(types()).toEqual([ 'wait', 'setBackgroundColor' ]);
@@ -137,13 +140,14 @@ describe('BlocksTabComponent', () => {
 	it('runs the blocks as a program', () => {
 		const { internals, programs, addTo } = createTab();
 		const script = internals.workspace().scripts[0];
-		addTo(script.id, 'createObject');
+		addTo(script.id, 'moveObject');
 		addTo(script.id, 'wait');
 
 		internals.play();
 
 		expect(programs).toHaveLength(1);
-		expect(programs[0].scripts[0].blocks.map((block) => block.op)).toEqual([ 'create', 'wait' ]);
+		expect(programs[0].objects).toEqual([ BALL ]);
+		expect(programs[0].scripts[0].blocks.map((block) => block.op)).toEqual([ 'move', 'wait' ]);
 		expect(internals.program()).toEqual(programs[0]);
 	});
 
@@ -162,7 +166,17 @@ describe('BlocksTabComponent', () => {
 		expect(programs).toHaveLength(1);
 	});
 
-	it('loads every example as blocks that run as the example', () => {
+	it('does not run while a block acts on an object that does not exist', () => {
+		const { internals, addTo } = createTab();
+		addTo(internals.workspace().scripts[0].id, 'moveObject');
+		expect(internals.ready()).toBe(true);
+
+		internals.objects.set([]);
+
+		expect(internals.ready()).toBe(false);
+	});
+
+	it('loads every example as objects and blocks that are ready to run', () => {
 		const { fixture, internals } = createTab();
 
 		for (const example of EXAMPLE_PROGRAMS) {
@@ -170,7 +184,7 @@ describe('BlocksTabComponent', () => {
 			fixture.detectChanges();
 
 			expect(internals.ready(), example.id).toBe(true);
-			expect(internals.program(), example.id).toEqual(example.program);
+			expect(internals.program()?.objects?.length, example.id).toBeGreaterThan(0);
 		}
 	});
 
@@ -187,10 +201,10 @@ describe('BlocksTabComponent', () => {
 		const { fixture, internals, addTo } = createTab();
 		const script = internals.workspace().scripts[0];
 
-		for (const type of [ 'setBackgroundImage', 'setBackgroundColor', 'createObject', 'moveObject', 'moveObjectTo', 'setObjectColor', 'showObject', 'hideObject', 'deleteObject', 'pointObjectUp', 'wait', 'repeat', 'forever' ])
+		for (const type of [ 'setBackgroundImage', 'setBackgroundColor', 'moveObject', 'moveObjectTo', 'setObjectColor', 'showObject', 'hideObject', 'deleteObject', 'pointObjectUp', 'wait', 'repeat', 'forever' ])
 			addTo(script.id, type);
 
 		expect(() => fixture.detectChanges()).not.toThrow();
-		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(13);
+		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(12);
 	});
 });

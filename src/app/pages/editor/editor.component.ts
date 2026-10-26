@@ -1,20 +1,22 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CubeComponent, Environment, Face } from '../../cube';
+import { CreateCommand, CubeComponent, Environment, Face } from '../../cube';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { BlocksTabComponent } from './blocks-tab.component';
+import { ObjectsPanelComponent } from './objects-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
 
 /**
- * The editor: a cube on one side, and on the other a panel with three tabs: the blocks, the
- * program (the JSON the blocks are turned into, read only) and the background. The page only
+ * The editor: a cube on one side, and on the other a panel with four tabs: the blocks, the
+ * objects they move, the background and the program (the JSON the blocks are turned into, read
+ * only). The page only
  * connects them to the cube: the program the blocks emit is run by the cube, and the environment
  * the background panel edits is shown by it.
  */
 @Component({
 	selector: 'app-editor',
 	standalone: true,
-	imports: [ RouterLink, CubeComponent, ProgramAreaComponent, BackgroundPanelComponent, BlocksTabComponent ],
+	imports: [ RouterLink, CubeComponent, ProgramAreaComponent, BackgroundPanelComponent, BlocksTabComponent, ObjectsPanelComponent ],
 	templateUrl: './editor.component.html',
 })
 export class EditorPage {
@@ -23,11 +25,17 @@ export class EditorPage {
 	 */
 	protected readonly tabs = [
 		{ id: 'blocks', label: 'Blocks' },
-		{ id: 'program', label: 'Program' },
+		{ id: 'objects', label: 'Objects' },
 		{ id: 'background', label: 'Background' },
+		{ id: 'program', label: 'Program' },
 	] as const;
 
 	protected readonly tab = signal<(typeof this.tabs)[number]['id']>('blocks');
+
+	/**
+	 * The objects of the program, made in the Objects tab and moved by the blocks.
+	 */
+	protected readonly objects = signal<CreateCommand[]>([]);
 
 	/**
 	 * The stage of the cube, edited by the background panel.

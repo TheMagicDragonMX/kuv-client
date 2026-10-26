@@ -336,6 +336,7 @@ Right now they work **per face**: a circle that hangs over the edge of FRONT is 
 
 Read it as a recipe: "when the program starts, create a red ball in front, then forever: move it up, wait a tenth of a second".
 
+- A program may also list **objects**: `create` blocks, with names that are not repeated, that exist from the start, before any script runs (and again after a reset). The editor's Objects tab makes them, and blocks act on them by name. A script can still create objects itself, as above.
 - A program has **scripts**. Each script has a **trigger** (when it starts: `start`, or `every N seconds`) and a list of **blocks**.
 - A **block** is a plain object with an `op` ("operation") plus its arguments. `forever` and `repeat` blocks contain other blocks in a `body`.
 - There are three kinds of blocks:
