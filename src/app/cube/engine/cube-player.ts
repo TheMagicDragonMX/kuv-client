@@ -11,8 +11,7 @@
  *   player.dispose();            // when finished with it
  *
  * It starts its timer on `play` and stops it by itself when the program is over (no script is
- * left running), so a finished program costs nothing. The exception is a video on a face: the
- * timer stays on while it plays, even with no program.
+ * left running), so a finished program costs nothing.
  */
 
 import { Environment } from '../environment/environment';
@@ -79,12 +78,11 @@ export class CubePlayer {
 	}
 
 	/**
-	 * Changes the pictures and videos on the faces and shows them at once, without disturbing
-	 * what runs. They stay through every run and reset. Throws an EngineError if one is invalid.
+	 * Changes the images on the faces and shows them at once, without disturbing what runs.
+	 * They stay through every run and reset. Throws an EngineError if a picture is invalid.
 	 */
 	setEnvironment (environment: Environment | undefined): void {
-		this.engine.setEnvironment(environment, this.loop.now());
-		this.sync();
+		this.engine.setEnvironment(environment);
 	}
 
 	/**
@@ -94,7 +92,10 @@ export class CubePlayer {
 	play (program: unknown): void {
 		this.engine.load(program);
 		this.engine.start(this.loop.now());
-		this.loop.start(this.tick);
+		this.loop.start((now) => {
+			this.engine.tick(now);
+			this.sync();
+		});
 		this.sync();
 	}
 
@@ -122,24 +123,13 @@ export class CubePlayer {
 	}
 
 	/**
-	 * One beat of the timer.
-	 */
-	private readonly tick = (now: number): void => {
-		this.engine.tick(now);
-		this.sync();
-	};
-
-	/**
-	 * Keeps the timer on while something is running or a video is playing, stops it when
-	 * nothing needs it, and reports changes of status.
+	 * Stops the timer when nothing is running any more, and reports changes of status.
 	 */
 	private sync (): void {
 		const running = this.engine.running;
 
-		if (!running && !this.engine.animated)
+		if (!running) 
 			this.loop.stop();
-		else if (!this.loop.running)
-			this.loop.start(this.tick);
 		
 		if (running !== this.reportedRunning) {
 			this.reportedRunning = running;

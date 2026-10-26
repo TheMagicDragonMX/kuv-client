@@ -19,7 +19,7 @@
 		}
 
 		@if (picture(); as image) {
-			@if (media()) {
+			@if (pixels()) {
 				<!-- Step 3: the result, and where it goes. -->
 				<div class="flex items-center gap-3">
 					<canvas
@@ -30,12 +30,7 @@
 						role="img"
 						aria-label="The picture as the cube will show it, 64 by 64 pixels"
 					></canvas>
-					<p class="text-[0.76rem] leading-relaxed text-slate-300">
-						This is how the cube will show it: 64 × 64 pixels, shrunk the same way the physical cube does.
-						@if (isVideo()) {
-							It plays over and over at {{ framesPerSecond }} frames per second.
-						}
-					</p>
+					<p class="text-[0.76rem] leading-relaxed text-slate-300">This is how the cube will show it: 64 × 64 pixels, shrunk the same way the physical cube does.</p>
 				</div>
 
 				<fieldset class="flex flex-col gap-2">
@@ -57,8 +52,8 @@
 								(click)="toggle(face.name)"
 							>
 								{{ face.label }}
-								@if (kindOf(face.name) !== 'plain') {
-									<span class="ml-1 text-emerald-300" [title]="'Has a ' + kindOf(face.name)" [attr.aria-label]="'has a ' + kindOf(face.name)">●</span>
+								@if (hasImage(face.name)) {
+									<span class="ml-1 text-emerald-300" title="Has a picture" aria-label="has a picture">●</span>
 								}
 							</button>
 						}
@@ -67,39 +62,31 @@
 
 				<div class="flex gap-2">
 					<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-[#0f172a] uppercase disabled:cursor-default disabled:opacity-40" [disabled]="selected().size === 0" (click)="apply()">Apply</button>
-					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="!selectedHaveMedia()" (click)="remove()">Remove</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="!selectedHaveImage()" (click)="remove()">Remove</button>
 				</div>
 
 				@if (message(); as text) {
 					<p class="text-[0.76rem] text-emerald-300" role="status">{{ text }}</p>
 				}
 
-				<button type="button" class="cursor-pointer self-start text-[0.76rem] font-semibold text-slate-400 underline hover:text-slate-200" (click)="discard()">Choose another file</button>
-			} @else if (progress(); as reading) {
-				<!-- Step 2b: a video is being cut into frames. -->
-				<div class="flex flex-col gap-3" role="status">
-					<p class="text-[0.76rem] text-slate-300">Reading the video… {{ reading.done }} of {{ reading.total }} frames</p>
-					<progress class="h-2 w-full accent-slate-300" [max]="reading.total" [value]="reading.done"></progress>
-					<button type="button" class="cursor-pointer self-start rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="discard()">Cancel</button>
-				</div>
+				<button type="button" class="cursor-pointer self-start text-[0.76rem] font-semibold text-slate-400 underline hover:text-slate-200" (click)="discard()">Choose another picture</button>
 			} @else {
 				<!-- Step 2: make it a square. -->
 				<app-image-cropper [image]="image" (cropped)="crop($event)" (cancelled)="discard()" />
-				<p class="text-[0.7rem] text-slate-400">Videos use the first {{ maxSeconds }} seconds, cut with this same square on every frame.</p>
 			}
 		} @else {
 			<!-- Step 1: pick a picture. -->
 			<label class="flex cursor-pointer flex-col items-center gap-2 rounded-[0.9rem] border border-dashed border-slate-400/30 px-4 py-8 text-center text-[0.76rem] text-slate-300 focus-within:border-slate-300/60 hover:bg-slate-400/10">
-				<span class="font-semibold tracking-[0.04em] uppercase">Pick a picture or a video</span>
+				<span class="font-semibold tracking-[0.04em] uppercase">Pick a picture</span>
 				<span class="text-slate-400">You will crop it to a square next.</span>
-				<input type="file" accept="image/*,video/*" class="sr-only" (change)="pick($event)" />
+				<input type="file" accept="image/*" class="sr-only" (change)="pick($event)" />
 			</label>
 
 			<div class="flex flex-col gap-2">
 				<h3 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">On the cube now</h3>
 				<ul class="flex flex-wrap gap-2 text-[0.76rem]">
 					@for (face of faces; track face.name) {
-						<li class="rounded-full border px-3 py-1" [class]="kindOf(face.name) !== 'plain' ? 'border-emerald-300/40 text-emerald-200' : 'border-slate-400/20 text-slate-500'">{{ face.label }}: {{ kindOf(face.name) }}</li>
+						<li class="rounded-full border px-3 py-1" [class]="hasImage(face.name) ? 'border-emerald-300/40 text-emerald-200' : 'border-slate-400/20 text-slate-500'">{{ face.label }}: {{ hasImage(face.name) ? 'picture' : 'plain' }}</li>
 					}
 				</ul>
 			</div>

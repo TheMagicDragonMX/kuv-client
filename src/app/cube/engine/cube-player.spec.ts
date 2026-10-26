@@ -1,4 +1,3 @@
-import { Environment } from '../environment/environment';
 import { ProgramError } from '../errors';
 import { Face } from '../state/cube-state';
 import { CubePlayer } from './cube-player';
@@ -100,47 +99,5 @@ describe('CubePlayer', () => {
 		player.dispose();
 
 		expect(vi.getTimerCount()).toBe(0);
-	});
-
-	describe('with a video on a face', () => {
-		const video: Environment = {
-			background: { FRONT: { fps: 10, frames: [ 1, 2, 3 ].map((color) => new Uint32Array(64 * 64).fill(color)) } },
-		};
-
-		it('plays it with no program running, and stops the timer when it is removed', () => {
-			const changes: boolean[] = [];
-			const player = new CubePlayer({ tickRate: 100, clock: () => time, onRunningChange: (running) => changes.push(running) });
-
-			player.setEnvironment(video);
-			expect(player.state.get(Face.FRONT, 0, 0)).toBe(1);
-
-			advance(120);
-			expect(player.state.get(Face.FRONT, 0, 0)).toBe(2);
-			expect(player.running).toBe(false);
-			expect(changes).toEqual([]);
-
-			player.setEnvironment(undefined);
-			expect(vi.getTimerCount()).toBe(0);
-		});
-
-		it('keeps the timer on after the program is over', () => {
-			const player = new CubePlayer({ tickRate: 100, clock: () => time });
-			player.setEnvironment(video);
-			player.play({ version: 1, scripts: [ { trigger: { type: 'start' }, blocks: [ { op: 'wait', seconds: 0.05 } ] } ] });
-
-			advance(250);
-
-			expect(player.running).toBe(false);
-			expect(vi.getTimerCount()).toBe(1);
-			player.dispose();
-		});
-
-		it('does not start a timer for a still picture', () => {
-			const player = new CubePlayer({ tickRate: 100, clock: () => time });
-
-			player.setEnvironment({ background: { FRONT: new Uint32Array(64 * 64).fill(5) } });
-
-			expect(vi.getTimerCount()).toBe(0);
-		});
 	});
 });
