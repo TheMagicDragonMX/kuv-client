@@ -7,13 +7,14 @@
  *   player.play(program);        // runs on its own, ticking in the background
  *   player.state                 // what the cube shows (give it to a 3D view)
  *   player.stop();               // stop the scripts, keep the picture
- *   player.reset();              // stop and blank the cube
+ *   player.reset();              // stop and clear the cube (only the environment stays)
  *   player.dispose();            // when finished with it
  *
  * It starts its timer on `play` and stops it by itself when the program is over (no script is
  * left running), so a finished program costs nothing.
  */
 
+import { Environment } from '../environment/environment';
 import { ProgramConfig } from '../program/program';
 import { CubeState } from '../state/cube-state';
 import { CubeEngine, CubeEngineOptions } from './cube-engine';
@@ -77,6 +78,14 @@ export class CubePlayer {
 	}
 
 	/**
+	 * Changes the images on the faces and shows them at once, without disturbing what runs.
+	 * They stay through every run and reset. Throws an EngineError if a picture is invalid.
+	 */
+	setEnvironment (environment: Environment | undefined): void {
+		this.engine.setEnvironment(environment);
+	}
+
+	/**
 	 * Checks the program and runs it from a clean cube. Throws a ProgramError, leaving
 	 * everything as it was, if the program is invalid.
 	 */
@@ -99,7 +108,7 @@ export class CubePlayer {
 	}
 
 	/**
-	 * Stops the scripts and blanks the cube.
+	 * Stops the scripts and clears the cube back to the environment.
 	 */
 	reset (): void {
 		this.engine.reset();

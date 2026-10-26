@@ -5,6 +5,7 @@
  * they fit:
  *
  *   program ──validate──▶ World ◀──commands── Scheduler ──runs──▶ Interpreter
+ *   environment ──paints background of──▶ │
  *                           │
  *                           └──read by──▶ Renderer ──writes──▶ state (CubeState)
  *
@@ -22,6 +23,7 @@
  *   engine.tick(66);
  */
 
+import { Environment, paintEnvironment } from '../environment/environment';
 import { GeometryConfig } from '../geometry/geometry';
 import { Program, ProgramConfig } from '../program/program';
 import { FACE_BY_NAME } from '../program/names';
@@ -69,6 +71,12 @@ export class CubeEngine {
 	 */
 	private defaults?: ProgramConfig;
 
+	/**
+	 * The stage the program runs on (images on the faces). It outlives programs: every start
+	 * and reset paints it again.
+	 */
+	private environment?: Environment;
+
 	constructor (private readonly options: CubeEngineOptions = {}) {
 		this.defaults = options.defaults;
 		this.build();
@@ -87,6 +95,18 @@ export class CubeEngine {
 	 */
 	setDefaults (defaults: ProgramConfig | undefined): void {
 		this.defaults = defaults;
+	}
+
+	/**
+	 * Changes the environment and shows it right away, even if nothing is running. A program
+	 * that is running is not restarted: the new pictures are painted on its background, and a
+	 * face whose picture was removed goes black. Throws an EngineError, leaving everything as it
+	 * was, if a picture is not the size of a face.
+	 */
+	setEnvironment (environment: Environment | undefined): void {
+		paintEnvironment(this.world, environment, this.environment);
+		this.environment = environment;
+		this.renderer.render();
 	}
 
 	/**
@@ -133,13 +153,15 @@ export class CubeEngine {
 
 	/**
 	 * Creates a fresh world, renderer and scheduler for the loaded program and draws the
-	 * (empty) result. Everything that changes while a program runs lives in those three, so
+	 * result, which is the environment alone because no script has run yet. Everything that changes while a program runs lives in those three, so
 	 * replacing them is what gives every run a clean start.
 	 */
 	private build (): void {
 		this.world = new World(this.geometryConfig());
 		this.renderer = new Renderer(this.world, this.state);
 		this.scheduler = new Scheduler(this.world, this.program.scripts, (error) => this.options.onError?.(error));
+
+		paintEnvironment(this.world, this.environment);
 
 		this.state.fill(0);
 		this.renderer.render();

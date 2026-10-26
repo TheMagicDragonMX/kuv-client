@@ -1,0 +1,35 @@
+<div class="flex flex-col gap-3">
+	<canvas
+		#canvas
+		class="aspect-square w-full cursor-grab touch-none rounded-[0.9rem] border border-slate-400/20 bg-slate-900/90 outline-none focus:border-slate-300/40 active:cursor-grabbing"
+		tabindex="0"
+		role="img"
+		aria-label="Crop area. Drag to move the picture, use the arrow keys to move it and the slider to zoom."
+		[width]="windowSize"
+		[height]="windowSize"
+		(pointerdown)="pointerDown($event)"
+		(pointermove)="pointerMove($event)"
+		(pointerup)="pointerUp()"
+		(pointercancel)="pointerUp()"
+		(wheel)="wheel($event)"
+		(keydown)="key($event)"
+	></canvas>
+
+	<label class="flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
+		Zoom
+		<input
+			type="range"
+			class="flex-1 accent-slate-300"
+			min="1"
+			[max]="maxZoom"
+			step="0.01"
+			[value]="zoom()"
+			(input)="setZoom(+$any($event.target).value)"
+		/>
+	</label>
+
+	<div class="flex gap-2">
+		<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-[#0f172a] uppercase" (click)="confirm()">Use this square</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="cancelled.emit()">Other picture</button>
+	</div>
+</div>

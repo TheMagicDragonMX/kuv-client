@@ -1,19 +1,36 @@
-import { Component } from '@angular/core';
+import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CubeComponent, Face } from '../../cube';
+import { CubeComponent, Environment, Face } from '../../cube';
+import { BackgroundPanelComponent } from './background-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
 
 /**
- * The editor: a cube on one side, the program area on the other. The page only connects the
- * two: whatever the program area emits is run by the cube.
+ * The editor: a cube on one side, and on the other a panel with two tabs: the program area and
+ * the background. The page only connects them to the cube: whatever the program area emits is
+ * run by the cube, and the environment the background panel edits is shown by it.
  */
 @Component({
 	selector: 'app-editor',
 	standalone: true,
-	imports: [ RouterLink, CubeComponent, ProgramAreaComponent ],
+	imports: [ RouterLink, CubeComponent, ProgramAreaComponent, BackgroundPanelComponent ],
 	templateUrl: './editor.component.html',
 })
 export class EditorPage {
+	/**
+	 * The tabs of the side panel.
+	 */
+	protected readonly tabs = [
+		{ id: 'program', label: 'Program' },
+		{ id: 'background', label: 'Background' },
+	] as const;
+
+	protected readonly tab = signal<(typeof this.tabs)[number]['id']>('program');
+
+	/**
+	 * The stage of the cube, edited by the background panel.
+	 */
+	protected readonly environment = signal<Environment>({});
+
 	/**
 	 * Faces the camera can turn to.
 	 */

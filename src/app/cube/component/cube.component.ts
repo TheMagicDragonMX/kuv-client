@@ -12,15 +12,16 @@
  *
  *   run(program?)       run a program (the `program` input when none is given)
  *   stop()              stop the scripts, keep what the cube shows
- *   reset()             stop and blank the cube
+ *   reset()             stop and clear the cube (the environment stays)
  *   showFace(face)      turn the camera to a face
  *   spin()              go back to the slow rotation
  *   running()           signal: is a program running?
  *   problem()           signal: message about why the last run failed, or null
  *   camera()            signal: the face being shown, or 'spin'
  *
- * Inputs: `program` (what to run), `autoplay` (run it whenever it changes) and `config`
- * (engine settings for programs that do not set their own, like `topAnchor` and `floor`).
+ * Inputs: `program` (what to run), `autoplay` (run it whenever it changes), `config`
+ * (engine settings for programs that do not set their own, like `topAnchor` and `floor`) and
+ * `environment` (the stage: pictures on the faces. It shows at once and stays through runs).
  */
 
 import {
@@ -37,8 +38,9 @@ import {
 	viewChild,
 } from '@angular/core';
 import { ThemeService } from '../../services/theme.service';
-import { ProgramError } from '../errors';
+import { EngineError, ProgramError } from '../errors';
 import { CubePlayer } from '../engine/cube-player';
+import { Environment } from '../environment/environment';
 import { ProgramConfig } from '../program/program';
 import { Face } from '../state/cube-state';
 import { CubeView } from '../view/cube-view';
@@ -65,6 +67,12 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	 * Engine settings used when the program does not set its own.
 	 */
 	readonly config = input<ProgramConfig>();
+
+	/**
+	 * The stage the programs run on: pictures on the faces. Shown at once, and kept when the
+	 * program stops, resets or runs again.
+	 */
+	readonly environment = input<Environment>();
 
 	private readonly runningState = signal(false);
 
@@ -102,6 +110,12 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 		effect(() => this.player.setDefaults(this.config()));
 
 		effect(() => {
+			const environment = this.environment();
+
+			untracked(() => this.applyEnvironment(environment));
+		});
+
+		effect(() => {
 			this.theme.theme();
 			this.applyFog();
 		});
@@ -119,6 +133,22 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	ngAfterViewInit (): void {
 		this.view = new CubeView(this.host().nativeElement, this.player.state);
 		this.applyFog();
+	}
+
+	/**
+	 * Shows the environment, reporting a picture of the wrong size as a problem.
+	 */
+	private applyEnvironment (environment: Environment | undefined): void {
+		try {
+			this.player.setEnvironment(environment);
+		}
+
+		catch (error) {
+			if (!(error instanceof EngineError))
+				throw error;
+
+			this.problemState.set(error.message);
+		}
 	}
 
 	/**

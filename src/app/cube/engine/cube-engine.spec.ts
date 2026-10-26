@@ -1,4 +1,5 @@
-import { ProgramError } from '../errors';
+import { EngineError, ProgramError } from '../errors';
+import { Environment } from '../environment/environment';
 import { EXAMPLE_PROGRAMS } from '../examples/example-programs';
 import { Program } from '../program/program';
 import { ScriptError } from '../runtime/scheduler';
@@ -225,5 +226,82 @@ describe('CubeEngine', () => {
 
 			expect(errors, example.id).toEqual([]);
 		}
+	});
+
+	describe('environment', () => {
+		/**
+		 * A picture of one color for a whole face.
+		 */
+		function solid (color: number): Uint32Array {
+			return new Uint32Array(64 * 64).fill(color);
+		}
+
+		it('shows the pictures at once, with nothing running', () => {
+			const engine = new CubeEngine();
+
+			engine.setEnvironment({ background: { LEFT: solid(0x112233) } });
+
+			expect(engine.state.get(Face.LEFT, 10, 10)).toBe(0x112233);
+			expect(engine.state.get(Face.FRONT, 10, 10)).toBe(0);
+		});
+
+		it('stays under the objects of a program, and through runs and resets', () => {
+			const engine = new CubeEngine();
+			engine.setEnvironment({ background: { FRONT: solid(0x00ff00) } });
+			engine.load(script({ op: 'create', name: 'a', face: 'FRONT', x: 5, y: 5, color: '#ff0000' }));
+
+			engine.start(0);
+			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0xff0000);
+			expect(engine.state.get(Face.FRONT, 6, 5)).toBe(0x00ff00);
+
+			engine.reset();
+			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0x00ff00);
+		});
+
+		it('does not restart a running program when it changes', () => {
+			const engine = new CubeEngine();
+			engine.load({ version: 1, scripts: [ { trigger: { type: 'start' }, blocks: [
+				{ op: 'create', name: 'a', face: 'FRONT', x: 5, y: 5, color: '#ff0000' },
+				{ op: 'forever', body: [ { op: 'wait', seconds: 1 } ] },
+			] } ] });
+			engine.start(0);
+
+			engine.setEnvironment({ background: { FRONT: solid(0x0000ff) } });
+
+			expect(engine.running).toBe(true);
+			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0xff0000);
+			expect(engine.state.get(Face.FRONT, 6, 5)).toBe(0x0000ff);
+		});
+
+		it('blanks a face when its picture is removed, and leaves the others', () => {
+			const engine = new CubeEngine();
+			const both: Environment = { background: { FRONT: solid(1), RIGHT: solid(2) } };
+			engine.setEnvironment(both);
+
+			engine.setEnvironment({ background: { RIGHT: solid(2) } });
+
+			expect(engine.state.get(Face.FRONT, 0, 0)).toBe(0);
+			expect(engine.state.get(Face.RIGHT, 0, 0)).toBe(2);
+
+			engine.setEnvironment(undefined);
+			expect(engine.state.get(Face.RIGHT, 0, 0)).toBe(0);
+		});
+
+		it('can be painted over by a program', () => {
+			const engine = new CubeEngine();
+			engine.setEnvironment({ background: { TOP: solid(0x00ff00) } });
+			engine.load(script({ op: 'clearBackground', color: '#000011' }));
+
+			engine.start(0);
+
+			expect(engine.state.get(Face.TOP, 0, 0)).toBe(0x000011);
+		});
+
+		it('rejects a picture that is not the size of a face, painting nothing', () => {
+			const engine = new CubeEngine();
+
+			expect(() => engine.setEnvironment({ background: { FRONT: solid(1), LEFT: new Uint32Array(10) } })).toThrow(EngineError);
+			expect(engine.state.get(Face.FRONT, 0, 0)).toBe(0);
+		});
 	});
 });

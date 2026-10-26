@@ -549,6 +549,18 @@ Notice there is no "erase the old position" step. Because every frame *starts ov
 
 **Where.** [renderer/renderer.ts](src/app/cube/renderer/renderer.ts)
 
+### 9.1 The environment: pictures under the program
+
+**The problem.** The user wants to dress the stage: put a picture on a face and then play with objects over it. A program is the wrong place for that: a 64×64 picture is 4,096 colors, the user did not write it as code, and every run starts from a new world (rule 6), which would wipe it.
+
+**The idea.** An **environment**, passed to the engine next to the program and not inside it. For now it holds one picture (64×64 colors) per face. The engine paints it onto the world's *background layer* before any script runs, and again on every start and reset. Because it goes through the background, the renderer needs to know nothing about it, objects draw on top of it, and a script can still paint over it (`clearBackground` wipes it, like anything else on the background).
+
+Changing the environment (`setEnvironment`) shows at once, even with nothing running, and does **not** restart a running program: the new pictures are painted on its background. A face whose picture was removed goes black.
+
+**From a photo to a face.** The cube has 64×64 pixels per face, so a picture has to be shrunk. `pixelate` does it the way the Raspberry Pi will: `rpi-rgb-led-matrix`'s image viewer shrinks with ImageMagick's `scale`, which averages the area of the original that each LED covers (a box filter, on the colors as written, with no gamma conversion). Transparent parts become black (LED off). It works on raw RGBA bytes and has no DOM, so it is the same code that can be written in Python. One thing the virtual cube does not copy is the brightness correction of the real panels: the library can apply a luminance curve to the colors on the LEDs, which makes mid-tones look darker there.
+
+**Where.** [environment/](src/app/cube/environment/) (`environment.ts`: the type and the painting, `pixelate.ts`: picture to pixels). The editor's panel for it is [pages/editor/background-panel.component.ts](src/app/pages/editor/background-panel.component.ts).
+
 ---
 
 ## 10. Putting it all together
@@ -768,6 +780,8 @@ state ← geometry ← world ← commands ← interpreter ← scheduler ← engi
 | What `wait`, `repeat`, `forever` mean | `runtime/interpreter.ts` |
 | When and in what order scripts run | `runtime/scheduler.ts` |
 | How the world becomes pixels | `renderer/renderer.ts` |
+| Pictures on the faces (the environment), shrinking a photo to 64×64 | `environment/environment.ts`, `environment/pixelate.ts` |
+| The editor's background panel and the square cropper | `pages/editor/background-panel.component.ts`, `pages/editor/image-cropper.component.ts` |
 | How to run a program from code | `engine/cube-engine.ts`, `engine/cube-player.ts` |
 | How the 3D cube looks | `view/` |
 | How a page uses the cube | `component/cube.component.ts` |
@@ -804,6 +818,6 @@ state ← geometry ← world ← commands ← interpreter ← scheduler ← engi
 3. Waits count from the scheduled wake-up time (with a capped catch-up).
 4. A command that changes nothing leaves the world's version alone.
 5. Every frame is drawn from scratch: background first, then objects.
-6. Every run starts from a new world.
+6. Every run starts from a new world (with the environment painted on its background).
 7. The engine never reads the clock.
 8. Programs are data, validated before they run, and unknown fields are errors.
