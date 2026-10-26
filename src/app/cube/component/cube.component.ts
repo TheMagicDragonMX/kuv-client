@@ -21,7 +21,7 @@
  *
  * Inputs: `program` (what to run), `autoplay` (run it whenever it changes), `config`
  * (engine settings for programs that do not set their own, like `topAnchor` and `floor`) and
- * `environment` (the stage: pictures on the faces. It shows at once and stays through runs).
+ * `environment` (the stage: pictures and videos on the faces. It shows at once and stays through runs).
  */
 
 import {
@@ -69,7 +69,7 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	readonly config = input<ProgramConfig>();
 
 	/**
-	 * The stage the programs run on: pictures on the faces. Shown at once, and kept when the
+	 * The stage the programs run on: pictures and videos on the faces. Shown at once, and kept when the
 	 * program stops, resets or runs again.
 	 */
 	readonly environment = input<Environment>();

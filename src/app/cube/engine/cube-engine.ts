@@ -23,7 +23,7 @@
  *   engine.tick(66);
  */
 
-import { Environment, paintEnvironment } from '../environment/environment';
+import { Environment, EnvironmentPainter } from '../environment/environment';
 import { GeometryConfig } from '../geometry/geometry';
 import { Program, ProgramConfig } from '../program/program';
 import { FACE_BY_NAME } from '../program/names';
@@ -72,10 +72,15 @@ export class CubeEngine {
 	private defaults?: ProgramConfig;
 
 	/**
-	 * The stage the program runs on (images on the faces). It outlives programs: every start
-	 * and reset paints it again.
+	 * The stage the program runs on (pictures and videos on the faces). It outlives programs:
+	 * every start and reset paints it again.
 	 */
-	private environment?: Environment;
+	private readonly environment = new EnvironmentPainter();
+
+	/**
+	 * Last time the engine was told, for the things that happen outside `start` and `tick`.
+	 */
+	private lastNow = 0;
 
 	constructor (private readonly options: CubeEngineOptions = {}) {
 		this.defaults = options.defaults;
@@ -98,14 +103,22 @@ export class CubeEngine {
 	}
 
 	/**
+	 * True while a video on a face is playing, which needs `tick` to be called even when no
+	 * script is running.
+	 */
+	get animated (): boolean {
+		return this.environment.animated;
+	}
+
+	/**
 	 * Changes the environment and shows it right away, even if nothing is running. A program
 	 * that is running is not restarted: the new pictures are painted on its background, and a
-	 * face whose picture was removed goes black. Throws an EngineError, leaving everything as it
-	 * was, if a picture is not the size of a face.
+	 * face whose picture was removed goes black. Videos start from their first frame at `now`.
+	 * Throws an EngineError, leaving everything as it was, if a picture is not the size of a face.
+	 * @param now Current time in milliseconds. Defaults to the last time the engine was told.
 	 */
-	setEnvironment (environment: Environment | undefined): void {
-		paintEnvironment(this.world, environment, this.environment);
-		this.environment = environment;
+	setEnvironment (environment: Environment | undefined, now = this.lastNow): void {
+		this.environment.set(this.world, environment, now);
 		this.renderer.render();
 	}
 
@@ -123,6 +136,7 @@ export class CubeEngine {
 	 * @param now Current time in milliseconds.
 	 */
 	start (now: number): void {
+		this.lastNow = now;
 		this.build();
 		this.scheduler.start(now);
 		this.tick(now);
@@ -133,6 +147,8 @@ export class CubeEngine {
 	 * @param now Current time in milliseconds. Must not go backwards.
 	 */
 	tick (now: number): void {
+		this.lastNow = now;
+		this.environment.update(this.world, now);
 		this.scheduler.tick(now);
 		this.renderer.render();
 	}
@@ -161,7 +177,7 @@ export class CubeEngine {
 		this.renderer = new Renderer(this.world, this.state);
 		this.scheduler = new Scheduler(this.world, this.program.scripts, (error) => this.options.onError?.(error));
 
-		paintEnvironment(this.world, this.environment);
+		this.environment.attach(this.world, this.lastNow);
 
 		this.state.fill(0);
 		this.renderer.render();

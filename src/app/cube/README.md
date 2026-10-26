@@ -16,7 +16,7 @@ On any page, put the component in the template, give it a size, give it a progra
 import { CubeComponent } from '../../cube';   // always import from the folder, never from inside it
 ```
 
-To put pictures on the faces, give it an environment (shown at once, and kept through runs and resets):
+To put pictures or videos on the faces, give it an environment (shown at once, and kept through runs and resets; a video is a list of 64×64 frames and a speed, `{ frames, fps }`):
 
 ```html
 <app-cube #cube [environment]="{ background: { FRONT: pixels } }" />   <!-- pixels: 64 * 64 colors, from pixelate() -->
@@ -24,7 +24,7 @@ To put pictures on the faces, give it an environment (shown at once, and kept th
 
 Anything else is on the template reference: `cube.run(program)`, `cube.stop()`, `cube.reset()`, `cube.showFace(face)`, `cube.spin()`, and the signals `cube.running()`, `cube.problem()` and `cube.camera()`. The full list is at the top of [component/cube.component.ts](component/cube.component.ts).
 
-The editor page does exactly this, plus a side panel with two tabs next to the cube ([pages/editor/](../pages/editor/)): the program area, and the background panel, where the user picks a picture, crops it to a square and chooses the faces it goes on.
+The editor page does exactly this, plus a side panel with two tabs next to the cube ([pages/editor/](../pages/editor/)): the program area, and the background panel, where the user picks a picture or video, crops it to a square and chooses the faces it goes on.
 
 ## The layers
 
@@ -55,7 +55,7 @@ environment (pictures on the faces) ──painted onto the world's background by
 | `commands/` | `apply-command.ts` | Looks up a command in `blocks/` and applies it to the world |
 | `runtime/` | `interpreter.ts` | Runs the blocks of one script, pausing at `wait` and between loop iterations |
 | | `scheduler.ts` | Decides when each script gets its turn |
-| `environment/` | `environment.ts` | The stage a program runs on: the picture of each face. Painted onto the background by the engine, and kept through runs and resets |
+| `environment/` | `environment.ts` | The stage a program runs on: the picture or video of each face. Painted onto the background by the engine (a video frame by frame, as the time passed to `tick` goes by), and kept through runs and resets |
 | | `pixelate.ts` | Shrinks a picture (raw RGBA bytes) to the 64×64 of a face the way the Raspberry Pi library does (box filter) |
 | `renderer/` | `renderer.ts` | Turns the world into pixels |
 | `engine/` | `cube-engine.ts` | Puts the layers together; pure, takes the time as an argument |
@@ -79,7 +79,7 @@ Rules that keep it this way:
 
 **Add a block** (for example `turn`): create its file in the folder of its category in `blocks/` and register it in that folder's `index.ts`. Nothing else changes. Step by step in [blocks/README.md](blocks/README.md#add-a-block).
 
-**Change what the editor offers for the background:** `pages/editor/background-panel.component.ts` (the steps) and `image-cropper.component.ts` (the square cropper, whose math is in `crop.ts`). To add another way to handle the background (a color, a pattern), add a mode to the panel and put whatever it produces in the `Environment` type (`environment/environment.ts`).
+**Change what the editor offers for the background:** `pages/editor/background-panel.component.ts` (the steps) and `image-cropper.component.ts` (the square cropper, whose math is in `crop.ts`) and `video-frames.ts` (cutting a video into frames). To add another way to handle the background (a color, a pattern), add a mode to the panel and put whatever it produces in the `Environment` type (`environment/environment.ts`).
 
 **Change how faces connect, headings or the floor:** `geometry/geometry.ts`. Nothing else computes edges.
 

@@ -297,6 +297,96 @@ describe('CubeEngine', () => {
 			expect(engine.state.get(Face.TOP, 0, 0)).toBe(0x000011);
 		});
 
+		describe('videos', () => {
+			/**
+			 * A video of one flat color per frame, shown 10 times a second.
+			 */
+			function video (...colors: number[]): Environment {
+				return { background: { FRONT: { fps: 10, frames: colors.map(solid) } } };
+			}
+
+			it('shows the first frame at once and plays the rest as time passes', () => {
+				const engine = new CubeEngine();
+				engine.setEnvironment(video(1, 2, 3), 1000);
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(1);
+
+				engine.tick(1100);
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(2);
+
+				engine.tick(1250);
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(3);
+			});
+
+			it('starts over when it ends', () => {
+				const engine = new CubeEngine();
+				engine.setEnvironment(video(1, 2, 3), 0);
+
+				engine.tick(300);
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(1);
+
+				engine.tick(450);
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(2);
+			});
+
+			it('says it is animated only while a video with several frames is there', () => {
+				const engine = new CubeEngine();
+				expect(engine.animated).toBe(false);
+
+				engine.setEnvironment(video(1, 2));
+				expect(engine.animated).toBe(true);
+
+				engine.setEnvironment(video(1));
+				expect(engine.animated).toBe(false);
+
+				engine.setEnvironment({ background: { FRONT: solid(1) } });
+				expect(engine.animated).toBe(false);
+			});
+
+			it('only touches the world when the frame changes', () => {
+				const engine = new CubeEngine();
+				engine.setEnvironment(video(1, 2), 0);
+				engine.tick(10);
+				const version = engine.state.version;
+
+				engine.tick(50);
+				engine.tick(90);
+
+				expect(engine.state.version).toBe(version);
+			});
+
+			it('keeps playing from where it was when a program starts and when the cube is reset', () => {
+				const engine = new CubeEngine();
+				engine.setEnvironment(video(1, 2, 3), 0);
+				engine.tick(150);
+				engine.load(script({ op: 'create', name: 'a', face: 'FRONT', x: 5, y: 5, color: '#ff0000' }));
+
+				engine.start(170);
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(2);
+				expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0xff0000);
+
+				engine.reset();
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(2);
+				expect(engine.state.get(Face.FRONT, 5, 5)).toBe(2);
+			});
+
+			it('blanks the face when the video is removed', () => {
+				const engine = new CubeEngine();
+				engine.setEnvironment(video(7, 8), 0);
+
+				engine.setEnvironment(undefined, 10);
+
+				expect(engine.state.get(Face.FRONT, 0, 0)).toBe(0);
+			});
+
+			it('rejects a video with no frames, a bad speed or a frame of the wrong size', () => {
+				const engine = new CubeEngine();
+
+				expect(() => engine.setEnvironment({ background: { FRONT: { fps: 10, frames: [] } } })).toThrow(EngineError);
+				expect(() => engine.setEnvironment({ background: { FRONT: { fps: 0, frames: [ solid(1) ] } } })).toThrow(EngineError);
+				expect(() => engine.setEnvironment({ background: { FRONT: { fps: 10, frames: [ solid(1), new Uint32Array(5) ] } } })).toThrow(EngineError);
+			});
+		});
+
 		it('rejects a picture that is not the size of a face, painting nothing', () => {
 			const engine = new CubeEngine();
 

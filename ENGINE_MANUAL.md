@@ -553,13 +553,19 @@ Notice there is no "erase the old position" step. Because every frame *starts ov
 
 **The problem.** The user wants to dress the stage: put a picture on a face and then play with objects over it. A program is the wrong place for that: a 64×64 picture is 4,096 colors, the user did not write it as code, and every run starts from a new world (rule 6), which would wipe it.
 
-**The idea.** An **environment**, passed to the engine next to the program and not inside it. For now it holds one picture (64×64 colors) per face. The engine paints it onto the world's *background layer* before any script runs, and again on every start and reset. Because it goes through the background, the renderer needs to know nothing about it, objects draw on top of it, and a script can still paint over it (`clearBackground` wipes it, like anything else on the background).
+**The idea.** An **environment**, passed to the engine next to the program and not inside it. For now it holds one thing per face: a picture (64×64 colors) or a video. The engine paints it onto the world's *background layer* before any script runs, and again on every start and reset. Because it goes through the background, the renderer needs to know nothing about it, objects draw on top of it, and a script can still paint over it (`clearBackground` wipes it, like anything else on the background).
 
 Changing the environment (`setEnvironment`) shows at once, even with nothing running, and does **not** restart a running program: the new pictures are painted on its background. A face whose picture was removed goes black.
 
+**Videos.** The Raspberry Pi cannot decode video at that size, so a video reaches the engine already cut into pictures: an `Animation` is a list of frames (each one the pixels of a face) and the frames per second. The engine plays it without reading a clock: `tick(now)` is told the time, and an `EnvironmentPainter` works out which frame is due (`floor(elapsed * fps) % frames`), paints it only when it changed (so a frame held for several ticks costs nothing and does not redraw the cube), and starts over when the video ends. The same frames can be shared by several faces, so "All" does not multiply the memory.
+
+Two details come from this. First, nothing was running before to keep the timer alive when no script was: now the player keeps its timer on while a video plays (`engine.animated`), even with no program, and stops it when the video is removed. Second, a video paints its frame again each time it changes, so something a script draws on that face lasts only until the next frame; on a face with a picture it lasts for good. A run or reset does not restart the video: it keeps playing from where it was.
+
+In the editor the video is cropped on its first frame, and the same square is used on every frame. The frames are read by seeking (the first 10 seconds, 15 per second, in [pages/editor/video-frames.ts](src/app/pages/editor/video-frames.ts)) and each one goes through the same `pixelate`.
+
 **From a photo to a face.** The cube has 64×64 pixels per face, so a picture has to be shrunk. `pixelate` does it the way the Raspberry Pi will: `rpi-rgb-led-matrix`'s image viewer shrinks with ImageMagick's `scale`, which averages the area of the original that each LED covers (a box filter, on the colors as written, with no gamma conversion). Transparent parts become black (LED off). It works on raw RGBA bytes and has no DOM, so it is the same code that can be written in Python. One thing the virtual cube does not copy is the brightness correction of the real panels: the library can apply a luminance curve to the colors on the LEDs, which makes mid-tones look darker there.
 
-**Where.** [environment/](src/app/cube/environment/) (`environment.ts`: the type and the painting, `pixelate.ts`: picture to pixels). The editor's panel for it is [pages/editor/background-panel.component.ts](src/app/pages/editor/background-panel.component.ts).
+**Where.** [environment/](src/app/cube/environment/) (`environment.ts`: the types, the painter and the video playing, `pixelate.ts`: picture to pixels). The editor's panel for it is [pages/editor/background-panel.component.ts](src/app/pages/editor/background-panel.component.ts).
 
 ---
 

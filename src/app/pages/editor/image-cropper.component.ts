@@ -10,7 +10,7 @@ import {
 	viewChild,
 } from '@angular/core';
 import { RawImage } from '../../cube';
-import { MAX_ZOOM, centerOf, cropOf } from './crop';
+import { Crop, MAX_ZOOM, centerOf, cropOf } from './crop';
 
 /**
  * Size, in pixels, the crop window is drawn at. The element scales to the width it is given.
@@ -22,6 +22,15 @@ const WINDOW = 480;
  * only to keep the work small: the final shrinking to a face is done by `pixelate`.
  */
 const MAX_OUTPUT = 1024;
+
+/**
+ * What the cropper hands back: the pixels of the chosen square, and where it is in the picture
+ * (for a video, which is cropped on one frame and cut with the same square on all of them).
+ */
+export interface CroppedPicture {
+	pixels: RawImage;
+	crop: Crop;
+}
 
 /**
  * Lets the user choose a square part of a picture: drag to move, wheel or slider to zoom. It
@@ -40,9 +49,9 @@ export class ImageCropperComponent {
 	readonly image = input.required<ImageBitmap>();
 
 	/**
-	 * The user is happy with the square: here are its pixels.
+	 * The user is happy with the square: here it is.
 	 */
-	readonly cropped = output<RawImage>();
+	readonly cropped = output<CroppedPicture>();
 
 	/**
 	 * The user wants to choose another picture.
@@ -174,7 +183,7 @@ export class ImageCropperComponent {
 		context.drawImage(this.image(), x, y, side, side, 0, 0, size, size);
 
 		const { width, height, data } = context.getImageData(0, 0, size, size);
-		this.cropped.emit({ width, height, data });
+		this.cropped.emit({ pixels: { width, height, data }, crop: { x, y, side } });
 	}
 
 	/**
