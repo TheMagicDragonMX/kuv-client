@@ -1,4 +1,4 @@
-import { Block } from '../program/program';
+import { Block } from '../blocks';
 import { World } from '../world/world';
 import { Pause, runBlocks } from './interpreter';
 

@@ -11,11 +11,12 @@
  * Unknown fields are rejected on purpose: a typo like `cont` instead of `count` would
  * otherwise be silently ignored and the block would do something unexpected.
  *
- * What a valid block looks like is not written here but in `block-schemas.ts`.
+ * What a valid block looks like is not written here but in the file of each block, in
+ * `blocks/`. This file only reads it.
  */
 
 import { ProgramError } from '../errors';
-import { BLOCK_SCHEMAS, BlockSchema, FieldKind } from './block-schemas';
+import { Block, FieldKind, getBlockDefinition } from '../blocks';
 import { FACE_BY_NAME, HEADING_BY_NAME, isColorValue } from './names';
 import { Program } from './program';
 
@@ -115,11 +116,13 @@ function validateBlock (value: unknown, path: string): void {
 	const block = expectObject(value, path);
 	const op = block['op'];
 
-	if (typeof op !== 'string' || !Object.hasOwn(BLOCK_SCHEMAS, op)) {
+	const definition = typeof op === 'string' ? getBlockDefinition(op) : undefined;
+
+	if (definition === undefined) {
 		fail(`${path}.op`, `unknown block ${JSON.stringify(op)}`);
 	}
 
-	const schema: BlockSchema = BLOCK_SCHEMAS[op as keyof typeof BLOCK_SCHEMAS];
+	const schema = definition.schema;
 	expectOnlyKeys(block, [ 'op', ...Object.keys(schema) ], path);
 
 	for (const [ name, field ] of Object.entries(schema)) {
@@ -135,8 +138,10 @@ function validateBlock (value: unknown, path: string): void {
 		validateField(field.kind, fieldValue, `${path}.${name}`);
 	}
 
-	if (op === 'drawBitmap' && (block['pixels'] as unknown[]).length !== (block['width'] as number) * (block['height'] as number)) {
-		fail(`${path}.pixels`, 'must have width * height colors');
+	const problem = definition.validate?.(block as unknown as Block);
+
+	if (problem !== undefined) {
+		fail(`${path}.${problem.field}`, problem.message);
 	}
 }
 

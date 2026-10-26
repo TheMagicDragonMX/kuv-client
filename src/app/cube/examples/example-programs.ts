@@ -7,7 +7,8 @@
  */
 
 import { formatColor, parseColor } from '../program/names';
-import { Block, ColorValue, Program, Script, ShapePixelDefinition, SideName } from '../program/program';
+import { Block } from '../blocks';
+import { ColorValue, Program, Script, ShapePixelDefinition, SideName } from '../program/program';
 
 /**
  * A program with a name and a description for showing in a menu.

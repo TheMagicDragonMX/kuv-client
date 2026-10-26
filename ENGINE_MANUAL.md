@@ -362,18 +362,18 @@ scripts[0].blocks[2].count: must be a whole number, zero or more
 
 It deliberately **rejects unknown fields**. Without that, a typo such as `"cont": 5` instead of `"count": 5` would be silently ignored and the block would do the wrong thing with no explanation.
 
-The rules for each block are not hard-coded in the validator. They live in a **schema table**: for each `op`, which fields exist and what kind of value each takes. The validator just reads the table. That table is also exactly what you will consult when you build a Blockly block, because it is the list of that block's inputs.
+The rules for each block are not hard-coded in the validator. Each block's file in [blocks/](src/app/cube/blocks/) has a **schema**: which fields exist and what kind of value each takes (plus, when needed, a rule between several fields). The validator just looks the block up by its `op` and reads it. That schema is also exactly what you will consult when you build a Blockly block, because it is the list of that block's inputs.
 
-TypeScript helps too: the schema table is declared so the compiler fails if a block type exists without a schema.
+TypeScript helps too: a block's schema must have exactly the fields of its type, and the registry fails to compile if a block type exists without a definition.
 
-**Where.** All in [program/](src/app/cube/program/):
+**Where.** [program/](src/app/cube/program/) and [blocks/](src/app/cube/blocks/):
 
 | File | Role |
 | --- | --- |
-| `program.ts` | The types: what a program is |
-| `names.ts` | Readable names ⇄ engine values |
-| `block-schemas.ts` | The table of fields per block |
-| `validate-program.ts` | The checker |
+| `program/program.ts` | The types: what a program, a script and a trigger are |
+| `program/names.ts` | Readable names ⇄ engine values |
+| `program/validate-program.ts` | The checker |
+| `blocks/<category>/<block>.ts` | One block: its type, its schema, what it does |
 
 [examples/example-programs.ts](src/app/cube/examples/example-programs.ts) has four complete, valid programs to read.
 
@@ -395,15 +395,15 @@ That is the whole function. Notice what is *not* there: no edge calculations, no
 
 A small but valuable detail: if a command changes nothing, it does not touch the world at all (it checks that `move` returned the same pose object, or that the color is already that color). That keeps the world's `version` still, which lets the renderer skip the frame (chapter 9). A ball pushed against the floor, "moving down" forever, costs nothing.
 
-The commands layer is split into three files to keep each job single:
+Each function lives in the file of its block, in the folder of its category under [blocks/](src/app/cube/blocks/):
 
-- **Object commands:** what `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete` and `pointUp` do.
-- **Background commands:** what each painting block does: convert the names, call a drawing primitive from chapter 4, aim it at the world's background layer.
-- **The dispatcher (`applyCommand`):** a `switch` on `op` that calls the right function. It has no logic of its own. It also ends with a safety net: if a new block type is added to the types but forgotten here, the TypeScript compiler refuses to build.
+- **Object blocks:** what `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete` and `pointUp` do.
+- **Background blocks:** what each painting block does: convert the names, call a drawing primitive from chapter 4, aim it at the world's background layer.
+- **The dispatcher (`applyCommand`):** looks the command up by `op` in the blocks registry and runs its `apply`. It has no logic of its own, and adding a block does not change it. The registry is typed so that a block type without a definition does not compile.
 
 Control blocks (`wait`, `repeat`, `forever`) are not commands. They do not change the world; they decide *when* other blocks run, which is the next chapter's problem.
 
-**Where.** [commands/](src/app/cube/commands/)
+**Where.** [blocks/](src/app/cube/blocks/) (the blocks) and [commands/](src/app/cube/commands/) (the dispatcher)
 
 ---
 
@@ -761,8 +761,9 @@ state ← geometry ← world ← commands ← interpreter ← scheduler ← engi
 | How faces connect, headings, the floor, the top anchor | `geometry/geometry.ts` |
 | What an object is | `world/cube-object.ts` |
 | How objects and the background are stored | `world/world.ts` |
-| What a block does | `commands/object-commands.ts`, `commands/background-commands.ts` |
-| What blocks exist and what fields they have | `program/program.ts`, `program/block-schemas.ts` |
+| What a block does, what fields it has | `blocks/<category>/<block>.ts` (see `blocks/README.md`) |
+| What blocks exist, how to add one | `blocks/README.md`, `blocks/index.ts` |
+| What a program, script and trigger are | `program/program.ts` |
 | Why a program is rejected | `program/validate-program.ts` |
 | What `wait`, `repeat`, `forever` mean | `runtime/interpreter.ts` |
 | When and in what order scripts run | `runtime/scheduler.ts` |

@@ -23,8 +23,8 @@
  * and *when* a paused script continues is decided by the scheduler.
  */
 
+import { Block } from '../blocks';
 import { applyCommand, isCommand } from '../commands/apply-command';
-import { Block } from '../program/program';
 import { World } from '../world/world';
 
 /**

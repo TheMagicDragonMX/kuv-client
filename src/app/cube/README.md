@@ -28,6 +28,8 @@ Each layer does one thing and only uses the layers above it in this table. The d
 program (JSON) ──▶ interpreter + scheduler ──▶ world ──▶ renderer ──▶ state ──▶ 3D view
                          │                       ▲
                          └──── commands ─────────┘
+                                   │
+                                 blocks (what each block is and does)
 ```
 
 | Folder | File | The one thing it does |
@@ -36,13 +38,13 @@ program (JSON) ──▶ interpreter + scheduler ──▶ world ──▶ rende
 | `geometry/` | `geometry.ts` | Answers "if an object steps this way, where does it end up?": the strip, the top face, headings, edges, the floor |
 | `drawing/` | `pixel.ts`, `shapes.ts`, `bitmap.ts` | Draws pixels, lines, rectangles, circles and pictures on one face of a state |
 | `world/` | `cube-object.ts`, `world.ts` | Stores what exists: the objects and the background layer |
-| `program/` | `program.ts` | The shape of a program (the JSON contract with Blockly and the Pi) |
+| `blocks/` | `object/`, `background/`, `control/` | **One file per block**, in the folder of its category: its type, its fields and what it does. See [blocks/README.md](blocks/README.md) |
+| | `index.ts` | Joins the categories: the `Block` types and the definition of a block by its `op` |
+| | `block-definition.ts`, `fields.ts` | What every block file must provide, and the kinds of field value |
+| `program/` | `program.ts` | The shape of a program: scripts, triggers and config (the JSON contract with Blockly and the Pi) |
 | | `names.ts` | Converts readable names (`'FRONT'`, `'#ff0000'`) to engine values |
-| | `block-schemas.ts` | A table of which fields each block has |
-| | `validate-program.ts` | Checks that something really is a program, with errors that say where |
-| `commands/` | `object-commands.ts` | What each object block does to the world |
-| | `background-commands.ts` | What each background (advanced) block paints |
-| | `apply-command.ts` | Calls the right one for a block |
+| | `validate-program.ts` | Checks that something really is a program, with errors that say where. Reads each block's schema from `blocks/` |
+| `commands/` | `apply-command.ts` | Looks up a command in `blocks/` and applies it to the world |
 | `runtime/` | `interpreter.ts` | Runs the blocks of one script, pausing at `wait` and between loop iterations |
 | | `scheduler.ts` | Decides when each script gets its turn |
 | `renderer/` | `renderer.ts` | Turns the world into pixels |
@@ -65,13 +67,7 @@ Rules that keep it this way:
 
 ## Common changes
 
-**Add a block** (for example `rotate`):
-
-1. Add its type to `program/program.ts` and to the `Command` or `ControlBlock` union.
-2. Add its fields to `program/block-schemas.ts`. The compiler fails if you forget.
-3. Write what it does in `commands/object-commands.ts` (or `background-commands.ts`).
-4. Add its case in `commands/apply-command.ts`. The compiler fails if you forget.
-5. Add tests, and update the block table in CUBE_DESIGN.md.
+**Add a block** (for example `turn`): create its file in the folder of its category in `blocks/` and register it in that folder's `index.ts`. Nothing else changes. Step by step in [blocks/README.md](blocks/README.md#add-a-block).
 
 **Change how faces connect, headings or the floor:** `geometry/geometry.ts`. Nothing else computes edges.
 

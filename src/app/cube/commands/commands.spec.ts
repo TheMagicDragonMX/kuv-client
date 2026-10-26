@@ -1,6 +1,6 @@
 import { EngineError } from '../errors';
 import { Heading } from '../geometry/geometry';
-import { Command } from '../program/program';
+import { Command } from '../blocks';
 import { Face } from '../state/cube-state';
 import { World } from '../world/world';
 import { applyCommand, isCommand } from './apply-command';
