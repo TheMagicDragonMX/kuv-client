@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import {
 	ChangeDetectionStrategy,
 	Component,
@@ -9,22 +10,31 @@ import {
 	signal,
 	viewChild,
 } from '@angular/core';
-import { FaceName, Program, RawImage, pixelate } from '../../cube';
+import { EXAMPLE_PROGRAMS, FaceName, Program, RawImage, SideName, pixelate } from '../../cube';
 import { FACE_OPTIONS } from './faces';
 import { ImageCropperComponent } from './image-cropper.component';
 import { PixelPreviewComponent } from './pixel-preview.component';
+import { CATEGORIES, Category, FieldValue, VISUAL_BLOCKS, VisualBlockSpec, specOf } from './visual-blocks';
 import {
-	CATEGORIES,
-	Category,
-	FieldValue,
-	VISUAL_BLOCKS,
 	VisualBlock,
-	compileBlocks,
+	VisualScript,
+	Workspace,
+	addBlock,
+	addScript,
+	compileWorkspace,
+	countBlocks,
+	emptyWorkspace,
+	moveItem,
 	newBlock,
-	objectsAbove,
+	newScript,
+	objectNames,
 	problemsOf,
-	specOf,
-} from './visual-blocks';
+	removeItem,
+	setConfig,
+	setTrigger,
+	setValue,
+	workspaceFromProgram,
+} from './workspace';
 
 /**
  * Colors that tell the categories apart: the stripe of a block and the dot in the picker.
@@ -32,21 +42,22 @@ import {
 const ACCENTS: Record<Category, string> = {
 	Background: 'border-l-sky-400',
 	Objects: 'border-l-pink-400',
-	Time: 'border-l-amber-400',
+	Control: 'border-l-amber-400',
 };
 
 /**
- * Where the user builds a program out of blocks. For now the blocks are only a picture of the
- * program: they are stacked in a container, a plus button adds the next one, and Run turns the
- * stack into the program the cube runs (see `visual-blocks.ts`). When Blockly arrives this
- * component is replaced by the block workspace, and the page does not change: all that
- * matters is that it emits a program on `run`.
+ * Where the user builds a program out of blocks. The blocks are the source of truth: the
+ * program (the JSON of the Program tab, and what the cube runs) is made from them, never the
+ * other way round. They are stacked in scripts, a plus button adds the next one, and Run sends
+ * the program to the cube (see `workspace.ts`). The examples are programs turned into blocks.
+ * When Blockly arrives this component is replaced by the block workspace, and the page does not
+ * change: all that matters is that it emits a program on `run`.
  */
 @Component({
 	selector: 'app-blocks-tab',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ ImageCropperComponent, PixelPreviewComponent ],
+	imports: [ ImageCropperComponent, NgTemplateOutlet, PixelPreviewComponent ],
 	templateUrl: './blocks-tab.component.html',
 })
 export class BlocksTabComponent implements OnDestroy {
@@ -77,7 +88,9 @@ export class BlocksTabComponent implements OnDestroy {
 
 	protected readonly faces = FACE_OPTIONS;
 
-	protected readonly blockTypes = VISUAL_BLOCKS;
+	protected readonly examples = EXAMPLE_PROGRAMS;
+
+	protected readonly sides: SideName[] = [ 'FRONT', 'RIGHT', 'BACK', 'LEFT' ];
 
 	/**
 	 * The picker, grouped the way it is shown.
@@ -88,24 +101,33 @@ export class BlocksTabComponent implements OnDestroy {
 		blocks: VISUAL_BLOCKS.filter((spec) => spec.category === name),
 	}));
 
-	protected readonly stack = signal<VisualBlock[]>([]);
+	/**
+	 * Everything the user built. It starts with one script that runs when the program starts.
+	 */
+	protected readonly workspace = signal<Workspace>(addScript(emptyWorkspace(), newScript(0)));
 
 	/**
-	 * Run the stack again and again instead of once.
+	 * What is missing in each block or script, by id.
 	 */
-	protected readonly repeat = signal(false);
+	protected readonly problems = computed(() => problemsOf(this.workspace()));
 
 	/**
-	 * What is missing in each block, by id.
+	 * The objects the blocks create: what a block can act on.
 	 */
-	protected readonly problems = computed(() => problemsOf(this.stack()));
+	protected readonly objects = computed(() => objectNames(this.workspace()));
+
+	protected readonly ready = computed(() => 0 < countBlocks(this.workspace()) && 0 === this.problems().size);
 
 	/**
-	 * The objects the blocks above each block create, by id: what a block can act on.
+	 * The program the blocks stand for, or null while they are not ready to run. The page shows
+	 * it in the Program tab.
 	 */
-	protected readonly objects = computed(() => objectsAbove(this.stack()));
+	readonly program = computed<Program | null>(() => this.ready() ? compileWorkspace(this.workspace()) : null);
 
-	protected readonly ready = computed(() => 0 < this.stack().length && 0 === this.problems().size);
+	/**
+	 * Where the picker adds the block: the id of the script or block it goes in.
+	 */
+	private pickerTarget = 0;
 
 	/**
 	 * The image field being filled in the dialog: which block and which field.
@@ -129,15 +151,19 @@ export class BlocksTabComponent implements OnDestroy {
 		this.picture()?.close();
 	}
 
-	protected specOf = specOf;
+	protected readonly specOf: (type: string) => VisualBlockSpec = specOf;
 
 	protected accent (category: Category): string {
 		return ACCENTS[category];
 	}
 
-	// --- The stack
+	// --- The workspace
 
-	protected openPicker (): void {
+	/**
+	 * Opens the picker to add a block to a script, or inside a block.
+	 */
+	protected openPicker (containerId: number): void {
+		this.pickerTarget = containerId;
 		this.picker().nativeElement.showModal();
 	}
 
@@ -146,35 +172,63 @@ export class BlocksTabComponent implements OnDestroy {
 	}
 
 	/**
-	 * Adds a block at the end of the stack and closes the picker.
+	 * Adds a block at the end of the place the picker was opened from, and closes the picker.
 	 */
 	protected add (type: string): void {
-		this.stack.update((stack) => [ ...stack, newBlock(type, this.nextId++, stack) ]);
+		this.workspace.update((workspace) => addBlock(workspace, this.pickerTarget, newBlock(type, this.nextId++, workspace)));
 		this.picker().nativeElement.close();
 	}
 
+	protected addScript (): void {
+		this.workspace.update((workspace) => addScript(workspace, newScript(this.nextId++)));
+	}
+
+	/**
+	 * Removes a script or a block, with what is inside it.
+	 */
 	protected remove (id: number): void {
-		this.stack.update((stack) => stack.filter((block) => block.id !== id));
+		this.workspace.update((workspace) => removeItem(workspace, id));
 	}
 
 	protected move (id: number, offset: -1 | 1): void {
-		this.stack.update((stack) => {
-			const index = stack.findIndex((block) => block.id === id);
-			const target = index + offset;
-
-			if (0 > target || target >= stack.length)
-				return stack;
-
-			const moved = [ ...stack ];
-			[ moved[index], moved[target] ] = [ moved[target], moved[index] ];
-
-			return moved;
-		});
+		this.workspace.update((workspace) => moveItem(workspace, id, offset));
 	}
 
 	protected setValue (id: number, key: string, value: FieldValue): void {
-		this.stack.update((stack) => stack.map((block) =>
-			block.id === id ? { ...block, values: { ...block.values, [key]: value } } : block));
+		this.workspace.update((workspace) => setValue(workspace, id, key, value));
+	}
+
+	protected setEvent (script: VisualScript, type: string): void {
+		this.workspace.update((workspace) => setTrigger(workspace, script.id, 'every' === type ? { type: 'every', seconds: 1 } : { type: 'start' }));
+	}
+
+	protected setEvery (script: VisualScript, seconds: number): void {
+		this.workspace.update((workspace) => setTrigger(workspace, script.id, { type: 'every', seconds }));
+	}
+
+	protected setFloor (value: number): void {
+		this.workspace.update((workspace) => setConfig(workspace, 'floor', Number.isFinite(value) ? value : undefined));
+	}
+
+	protected setTopAnchor (value: string): void {
+		this.workspace.update((workspace) => setConfig(workspace, 'topAnchor', value ? value as SideName : undefined));
+	}
+
+	/**
+	 * Replaces everything with the blocks of an example.
+	 */
+	protected load (id: string): void {
+		const example = this.examples.find((candidate) => candidate.id === id);
+
+		if (example)
+			this.workspace.set(workspaceFromProgram(example.program, () => this.nextId++));
+	}
+
+	/**
+	 * How many pixels the shape of an object has (a block can carry a shape it cannot draw).
+	 */
+	protected shapeSize (block: VisualBlock, key: string): number {
+		return (block.values[key] as unknown[]).length;
 	}
 
 	protected hasFace (block: VisualBlock, key: string, name: FaceName): boolean {
@@ -199,8 +253,10 @@ export class BlocksTabComponent implements OnDestroy {
 	// --- Running
 
 	protected play (): void {
-		if (this.ready())
-			this.run.emit(compileBlocks(this.stack(), this.repeat()));
+		const program = this.program();
+
+		if (program)
+			this.run.emit(program);
 	}
 
 	// --- Choosing an image for a block

@@ -1,20 +1,25 @@
 import { TestBed } from '@angular/core/testing';
-import { Program } from '../../cube';
+import { EXAMPLE_PROGRAMS, Program } from '../../cube';
 import { BlocksTabComponent } from './blocks-tab.component';
-import { VisualBlock } from './visual-blocks';
+import { VisualBlock, VisualScript, Workspace } from './workspace';
 
 /**
  * The protected members the template uses, so the tab can be driven without a browser (the
  * dialogs and the cropper need a real one).
  */
 interface TabInternals {
-	stack: { (): VisualBlock[]; set(value: VisualBlock[]): void };
-	repeat: { set(value: boolean): void };
+	workspace: { (): Workspace; set(value: Workspace): void };
+	program: () => Program | null;
 	ready: () => boolean;
+	openPicker(containerId: number): void;
 	add(type: string): void;
+	addScript(): void;
 	remove(id: number): void;
 	move(id: number, offset: -1 | 1): void;
 	setValue(id: number, key: string, value: unknown): void;
+	setEvent(script: VisualScript, type: string): void;
+	setFloor(value: number): void;
+	load(id: string): void;
 	toggleFace(block: VisualBlock, key: string, name: string): void;
 	toggleAllFaces(block: VisualBlock, key: string): void;
 	play(): void;
@@ -25,77 +30,102 @@ function createTab () {
 	const tab = fixture.componentInstance;
 	const programs: Program[] = [];
 
-	// The dialogs are a browser feature; the tab only closes the picker after adding a block.
+	// The dialogs are a browser feature; the tab only opens and closes the picker.
 	fixture.nativeElement.querySelectorAll('dialog').forEach((dialog: HTMLDialogElement) => {
 		dialog.close = () => undefined;
+		dialog.showModal = () => undefined;
 	});
 	tab.run.subscribe((program) => programs.push(program));
 
-	return { fixture, internals: tab as unknown as TabInternals, programs };
+	const internals = tab as unknown as TabInternals;
+
+	/**
+	 * Adds a block the way the user does: the plus of a script (or block), then the picker.
+	 */
+	const addTo = (containerId: number, type: string): void => {
+		internals.openPicker(containerId);
+		internals.add(type);
+	};
+
+	return { fixture, internals, programs, addTo };
 }
 
 describe('BlocksTabComponent', () => {
-	it('starts empty and cannot run', () => {
+	it('starts with one empty script and cannot run', () => {
 		const { fixture, internals } = createTab();
 		fixture.detectChanges();
 
-		expect(internals.stack()).toEqual([]);
+		expect(internals.workspace().scripts).toHaveLength(1);
+		expect(internals.workspace().scripts[0].blocks).toEqual([]);
 		expect(internals.ready()).toBe(false);
+		expect(internals.program()).toBeNull();
 	});
 
-	it('adds blocks at the end, one after the other', () => {
-		const { fixture, internals } = createTab();
+	it('adds blocks at the end of the script that opened the picker', () => {
+		const { fixture, internals, addTo } = createTab();
+		fixture.detectChanges();
+		internals.addScript();
+		const [ first, second ] = internals.workspace().scripts;
+
+		addTo(first.id, 'createObject');
+		addTo(second.id, 'wait');
+		addTo(first.id, 'wait');
 		fixture.detectChanges();
 
-		internals.add('createObject');
-		internals.add('wait');
+		expect(internals.workspace().scripts.map((script) => script.blocks.map((block) => block.type))).toEqual([ [ 'createObject', 'wait' ], [ 'wait' ] ]);
+		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(3);
+	});
+
+	it('adds blocks inside a repeat', () => {
+		const { fixture, internals, addTo } = createTab();
+		const script = internals.workspace().scripts[0];
+
+		addTo(script.id, 'forever');
+		const forever = internals.workspace().scripts[0].blocks[0];
+		addTo(forever.id, 'wait');
 		fixture.detectChanges();
 
-		expect(internals.stack().map((block) => block.type)).toEqual([ 'createObject', 'wait' ]);
+		expect(internals.workspace().scripts[0].blocks[0].body?.map((block) => block.type)).toEqual([ 'wait' ]);
 		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(2);
 	});
 
 	it('removes and reorders blocks', () => {
-		const { fixture, internals } = createTab();
-		internals.add('createObject');
-		internals.add('wait');
-		internals.add('setBackgroundColor');
-		const [ first, second ] = internals.stack();
+		const { fixture, internals, addTo } = createTab();
+		const script = internals.workspace().scripts[0];
+		addTo(script.id, 'createObject');
+		addTo(script.id, 'wait');
+		addTo(script.id, 'setBackgroundColor');
+		const [ first, second ] = internals.workspace().scripts[0].blocks;
+		const types = () => internals.workspace().scripts[0].blocks.map((block) => block.type);
 
 		internals.move(second.id, -1);
-		expect(internals.stack().map((block) => block.type)).toEqual([ 'wait', 'createObject', 'setBackgroundColor' ]);
-
-		internals.move(second.id, -1);
-		expect(internals.stack()[0].id).toBe(second.id);
+		expect(types()).toEqual([ 'wait', 'createObject', 'setBackgroundColor' ]);
 
 		internals.remove(first.id);
-		expect(internals.stack().map((block) => block.type)).toEqual([ 'wait', 'setBackgroundColor' ]);
+		expect(types()).toEqual([ 'wait', 'setBackgroundColor' ]);
 		fixture.detectChanges();
 	});
 
-	it('edits the values of one block and leaves the others', () => {
+	it('changes when a script runs', () => {
 		const { internals } = createTab();
-		internals.add('wait');
-		internals.add('wait');
-		const [ first ] = internals.stack();
+		const script = internals.workspace().scripts[0];
 
-		internals.setValue(first.id, 'seconds', 3);
+		internals.setEvent(script, 'every');
+		expect(internals.workspace().scripts[0].trigger).toEqual({ type: 'every', seconds: 1 });
 
-		expect(internals.stack().map((block) => block.values['seconds'])).toEqual([ 3, 1 ]);
+		internals.setEvent(script, 'start');
+		expect(internals.workspace().scripts[0].trigger).toEqual({ type: 'start' });
 	});
 
 	it('toggles faces, keeping them in the order of the cube', () => {
-		const { internals } = createTab();
-		internals.add('setBackgroundColor');
-		const id = internals.stack()[0].id;
-		const block = (): VisualBlock => internals.stack().find((candidate) => candidate.id === id)!;
+		const { internals, addTo } = createTab();
+		addTo(internals.workspace().scripts[0].id, 'setBackgroundColor');
+		const id = internals.workspace().scripts[0].blocks[0].id;
+		const block = (): VisualBlock => internals.workspace().scripts[0].blocks.find((candidate) => candidate.id === id)!;
 
 		internals.toggleFace(block(), 'faces', 'TOP');
 		internals.toggleFace(block(), 'faces', 'RIGHT');
 		expect(block().values['faces']).toEqual([ 'FRONT', 'RIGHT', 'TOP' ]);
-
-		internals.toggleFace(block(), 'faces', 'FRONT');
-		expect(block().values['faces']).toEqual([ 'RIGHT', 'TOP' ]);
 
 		internals.toggleAllFaces(block(), 'faces');
 		expect(block().values['faces']).toHaveLength(5);
@@ -104,40 +134,63 @@ describe('BlocksTabComponent', () => {
 		expect(block().values['faces']).toEqual([]);
 	});
 
-	it('runs the blocks as a program, once or forever', () => {
-		const { internals, programs } = createTab();
-		internals.add('createObject');
-		internals.add('wait');
+	it('runs the blocks as a program', () => {
+		const { internals, programs, addTo } = createTab();
+		const script = internals.workspace().scripts[0];
+		addTo(script.id, 'createObject');
+		addTo(script.id, 'wait');
 
 		internals.play();
-		internals.repeat.set(true);
-		internals.play();
 
+		expect(programs).toHaveLength(1);
 		expect(programs[0].scripts[0].blocks.map((block) => block.op)).toEqual([ 'create', 'wait' ]);
-		expect(programs[1].scripts[0].blocks[0].op).toBe('forever');
+		expect(internals.program()).toEqual(programs[0]);
 	});
 
 	it('does not run while a block is unfinished, and runs once it is', () => {
-		const { internals, programs } = createTab();
-		internals.add('setBackgroundImage');
+		const { internals, programs, addTo } = createTab();
+		addTo(internals.workspace().scripts[0].id, 'setBackgroundImage');
 
 		internals.play();
 		expect(programs).toEqual([]);
 		expect(internals.ready()).toBe(false);
 
-		internals.setValue(internals.stack()[0].id, 'image', new Uint32Array(64 * 64));
+		internals.setValue(internals.workspace().scripts[0].blocks[0].id, 'image', new Uint32Array(64 * 64));
 		expect(internals.ready()).toBe(true);
 
 		internals.play();
 		expect(programs).toHaveLength(1);
 	});
 
-	it('draws every kind of block without errors', () => {
+	it('loads every example as blocks that run as the example', () => {
 		const { fixture, internals } = createTab();
-		for (const type of [ 'setBackgroundImage', 'setBackgroundColor', 'createObject', 'moveObject', 'setObjectColor', 'wait' ])
-			internals.add(type);
+
+		for (const example of EXAMPLE_PROGRAMS) {
+			internals.load(example.id);
+			fixture.detectChanges();
+
+			expect(internals.ready(), example.id).toBe(true);
+			expect(internals.program(), example.id).toEqual(example.program);
+		}
+	});
+
+	it('keeps the settings of an example, and lets them change', () => {
+		const { internals } = createTab();
+		internals.load('raindrops');
+		expect(internals.program()?.config).toEqual({ floor: 65 });
+
+		internals.setFloor(Number.NaN);
+		expect(internals.program()).not.toHaveProperty('config');
+	});
+
+	it('draws every kind of block without errors', () => {
+		const { fixture, internals, addTo } = createTab();
+		const script = internals.workspace().scripts[0];
+
+		for (const type of [ 'setBackgroundImage', 'setBackgroundColor', 'createObject', 'moveObject', 'moveObjectTo', 'setObjectColor', 'showObject', 'hideObject', 'deleteObject', 'pointObjectUp', 'wait', 'repeat', 'forever' ])
+			addTo(script.id, type);
 
 		expect(() => fixture.detectChanges()).not.toThrow();
-		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(6);
+		expect(fixture.nativeElement.querySelectorAll('article')).toHaveLength(13);
 	});
 });

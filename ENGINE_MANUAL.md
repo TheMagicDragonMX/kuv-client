@@ -677,7 +677,7 @@ The view also watches its container with a `ResizeObserver`, so the canvas follo
 - `run` catches an invalid program and turns it into the `problem()` message (for example `scripts[0].blocks[2].count: must be…`) instead of crashing. A script that stops while running also sets `problem()`, as `Script 2 stopped: There is no object called "ghost"`.
 - Two small effects keep it reactive: one passes `config` to the engine; the other runs the program when `autoplay` is on and `program` changes.
 
-On the **editor page** the logic is the same, with one extra piece: a **program area** next to the cube. The page only connects them: whatever the program area emits is passed to `cube.run(...)`. Today the program area is a text box with JSON. When Blockly arrives, only that component is replaced.
+On the **editor page** the logic is the same, with one extra piece: a **Blocks tab** next to the cube. The page only connects them: the program the blocks emit is passed to `cube.run(...)`. The blocks are the source of truth; the Program tab shows the JSON they compile to, read only. When Blockly arrives, only the Blocks tab is replaced.
 
 **Where.** [component/cube.component.ts](src/app/cube/component/cube.component.ts), [pages/test-cube/](src/app/pages/test-cube/) (the simplest use) and [pages/editor/](src/app/pages/editor/).
 
@@ -689,7 +689,7 @@ Let us follow one click of **Run** on the editor with the program from chapter 5
 
 ```
  1. The student clicks Run.
-    The program area parses its text as JSON and emits it.              (12)
+    The Blocks tab compiles its blocks into a program and emits it.           (12)
  2. The page calls cube.run(program).                                   (12)
  3. The component calls player.play(program).                           (10)
  4. The engine validates the program.                                   (5)
@@ -756,7 +756,7 @@ state ← geometry ← world ← commands ← interpreter ← scheduler ← engi
 
 ### What is not built yet
 
-- **Blockly.** The program area is a JSON text box. Blockly will produce the same JSON.
+- **Blockly.** The Blocks tab is a simple stand-in for it. Blockly will produce the same JSON.
 - **The Python engine** for the Raspberry Pi, and the shared tests that prove it behaves like the TypeScript one.
 - **Strip-aware shapes.** A circle that crosses a face edge is currently cut off.
 - **More object shapes** (rectangle, circle, sprite), size, velocity, collisions.

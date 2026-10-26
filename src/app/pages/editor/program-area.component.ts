@@ -1,10 +1,10 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
-import { EXAMPLE_PROGRAMS } from '../../cube';
+import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { Program } from '../../cube';
 
 /**
- * Where the user writes the program. For now it is a text box with the program as JSON; when
- * Blockly arrives this component is replaced by the block workspace, and the page does not
- * change: all that matters is that it emits a program (any value) on `run`.
+ * Shows the program the blocks stand for, as JSON. It is read only: the blocks are the source of
+ * truth and this text is made from them, so there is nothing to run or edit here. To change the
+ * program, change the blocks.
  */
 @Component({
 	selector: 'app-program-area',
@@ -14,53 +14,27 @@ import { EXAMPLE_PROGRAMS } from '../../cube';
 })
 export class ProgramAreaComponent {
 	/**
-	 * Whether the program is running, so the buttons can tell.
+	 * The program made from the blocks, or null while they are not ready.
 	 */
-	readonly running = input(false);
+	readonly program = input<Program | null>(null);
 
 	/**
-	 * Why the last run failed, as reported by the cube.
+	 * Whether the tab is showing. The text of a big program is slow to make, so it is only made
+	 * while someone looks at it.
 	 */
-	readonly problem = input<string | null>(null);
+	readonly visible = input(false);
 
-	/**
-	 * The user asked to run the program.
-	 */
-	readonly run = output<unknown>();
+	protected readonly source = computed(() => {
+		const program = this.program();
 
-	/**
-	 * The user asked to stop it.
-	 */
-	readonly stop = output<void>();
+		return this.visible() && program ? JSON.stringify(program, null, 2) : '';
+	});
 
-	/**
-	 * The user asked to stop it and blank the cube.
-	 */
-	readonly reset = output<void>();
+	protected readonly copied = signal(false);
 
-	protected readonly examples = EXAMPLE_PROGRAMS;
-
-	protected readonly source = signal(JSON.stringify(EXAMPLE_PROGRAMS[0].program, null, 2));
-
-	/**
-	 * Why the text is not a program at all (not valid JSON).
-	 */
-	protected readonly syntaxProblem = signal<string | null>(null);
-
-	protected load (id: string): void {
-		const example = this.examples.find((candidate) => candidate.id === id);
-		if (example) {
-			this.source.set(JSON.stringify(example.program, null, 2));
-			this.syntaxProblem.set(null);
-		}
-	}
-
-	protected submit (): void {
-		try {
-			this.syntaxProblem.set(null);
-			this.run.emit(JSON.parse(this.source()));
-		} catch (error) {
-			this.syntaxProblem.set(error instanceof Error ? error.message : String(error));
-		}
+	protected async copy (): Promise<void> {
+		await navigator.clipboard.writeText(this.source());
+		this.copied.set(true);
+		setTimeout(() => this.copied.set(false), 1500);
 	}
 }

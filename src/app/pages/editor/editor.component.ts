@@ -7,8 +7,8 @@ import { ProgramAreaComponent } from './program-area.component';
 
 /**
  * The editor: a cube on one side, and on the other a panel with three tabs: the blocks, the
- * program area (the same program as JSON) and the background. The page only connects them to
- * the cube: whatever the blocks or the program area emit is run by the cube, and the environment
+ * program (the JSON the blocks are turned into, read only) and the background. The page only
+ * connects them to the cube: the program the blocks emit is run by the cube, and the environment
  * the background panel edits is shown by it.
  */
 @Component({
