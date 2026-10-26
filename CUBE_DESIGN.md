@@ -246,9 +246,9 @@ All commands are plain data, so programs can be stored, sent to the Pi and repla
 
 ### 6.3 Drawing primitives and the background layer
 
-The pixel and shape primitives (`setPixel`, `drawLine`, `drawRect`, `fillRect`, `drawCircle`, `fillCircle`, `drawBitmap`) are **internal tools**. The renderer will use them to draw objects (a circle object calls `fillCircle`, a sprite calls `drawBitmap`). No program block exposes them: there was an "advanced tier" of blocks that painted on the background, and it was removed to focus on the block scripts.
+The pixel and shape primitives (`setPixel`, `drawLine`, `drawRect`, `fillRect`, `drawCircle`, `fillCircle`, `drawBitmap`) are **internal tools**. The renderer will use them to draw objects (a circle object calls `fillCircle`, a sprite calls `drawBitmap`). No program block exposes them pixel by pixel: there was an "advanced tier" of blocks that painted on the background, and it was removed to focus on the block scripts.
 
-The **background layer** stays, with one job: it holds the **environment**, the pictures the user puts on the faces (see [ENGINE_MANUAL.md](ENGINE_MANUAL.md), section 9.1). The renderer redraws every frame, so the pictures live in a layer it starts each frame from. Each frame, the renderer copies the background and draws the objects on top. Nothing in a program writes to the background, so objects never change the pictures.
+The **background layer** stays. It holds the **environment**, the pictures the user puts on the faces (see [ENGINE_MANUAL.md](ENGINE_MANUAL.md), section 9.1), and what the **background blocks** paint: `setBackgroundImage` (a picture, already 64×64, inside the block) and `setBackgroundColor`, which use `drawBitmap` and `fillRect` underneath. The renderer redraws every frame, so these live in a layer it starts each frame from. Each frame, the renderer copies the background and draws the objects on top, so objects never change the background. The environment is where the cube starts; a reset brings it back.
 
 The existing primitives work per face today. Making them strip-aware, so a circle wraps around a corner, is a later milestone.
 
@@ -319,7 +319,7 @@ t = 0.10s   tick: script wakes: move, hits wait → sleeps until t = 0.20
 ### 9.1 World
 
 - The set of objects, keyed by name.
-- The **background layer**, a `CubeState` that holds the pictures of the environment.
+- The **background layer**, a `CubeState` that holds the pictures of the environment and what the background blocks paint.
 - A version counter that increases on every change.
 
 ### 9.2 Renderer
@@ -398,7 +398,7 @@ Milestone 1 uses pixel objects only, with `create`, `move`, `moveTo`, `setColor`
 | Bottom edge | A floor stops objects. Last visible row by default, configurable and can be deeper |
 | TOP addressing | Configurable with `topAnchor`. Default FRONT at the bottom of the TOP view |
 | Object shape | Pixel only at first. No size or velocity |
-| Background layer | Persistent layer under the objects, written only by the environment (pictures on the faces) |
+| Background layer | Persistent layer under the objects, written by the environment (pictures on the faces) and the background blocks |
 | Execution | Generator-based scripts, one turn per tick, real-time waits, a loop yields at least once per iteration |
 | Editor | Blockly |
 

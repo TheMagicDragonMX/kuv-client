@@ -5,8 +5,9 @@
  * Anything outside the face is clipped by CubeState, so shapes can safely overflow.
  *
  * These write straight into a CubeState face. They do not know about objects or programs:
- * the renderer will use them to draw objects with those shapes. No program block exposes them
- * (there is no block that draws on the background).
+ * the renderer will use them to draw objects with those shapes, and `fillRect` paints faces
+ * for the background blocks. No block exposes the drawing itself (there is no line or circle
+ * block).
  */
 
 import { Color, CubeState, Face } from '../state/cube-state';

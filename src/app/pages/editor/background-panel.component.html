@@ -19,17 +19,10 @@
 		}
 
 		@if (picture(); as image) {
-			@if (pixels()) {
+			@if (pixels(); as result) {
 				<!-- Step 3: the result, and where it goes. -->
 				<div class="flex items-center gap-3">
-					<canvas
-						#preview
-						class="h-28 w-28 shrink-0 rounded-[0.7rem] border border-slate-400/20 [image-rendering:pixelated]"
-						[width]="64"
-						[height]="64"
-						role="img"
-						aria-label="The picture as the cube will show it, 64 by 64 pixels"
-					></canvas>
+					<app-pixel-preview class="h-28 w-28 shrink-0 rounded-[0.7rem] border border-slate-400/20" [pixels]="result" />
 					<p class="text-[0.76rem] leading-relaxed text-slate-300">This is how the cube will show it: 64 × 64 pixels, shrunk the same way the physical cube does.</p>
 				</div>
 

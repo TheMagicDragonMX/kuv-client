@@ -24,7 +24,7 @@ To put pictures on the faces, give it an environment (shown at once, and kept th
 
 Anything else is on the template reference: `cube.run(program)`, `cube.stop()`, `cube.reset()`, `cube.showFace(face)`, `cube.spin()`, and the signals `cube.running()`, `cube.problem()` and `cube.camera()`. The full list is at the top of [component/cube.component.ts](component/cube.component.ts).
 
-The editor page does exactly this, plus a side panel with two tabs next to the cube ([pages/editor/](../pages/editor/)): the program area, and the background panel, where the user picks a picture, crops it to a square and chooses the faces it goes on.
+The editor page does exactly this, plus a side panel with three tabs next to the cube ([pages/editor/](../pages/editor/README.md)): the blocks, the program area (the same program as JSON), and the background panel, where the user picks a picture, crops it to a square and chooses the faces it goes on.
 
 ## The layers
 
@@ -44,9 +44,9 @@ environment (pictures on the faces) ──painted onto the world's background by
 | --- | --- | --- |
 | `state/` | `cube-state.ts` | The pixel buffer: one 64×64 grid of colors per face. The meeting point between the engine and whatever shows it |
 | `geometry/` | `geometry.ts` | Answers "if an object steps this way, where does it end up?": the strip, the top face, headings, edges, the floor |
-| `drawing/` | `pixel.ts`, `shapes.ts`, `bitmap.ts` | Draws pixels, lines, rectangles, circles and pictures on one face of a state. Internal tools: only `drawBitmap` is used today (by the environment) |
-| `world/` | `cube-object.ts`, `world.ts` | Stores what exists: the objects and the background layer (which holds the environment's pictures) |
-| `blocks/` | `object/`, `control/` | **One file per block**, in the folder of its category: its type, its fields and what it does. See [blocks/README.md](blocks/README.md) |
+| `drawing/` | `pixel.ts`, `shapes.ts`, `bitmap.ts` | Draws pixels, lines, rectangles, circles and pictures on one face of a state. Mostly internal tools: only `drawBitmap` and `fillRect` are used today (by the environment and the background blocks) |
+| `world/` | `cube-object.ts`, `world.ts` | Stores what exists: the objects and the background layer (which holds the environment's pictures and what the background blocks paint) |
+| `blocks/` | `object/`, `background/`, `control/` | **One file per block**, in the folder of its category: its type, its fields and what it does. See [blocks/README.md](blocks/README.md) |
 | | `index.ts` | Joins the categories: the `Block` types and the definition of a block by its `op` |
 | | `block-definition.ts`, `fields.ts` | What every block file must provide, and the kinds of field value |
 | `program/` | `program.ts` | The shape of a program: scripts, triggers and config (the JSON contract with Blockly and the Pi) |
@@ -55,7 +55,7 @@ environment (pictures on the faces) ──painted onto the world's background by
 | `commands/` | `apply-command.ts` | Looks up a command in `blocks/` and applies it to the world |
 | `runtime/` | `interpreter.ts` | Runs the blocks of one script, pausing at `wait` and between loop iterations |
 | | `scheduler.ts` | Decides when each script gets its turn |
-| `environment/` | `environment.ts` | The stage a program runs on: the picture of each face. Painted onto the background layer by the engine, and kept through runs and resets. No block writes to the background, so programs never change the pictures |
+| `environment/` | `environment.ts` | The stage a program runs on: the picture of each face. Painted onto the background layer by the engine before a program starts, and kept through runs and resets. The background blocks can change that layer while a program runs; a reset brings the environment back |
 | | `pixelate.ts` | Shrinks a picture (raw RGBA bytes) to the 64×64 of a face the way the Raspberry Pi library does (box filter) |
 | `renderer/` | `renderer.ts` | Turns the world into pixels |
 | `engine/` | `cube-engine.ts` | Puts the layers together; pure, takes the time as an argument |

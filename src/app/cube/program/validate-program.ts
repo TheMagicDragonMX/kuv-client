@@ -17,6 +17,7 @@
 
 import { ProgramError } from '../errors';
 import { FieldKind, getBlockDefinition } from '../blocks';
+import { FACE_RESOLUTION } from '../state/cube-state';
 import { FACE_BY_NAME, HEADING_BY_NAME, isColorValue } from './names';
 import { Program } from './program';
 
@@ -33,17 +34,17 @@ export function validateProgram (value: unknown): Program {
 	const program = expectObject(value, 'program');
 	expectOnlyKeys(program, [ 'version', 'config', 'scripts' ], 'program');
 
-	if (program['version'] !== 1) {
+	if (1 !== program['version']) 
 		fail('version', 'must be 1');
-	}
-	if (program['config'] !== undefined) {
+	
+	if (program['config'] !== undefined) 
 		validateConfig(program['config']);
-	}
+	
 
 	const scripts = program['scripts'];
-	if (!Array.isArray(scripts)) {
+	if (!Array.isArray(scripts)) 
 		fail('scripts', 'must be a list of scripts');
-	}
+	
 
 	scripts.forEach((script, index) => validateScript(script, `scripts[${index}]`));
 
@@ -58,12 +59,12 @@ function validateConfig (value: unknown): void {
 	expectOnlyKeys(config, [ 'topAnchor', 'floor' ], 'config');
 
 	const { topAnchor, floor } = config;
-	if (topAnchor !== undefined && !SIDE_NAMES.includes(topAnchor as string)) {
+	if (topAnchor !== undefined && !SIDE_NAMES.includes(topAnchor as string)) 
 		fail('config.topAnchor', `must be one of ${SIDE_NAMES.join(', ')}`);
-	}
-	if (floor !== undefined && !isCount(floor)) {
+	
+	if (floor !== undefined && !isCount(floor)) 
 		fail('config.floor', 'must be a whole number, zero or more');
-	}
+	
 }
 
 /**
@@ -89,9 +90,9 @@ function validateTrigger (value: unknown, path: string): void {
 			return;
 		case 'every':
 			expectOnlyKeys(trigger, [ 'type', 'seconds' ], path);
-			if (typeof trigger['seconds'] !== 'number' || !(trigger['seconds'] > 0) || !Number.isFinite(trigger['seconds'])) {
+			if ('number' !== typeof trigger['seconds'] || !(0 < trigger['seconds']) || !Number.isFinite(trigger['seconds'])) 
 				fail(`${path}.seconds`, 'must be a number greater than zero');
-			}
+			
 			return;
 		default:
 			fail(`${path}.type`, "must be 'start' or 'every'");
@@ -102,9 +103,9 @@ function validateTrigger (value: unknown, path: string): void {
  * Checks a list of blocks, including the lists nested inside loops.
  */
 function validateBlocks (value: unknown, path: string): void {
-	if (!Array.isArray(value)) {
+	if (!Array.isArray(value)) 
 		fail(path, 'must be a list of blocks');
-	}
+	
 
 	value.forEach((block, index) => validateBlock(block, `${path}[${index}]`));
 }
@@ -116,11 +117,11 @@ function validateBlock (value: unknown, path: string): void {
 	const block = expectObject(value, path);
 	const op = block['op'];
 
-	const definition = typeof op === 'string' ? getBlockDefinition(op) : undefined;
+	const definition = 'string' === typeof op ? getBlockDefinition(op) : undefined;
 
-	if (definition === undefined) {
+	if (definition === undefined) 
 		fail(`${path}.op`, `unknown block ${JSON.stringify(op)}`);
-	}
+	
 
 	const schema = definition.schema;
 	expectOnlyKeys(block, [ 'op', ...Object.keys(schema) ], path);
@@ -129,9 +130,9 @@ function validateBlock (value: unknown, path: string): void {
 		const fieldValue = block[name];
 
 		if (fieldValue === undefined) {
-			if (!field.optional) {
+			if (!field.optional) 
 				fail(`${path}.${name}`, 'is required');
-			}
+			
 			continue;
 		}
 
@@ -146,47 +147,57 @@ function validateBlock (value: unknown, path: string): void {
 function validateField (kind: FieldKind, value: unknown, path: string): void {
 	switch (kind) {
 		case 'text':
-			if (typeof value !== 'string' || value.length === 0) {
+			if ('string' !== typeof value || 0 === value.length) 
 				fail(path, 'must be a non-empty text');
-			}
+			
 			return;
 		case 'face':
-			if (typeof value !== 'string' || !Object.hasOwn(FACE_BY_NAME, value)) {
+			if ('string' !== typeof value || !Object.hasOwn(FACE_BY_NAME, value)) 
 				fail(path, `must be one of ${Object.keys(FACE_BY_NAME).join(', ')}`);
-			}
+			
+			return;
+		case 'faces':
+			if (!Array.isArray(value) || 0 === value.length || !value.every((name) => 'string' === typeof name && Object.hasOwn(FACE_BY_NAME, name))) 
+				fail(path, `must be a non-empty list of faces (${Object.keys(FACE_BY_NAME).join(', ')})`);
+			
 			return;
 		case 'heading':
-			if (typeof value !== 'string' || !Object.hasOwn(HEADING_BY_NAME, value)) {
+			if ('string' !== typeof value || !Object.hasOwn(HEADING_BY_NAME, value)) 
 				fail(path, `must be one of ${Object.keys(HEADING_BY_NAME).join(', ')}`);
-			}
+			
 			return;
 		case 'step':
-			if (!STEP_NAMES.includes(value as string)) {
+			if (!STEP_NAMES.includes(value as string)) 
 				fail(path, `must be one of ${STEP_NAMES.join(', ')}`);
-			}
+			
 			return;
 		case 'color':
-			if (!isColorValue(value)) {
+			if (!isColorValue(value)) 
 				fail(path, 'must be a color written as #rrggbb');
-			}
+			
 			return;
 		case 'integer':
-			if (!Number.isInteger(value)) {
+			if (!Number.isInteger(value)) 
 				fail(path, 'must be a whole number');
-			}
+			
 			return;
 		case 'count':
-			if (!isCount(value)) {
+			if (!isCount(value)) 
 				fail(path, 'must be a whole number, zero or more');
-			}
+			
 			return;
 		case 'seconds':
-			if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+			if ('number' !== typeof value || !Number.isFinite(value) || 0 > value) 
 				fail(path, 'must be a number of seconds, zero or more');
-			}
+			
 			return;
 		case 'shape':
 			validateShape(value, path);
+			return;
+		case 'image':
+			if (!Array.isArray(value) || value.length !== FACE_RESOLUTION * FACE_RESOLUTION || !value.every(isColorValue)) 
+				fail(path, `must be ${FACE_RESOLUTION * FACE_RESOLUTION} colors written as #rrggbb, row after row`);
+			
 			return;
 		case 'blocks':
 			validateBlocks(value, path);
@@ -218,16 +229,16 @@ function validateShape (value: unknown, path: string): void {
  * Tells whether a value is a whole number, zero or more.
  */
 function isCount (value: unknown): boolean {
-	return Number.isInteger(value) && (value as number) >= 0;
+	return Number.isInteger(value) && 0 <= (value as number);
 }
 
 /**
  * Requires a plain object (not null, not a list).
  */
 function expectObject (value: unknown, path: string): Fields {
-	if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+	if ('object' !== typeof value || null === value || Array.isArray(value)) 
 		fail(path, 'must be an object');
-	}
+	
 
 	return value as Fields;
 }
@@ -236,11 +247,11 @@ function expectObject (value: unknown, path: string): Fields {
  * Rejects fields that are not in the allowed list.
  */
 function expectOnlyKeys (fields: Fields, allowed: string[], path: string): void {
-	for (const key of Object.keys(fields)) {
-		if (!allowed.includes(key)) {
+	for (const key of Object.keys(fields)) 
+		if (!allowed.includes(key)) 
 			fail(`${path}.${key}`, `unknown field (allowed: ${allowed.join(', ')})`);
-		}
-	}
+		
+	
 }
 
 /**

@@ -1,27 +1,17 @@
 import {
 	ChangeDetectionStrategy,
 	Component,
-	ElementRef,
 	OnDestroy,
-	afterRenderEffect,
 	computed,
 	model,
 	signal,
-	viewChild,
 } from '@angular/core';
-import { BackgroundImages, Environment, FACE_RESOLUTION, FaceName, RawImage, pixelate } from '../../cube';
+import { BackgroundImages, Environment, FaceName, RawImage, pixelate } from '../../cube';
+import { FACE_OPTIONS } from './faces';
 import { ImageCropperComponent } from './image-cropper.component';
+import { PixelPreviewComponent } from './pixel-preview.component';
 
-/**
- * The faces an image can go on, in the order they are shown.
- */
-const FACES: { name: FaceName; label: string }[] = [
-	{ name: 'FRONT', label: 'Front' },
-	{ name: 'RIGHT', label: 'Right' },
-	{ name: 'BACK', label: 'Back' },
-	{ name: 'LEFT', label: 'Left' },
-	{ name: 'TOP', label: 'Top' },
-];
+const FACES = FACE_OPTIONS;
 
 /**
  * Where the user handles the background of the cube. The way to do it for now is an image:
@@ -36,7 +26,7 @@ const FACES: { name: FaceName; label: string }[] = [
 	selector: 'app-background-panel',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ ImageCropperComponent ],
+	imports: [ ImageCropperComponent, PixelPreviewComponent ],
 	templateUrl: './background-panel.component.html',
 })
 export class BackgroundPanelComponent implements OnDestroy {
@@ -77,18 +67,6 @@ export class BackgroundPanelComponent implements OnDestroy {
 	protected readonly message = signal<string | null>(null);
 
 	protected readonly problem = signal<string | null>(null);
-
-	private readonly preview = viewChild<ElementRef<HTMLCanvasElement>>('preview');
-
-	constructor () {
-		afterRenderEffect(() => {
-			const pixels = this.pixels();
-			const context = this.preview()?.nativeElement.getContext('2d');
-
-			if (pixels && context)
-				context.putImageData(toImageData(pixels), 0, 0);
-		});
-	}
 
 	ngOnDestroy (): void {
 		this.picture()?.close();
@@ -179,20 +157,4 @@ export class BackgroundPanelComponent implements OnDestroy {
 	private describe (names: ReadonlySet<FaceName>): string {
 		return FACES.filter((face) => names.has(face.name)).map((face) => face.label.toLowerCase()).join(', ');
 	}
-}
-
-/**
- * The pixels of a face as something a canvas can show.
- */
-function toImageData (pixels: Uint32Array): ImageData {
-	const image = new ImageData(FACE_RESOLUTION, FACE_RESOLUTION);
-
-	pixels.forEach((color, index) => {
-		image.data[index * 4] = color >> 16 & 0xff;
-		image.data[index * 4 + 1] = color >> 8 & 0xff;
-		image.data[index * 4 + 2] = color & 0xff;
-		image.data[index * 4 + 3] = 255;
-	});
-
-	return image;
 }

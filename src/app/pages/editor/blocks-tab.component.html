@@ -1,0 +1,193 @@
+<section class="flex h-full flex-col gap-3" aria-label="Blocks">
+	<div class="flex items-center justify-between gap-2">
+		<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Blocks</h2>
+		<label class="flex cursor-pointer items-center gap-2 text-[0.76rem] text-slate-300">
+			<input type="checkbox" class="accent-slate-300" [checked]="repeat()" (change)="repeat.set($any($event.target).checked)" />
+			Repeat forever
+		</label>
+	</div>
+
+	<!-- The container: the blocks one under the other, and the plus that adds the next. -->
+	<div class="min-h-0 flex-1 overflow-y-auto rounded-[0.9rem] border border-slate-400/20 bg-slate-900/60 p-3">
+		<ol class="flex flex-col items-stretch">
+			@for (block of stack(); track block.id; let index = $index) {
+				@let spec = specOf(block.type);
+				@let issue = problems().get(block.id);
+
+				<li class="flex flex-col items-stretch">
+					@if (index > 0) {
+						<span class="mx-auto h-3 w-px bg-slate-400/30" aria-hidden="true"></span>
+					}
+
+					<article class="rounded-2xl border border-l-4 border-slate-400/25 bg-slate-400/10 p-3" [class]="accent(spec.category)" [attr.aria-label]="spec.label">
+						<header class="flex items-center gap-1">
+							<h3 class="flex-1 text-[0.76rem] font-bold tracking-[0.04em] text-slate-100 uppercase">{{ spec.label }}</h3>
+							<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15 disabled:cursor-default disabled:opacity-30" aria-label="Move up" [disabled]="index === 0" (click)="move(block.id, -1)">↑</button>
+							<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15 disabled:cursor-default disabled:opacity-30" aria-label="Move down" [disabled]="index === stack().length - 1" (click)="move(block.id, 1)">↓</button>
+							<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" aria-label="Remove block" (click)="remove(block.id)">✕</button>
+						</header>
+
+						<div class="mt-3 flex flex-col gap-3">
+							@for (field of spec.fields; track field.key) {
+								<div class="flex flex-col gap-1">
+									@switch (field.kind) {
+										@case ('faces') {
+											<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">{{ field.label }}</span>
+											<div class="flex flex-wrap gap-1.5">
+												<button
+													type="button"
+													class="cursor-pointer rounded-full border px-3 py-1 text-[0.7rem] font-semibold uppercase transition duration-150"
+													[class]="allFaces(block, field.key) ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
+													[attr.aria-pressed]="allFaces(block, field.key)"
+													(click)="toggleAllFaces(block, field.key)"
+												>All</button>
+												@for (face of faces; track face.name) {
+													<button
+														type="button"
+														class="cursor-pointer rounded-full border px-3 py-1 text-[0.7rem] font-semibold uppercase transition duration-150"
+														[class]="hasFace(block, field.key, face.name) ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
+														[attr.aria-pressed]="hasFace(block, field.key, face.name)"
+														(click)="toggleFace(block, field.key, face.name)"
+													>{{ face.label }}</button>
+												}
+											</div>
+										}
+										@case ('image') {
+											<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">{{ field.label }}</span>
+											@let pixels = block.values[field.key];
+											@if (pixels) {
+												<div class="flex items-center gap-3">
+													<app-pixel-preview class="size-20 shrink-0 rounded-xl border border-slate-400/25" [pixels]="$any(pixels)" label="The image of this block, 64 by 64 pixels" />
+													<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="openImage(block.id, field.key)">Change image</button>
+												</div>
+											} @else {
+												<button type="button" class="flex size-20 cursor-pointer items-center justify-center rounded-xl border border-dashed border-slate-400/40 px-2 text-center text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="openImage(block.id, field.key)">Choose image</button>
+											}
+										}
+										@default {
+											<label class="flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
+												<span class="w-20 shrink-0">{{ field.label }}</span>
+												@switch (field.kind) {
+													@case ('color') {
+														<input type="color" class="h-8 w-14 cursor-pointer rounded-lg border border-slate-400/25 bg-transparent" [value]="block.values[field.key]" (input)="setValue(block.id, field.key, $any($event.target).value)" />
+													}
+													@case ('number') {
+														<input
+															type="number"
+															class="w-24 rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case"
+															[attr.min]="field.min"
+															[attr.step]="field.step ?? 1"
+															[value]="block.values[field.key]"
+															(input)="setValue(block.id, field.key, $any($event.target).valueAsNumber)"
+														/>
+													}
+													@case ('text') {
+														<input type="text" class="min-w-0 flex-1 rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" [value]="block.values[field.key]" (input)="setValue(block.id, field.key, $any($event.target).value)" />
+													}
+													@case ('face') {
+														<select class="rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" (change)="setValue(block.id, field.key, $any($event.target).value)">
+															@for (face of faces; track face.name) {
+																<option [value]="face.name" [selected]="block.values[field.key] === face.name">{{ face.label }}</option>
+															}
+														</select>
+													}
+													@case ('choice') {
+														<select class="rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" (change)="setValue(block.id, field.key, $any($event.target).value)">
+															@for (option of $any(field).options; track option.value) {
+																<option [value]="option.value" [selected]="block.values[field.key] === option.value">{{ option.label }}</option>
+															}
+														</select>
+													}
+													@case ('object') {
+														<select class="rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" (change)="setValue(block.id, field.key, $any($event.target).value)">
+															<option value="" [selected]="!objects().get(block.id)?.includes($any(block.values[field.key]))" disabled>Choose…</option>
+															@for (name of objects().get(block.id); track name) {
+																<option [value]="name" [selected]="block.values[field.key] === name">{{ name }}</option>
+															}
+														</select>
+													}
+												}
+											</label>
+										}
+									}
+								</div>
+							}
+						</div>
+
+						@if (issue) {
+							<p class="mt-3 text-[0.7rem] text-rose-200" role="alert">{{ issue }}</p>
+						}
+					</article>
+				</li>
+			} @empty {
+				<li class="px-2 py-6 text-center text-[0.76rem] text-slate-400">No blocks yet. Press + to add the first one.</li>
+			}
+		</ol>
+
+		@if (stack().length > 0) {
+			<span class="mx-auto block h-3 w-px bg-slate-400/30" aria-hidden="true"></span>
+		}
+
+		<button type="button" class="mx-auto flex size-12 cursor-pointer items-center justify-center rounded-2xl border border-dashed border-slate-400/40 text-2xl text-slate-300 transition duration-150 hover:bg-slate-400/15" aria-label="Add a block" (click)="openPicker()">+</button>
+	</div>
+
+	@if (problem(); as message) {
+		<p class="rounded-lg border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-[0.76rem] text-rose-200" role="alert">{{ message }}</p>
+	} @else if (stack().length > 0 && !ready()) {
+		<p class="text-[0.76rem] text-slate-400">Finish the blocks marked in red to run them.</p>
+	}
+
+	<div class="flex gap-2">
+		<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-[#0f172a] uppercase disabled:cursor-default disabled:opacity-40" [disabled]="!ready()" (click)="play()">Run</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="!running()" (click)="stop.emit()">Stop</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 text-[0.76rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="reset.emit()">Reset</button>
+	</div>
+</section>
+
+<!-- The popup with the blocks that can be added. -->
+<dialog #picker class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-[22px] border border-slate-400/25 bg-slate-900 p-0 text-slate-100 shadow-[0_20px_50px_var(--shadow)] backdrop:bg-black/50" aria-labelledby="picker-title" (click)="$event.target === picker && picker.close()">
+	<div class="flex max-h-[80vh] flex-col gap-4 overflow-y-auto p-4">
+		<div class="flex items-center justify-between">
+			<h2 id="picker-title" class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Add a block</h2>
+			<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" aria-label="Close" (click)="picker.close()">✕</button>
+		</div>
+
+		@for (category of categories; track category.name) {
+			<div class="flex flex-col gap-2">
+				<h3 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">{{ category.name }}</h3>
+				<div class="grid grid-cols-2 gap-2">
+					@for (spec of category.blocks; track spec.type) {
+						<button type="button" class="flex cursor-pointer flex-col gap-1 rounded-2xl border border-l-4 border-slate-400/25 bg-slate-400/10 p-3 text-left transition duration-150 hover:bg-slate-400/20" [class]="category.accent" (click)="add(spec.type)">
+							<span class="text-[0.76rem] font-bold text-slate-100">{{ spec.label }}</span>
+							<span class="text-[0.7rem] leading-snug text-slate-400">{{ spec.description }}</span>
+						</button>
+					}
+				</div>
+			</div>
+		}
+	</div>
+</dialog>
+
+<!-- The popup where a block gets its photo: pick it, then crop it to a square. -->
+<dialog #imageDialog class="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-[22px] border border-slate-400/25 bg-slate-900 p-0 text-slate-100 shadow-[0_20px_50px_var(--shadow)] backdrop:bg-black/50" aria-labelledby="image-title" (close)="imageClosed()">
+	<div class="flex max-h-[90vh] flex-col gap-3 overflow-y-auto p-4">
+		<div class="flex items-center justify-between">
+			<h2 id="image-title" class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Choose the image</h2>
+			<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" aria-label="Close" (click)="imageDialog.close()">✕</button>
+		</div>
+
+		@if (imageProblem(); as text) {
+			<p class="rounded-lg border border-rose-400/30 bg-rose-950/40 px-3 py-2 text-[0.76rem] text-rose-200" role="alert">{{ text }}</p>
+		}
+
+		@if (picture(); as image) {
+			<app-image-cropper [image]="image" (cropped)="crop($event)" (cancelled)="discardPicture()" />
+		} @else {
+			<label class="flex cursor-pointer flex-col items-center gap-2 rounded-[0.9rem] border border-dashed border-slate-400/30 px-4 py-8 text-center text-[0.76rem] text-slate-300 focus-within:border-slate-300/60 hover:bg-slate-400/10">
+				<span class="font-semibold tracking-[0.04em] uppercase">Pick a picture</span>
+				<span class="text-slate-400">You will crop it to a square next.</span>
+				<input type="file" accept="image/*" class="sr-only" (change)="pick($event)" />
+			</label>
+		}
+	</div>
+</dialog>

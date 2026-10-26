@@ -8,8 +8,10 @@
  *
  *   environment --painted onto--> World.background <--read by-- renderer
  *
- * It goes through the background layer, which nothing else writes to: no program block paints
- * there, so the objects of a program always draw over the pictures and never change them.
+ * It goes through the background layer. The background blocks of a program (change background
+ * image, change background color) write to the same layer while it runs, so they can replace
+ * the pictures; the environment is where the cube starts, and a reset brings it back. Objects
+ * always draw over the layer and never change it.
  *
  * To get the pixels of a face from a picture, see `pixelate.ts`.
  */

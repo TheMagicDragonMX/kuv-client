@@ -2,17 +2,19 @@ import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { CubeComponent, Environment, Face } from '../../cube';
 import { BackgroundPanelComponent } from './background-panel.component';
+import { BlocksTabComponent } from './blocks-tab.component';
 import { ProgramAreaComponent } from './program-area.component';
 
 /**
- * The editor: a cube on one side, and on the other a panel with two tabs: the program area and
- * the background. The page only connects them to the cube: whatever the program area emits is
- * run by the cube, and the environment the background panel edits is shown by it.
+ * The editor: a cube on one side, and on the other a panel with three tabs: the blocks, the
+ * program area (the same program as JSON) and the background. The page only connects them to
+ * the cube: whatever the blocks or the program area emit is run by the cube, and the environment
+ * the background panel edits is shown by it.
  */
 @Component({
 	selector: 'app-editor',
 	standalone: true,
-	imports: [ RouterLink, CubeComponent, ProgramAreaComponent, BackgroundPanelComponent ],
+	imports: [ RouterLink, CubeComponent, ProgramAreaComponent, BackgroundPanelComponent, BlocksTabComponent ],
 	templateUrl: './editor.component.html',
 })
 export class EditorPage {
@@ -20,11 +22,12 @@ export class EditorPage {
 	 * The tabs of the side panel.
 	 */
 	protected readonly tabs = [
+		{ id: 'blocks', label: 'Blocks' },
 		{ id: 'program', label: 'Program' },
 		{ id: 'background', label: 'Background' },
 	] as const;
 
-	protected readonly tab = signal<(typeof this.tabs)[number]['id']>('program');
+	protected readonly tab = signal<(typeof this.tabs)[number]['id']>('blocks');
 
 	/**
 	 * The stage of the cube, edited by the background panel.

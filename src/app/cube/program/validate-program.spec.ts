@@ -139,5 +139,24 @@ describe('validateProgram', () => {
 			expect(() => validateProgram(value)).toThrow('scripts[0].blocks[0].body[0].body[0].seconds');
 		});
 
+
+	describe('background blocks', () => {
+		const pixels = new Array<string>(64 * 64).fill('#000000');
+
+		it('accepts a picture for some faces', () => {
+			expect(() => validateProgram(program({ op: 'setBackgroundImage', faces: [ 'FRONT', 'TOP' ], pixels }))).not.toThrow();
+			expect(() => validateProgram(program({ op: 'setBackgroundColor', faces: [ 'LEFT' ], color: '#ff00ff' }))).not.toThrow();
+		});
+
+		it.each([
+			[ 'no faces', { op: 'setBackgroundColor', faces: [], color: '#000000' }, 'faces' ],
+			[ 'a face that does not exist', { op: 'setBackgroundColor', faces: [ 'MIDDLE' ], color: '#000000' }, 'faces' ],
+			[ 'faces that are not a list', { op: 'setBackgroundColor', faces: 'FRONT', color: '#000000' }, 'faces' ],
+			[ 'a picture with too few colors', { op: 'setBackgroundImage', faces: [ 'FRONT' ], pixels: pixels.slice(1) }, 'pixels' ],
+			[ 'a picture with a bad color', { op: 'setBackgroundImage', faces: [ 'FRONT' ], pixels: [ ...pixels.slice(1), 'red' ] }, 'pixels' ],
+		])('rejects %s', (_name, block, field) => {
+			expect(() => validateProgram(program(block))).toThrow(`scripts[0].blocks[0].${field}`);
+		});
+	});
 	});
 });

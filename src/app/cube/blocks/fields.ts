@@ -14,6 +14,7 @@
  *
  *   text      non-empty string
  *   face      a FaceName
+ *   faces     non-empty list of FaceName
  *   heading   a HeadingName
  *   step      'up' | 'right' | 'down' | 'left'
  *   color     '#RRGGBB'
@@ -21,11 +22,13 @@
  *   count     whole number, zero or more
  *   seconds   number, zero or more
  *   shape     non-empty list of { dx, dy, color? }: the pixels of an object
+ *   image     the pixels of one face: FACE_RESOLUTION * FACE_RESOLUTION '#RRGGBB', row after row
  *   blocks    nested list of blocks
  */
 export type FieldKind =
 	| 'text'
 	| 'face'
+	| 'faces'
 	| 'heading'
 	| 'step'
 	| 'color'
@@ -33,6 +36,7 @@ export type FieldKind =
 	| 'count'
 	| 'seconds'
 	| 'shape'
+	| 'image'
 	| 'blocks';
 
 /**
@@ -54,6 +58,7 @@ export type BlockSchema = Record<string, FieldSchema>;
 export const FIELD = {
 	text: { kind: 'text' },
 	face: { kind: 'face' },
+	faces: { kind: 'faces' },
 	heading: { kind: 'heading' },
 	step: { kind: 'step' },
 	color: { kind: 'color' },
@@ -61,6 +66,7 @@ export const FIELD = {
 	count: { kind: 'count' },
 	seconds: { kind: 'seconds' },
 	shape: { kind: 'shape' },
+	image: { kind: 'image' },
 	blocks: { kind: 'blocks' },
 } satisfies Record<FieldKind, FieldSchema>;
 

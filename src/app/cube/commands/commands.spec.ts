@@ -1,6 +1,7 @@
 import { EngineError } from '../errors';
 import { Heading } from '../geometry/geometry';
 import { Command } from '../blocks';
+import { Face } from '../state/cube-state';
 import { World } from '../world/world';
 import { applyCommand, isCommand } from './apply-command';
 
@@ -130,6 +131,57 @@ describe('object commands', () => {
 		for (const command of commands) {
 			expect(() => applyCommand(world, command), command.op).toThrow(EngineError);
 		}
+	});
+});
+
+describe('background commands', () => {
+	/**
+	 * A picture of one color for a whole face, as a program writes it.
+	 */
+	function solid (color: string): string[] {
+		return new Array<string>(64 * 64).fill(color);
+	}
+
+	it('puts a picture on the faces it names, behind the objects', () => {
+		const world = worldWithBall();
+
+		applyCommand(world, { op: 'setBackgroundImage', faces: [ 'FRONT', 'TOP' ], pixels: solid('#336699') });
+
+		expect(world.background.get(Face.FRONT, 10, 10)).toBe(0x336699);
+		expect(world.background.get(Face.TOP, 63, 63)).toBe(0x336699);
+		expect(world.background.get(Face.LEFT, 10, 10)).toBe(0);
+		expect(world.get('ball').color).toBe(0xff0000);
+	});
+
+	it('places the pixels row after row', () => {
+		const world = new World();
+		const pixels = solid('#000000');
+		pixels[2 * 64 + 5] = '#ff0000';
+
+		applyCommand(world, { op: 'setBackgroundImage', faces: [ 'RIGHT' ], pixels });
+
+		expect(world.background.get(Face.RIGHT, 5, 2)).toBe(0xff0000);
+		expect(world.background.get(Face.RIGHT, 2, 5)).toBe(0);
+	});
+
+	it('paints faces one color, replacing a picture', () => {
+		const world = new World();
+		applyCommand(world, { op: 'setBackgroundImage', faces: [ 'BACK', 'LEFT' ], pixels: solid('#336699') });
+
+		applyCommand(world, { op: 'setBackgroundColor', faces: [ 'BACK' ], color: '#112233' });
+
+		expect(world.background.get(Face.BACK, 0, 0)).toBe(0x112233);
+		expect(world.background.get(Face.BACK, 63, 63)).toBe(0x112233);
+		expect(world.background.get(Face.LEFT, 0, 0)).toBe(0x336699);
+	});
+
+	it('makes the world change, so the renderer redraws', () => {
+		const world = new World();
+		const version = world.version;
+
+		applyCommand(world, { op: 'setBackgroundColor', faces: [ 'FRONT' ], color: '#ffffff' });
+
+		expect(world.version).toBeGreaterThan(version);
 	});
 });
 

@@ -12,6 +12,9 @@ blocks/
 │   ├── create.ts  move.ts  move-to.ts  set-color.ts
 │   ├── show.ts  hide.ts  delete.ts  point-up.ts
 │   └── index.ts
+├── background/           change what is behind the objects
+│   ├── set-background-image.ts  set-background-color.ts
+│   └── index.ts
 └── control/              decide when other blocks run
     ├── wait.ts  repeat.ts  forever.ts
     └── index.ts
@@ -29,6 +32,8 @@ blocks/
 | | `hide` | `target` | Hides an object without removing it |
 | | `delete` | `target` | Removes an object |
 | | `pointUp` | `target` | Resets the heading so "up" is the up of the screen |
+| background | `setBackgroundImage` | `faces, pixels` | Puts a picture on some faces. `pixels` is the picture already shrunk to 64 × 64 colors |
+| | `setBackgroundColor` | `faces, color` | Paints some faces one color, replacing any picture |
 | control | `wait` | `seconds` | Pauses the script |
 | | `repeat` | `times, body` | Runs `body` a fixed number of times |
 | | `forever` | `body` | Runs `body` until the program stops |
@@ -92,7 +97,7 @@ Example: `sound/`.
 - **One block per file**, named after its `op` in kebab-case (`moveTo` → `move-to.ts`). The definition is `<op>Block`; `delete` is `deleteBlock` because `delete` is a reserved word.
 - **A block file never imports another block.** If two blocks share logic, the logic belongs in a lower layer (`geometry/`, `drawing/`, `world/`).
 - **Blocks never compute edges, rotations or pixels themselves.** They call the geometry or the drawing primitives, like the existing ones.
-- **No block writes to the world's background layer.** That layer belongs to the environment (the pictures the user puts on the faces), so objects, which blocks create and move, always draw over it and never change it.
+- **Only the background blocks write to the world's background layer** (besides the environment, which is where the cube starts). Objects always draw over it and never change it.
 - **A command that changes nothing must not touch the world**, so the world's `version` stays still and the renderer can skip the frame.
 - **Outside this folder, import from `blocks/index.ts`**, never from a block file.
 - Every file starts with a comment saying what the block is and does.

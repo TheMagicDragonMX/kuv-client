@@ -39,7 +39,18 @@
 			}
 		</div>
 
-		<!-- Both stay alive and one is hidden, so switching tabs loses neither the program text nor the picture being cropped. -->
+		<!-- All stay alive and the others are hidden, so switching tabs loses neither the blocks, the program text nor the picture being cropped. -->
+		<div class="min-h-0 flex-1" role="tabpanel" [hidden]="tab() !== 'blocks'">
+			<app-blocks-tab
+				class="block h-full"
+				[running]="cube.running()"
+				[problem]="cube.problem()"
+				(run)="cube.run($event)"
+				(stop)="cube.stop()"
+				(reset)="cube.reset()"
+			/>
+		</div>
+
 		<div class="min-h-0 flex-1" role="tabpanel" [hidden]="tab() !== 'program'">
 			<app-program-area
 				class="block h-full"
