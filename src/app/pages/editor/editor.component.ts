@@ -38,6 +38,12 @@ export class EditorPage {
 	protected readonly objects = signal<CreateCommand[]>([]);
 
 	/**
+	 * Names of the objects the user has hidden to see what is behind them. Only a view setting:
+	 * it is not part of the program.
+	 */
+	protected readonly hiddenObjects = signal<string[]>([]);
+
+	/**
 	 * The stage of the cube, edited by the background panel.
 	 */
 	protected readonly environment = signal<Environment>({});

@@ -10,7 +10,24 @@
 					<h3 class="truncate text-[0.76rem] font-bold text-slate-100">{{ object.name }}</h3>
 					<p class="text-[0.7rem] text-slate-400">{{ object.pixels ? object.pixels.length + ' pixels' : 'One pixel' }} · starts at {{ object.face.toLowerCase() }} {{ object.x }}, {{ object.y }}</p>
 				</div>
-				@if (editable(object)) {
+				<button
+						type="button"
+						class="cursor-pointer rounded-full p-1.5 hover:bg-slate-400/15"
+						[class]="isHidden(object.name) ? 'text-slate-500' : 'text-slate-300'"
+						[attr.aria-label]="(isHidden(object.name) ? 'Show ' : 'Hide ') + object.name"
+						[attr.aria-pressed]="isHidden(object.name)"
+						[title]="isHidden(object.name) ? 'Hidden on the cube: click to show' : 'Visible on the cube: click to hide'"
+						(click)="toggleHidden(object.name)"
+					>
+						<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
+							<circle cx="12" cy="12" r="3" />
+							@if (isHidden(object.name)) {
+								<path d="M4 4l16 16" />
+							}
+						</svg>
+					</button>
+					@if (editable(object)) {
 					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" [attr.aria-label]="'Edit ' + object.name" (click)="edit(object)">Edit</button>
 				}
 				<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" [attr.aria-label]="'Delete ' + object.name" (click)="remove(object.name)">✕</button>

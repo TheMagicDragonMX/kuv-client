@@ -1,5 +1,5 @@
 <div class="relative block h-screen w-screen overflow-hidden bg-(image:--editor-gradient) font-[Inter,'Segoe_UI',sans-serif] text-slate-100">
-	<app-cube #cube class="absolute inset-y-0 right-0 left-0 lg:left-[26rem]" [environment]="environment()" aria-label="Virtual LED cube preview" />
+	<app-cube #cube class="absolute inset-y-0 right-0 left-0 lg:left-[26rem]" [environment]="environment()" [objects]="objects()" [hiddenObjects]="hiddenObjects()" aria-label="Virtual LED cube preview" />
 
 	<nav class="absolute top-4 left-4 z-20 flex gap-2 rounded-full border border-slate-400/20 bg-(--surface) p-[0.4rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]" aria-label="Navegación principal">
 		<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Login</a>
@@ -58,7 +58,7 @@
 		</div>
 
 		<div class="min-h-0 flex-1" role="tabpanel" [hidden]="tab() !== 'objects'">
-			<app-objects-panel class="block h-full" [(objects)]="objects" />
+			<app-objects-panel class="block h-full" [(objects)]="objects" [(hidden)]="hiddenObjects" />
 		</div>
 
 		<div class="min-h-0 flex-1 overflow-y-auto" role="tabpanel" [hidden]="tab() !== 'background'">

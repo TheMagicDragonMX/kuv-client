@@ -78,6 +78,11 @@ export class CubeEngine {
 	 */
 	private environment?: Environment;
 
+	/**
+	 * Objects kept out of sight by the user (see `setHidden`).
+	 */
+	private hidden = new Set<string>();
+
 	constructor (private readonly options: CubeEngineOptions = {}) {
 		this.defaults = options.defaults;
 		this.build();
@@ -108,6 +113,42 @@ export class CubeEngine {
 		paintEnvironment(this.world, environment, this.environment);
 		this.environment = environment;
 		this.renderer.render();
+	}
+
+	/**
+	 * Chooses the objects that are kept out of sight, like a hidden layer: they still exist and
+	 * move, they are just not drawn. It applies at once, and again on every start and reset.
+	 * Names with no object are ignored.
+	 */
+	setHidden (names: readonly string[]): void {
+		const previous = this.hidden;
+
+		this.hidden = new Set(names);
+
+		for (const name of previous)
+			if (!this.hidden.has(name))
+				this.setVisible(name, true);
+
+		this.applyHidden();
+		this.renderer.render();
+	}
+
+	/**
+	 * Hides the objects chosen with `setHidden` that exist in the current world.
+	 */
+	private applyHidden (): void {
+		for (const name of this.hidden)
+			this.setVisible(name, false);
+	}
+
+	private setVisible (name: string, visible: boolean): void {
+		try {
+			this.world.update(name, { visible });
+		}
+
+		catch {
+			// No object with that name (yet): nothing to change.
+		}
 	}
 
 	/**
@@ -167,6 +208,7 @@ export class CubeEngine {
 		for (const object of this.program.objects ?? [])
 			applyCommand(this.world, object);
 
+		this.applyHidden();
 		this.state.fill(0);
 		this.renderer.render();
 	}

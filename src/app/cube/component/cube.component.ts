@@ -39,6 +39,7 @@ import {
 } from '@angular/core';
 import { ThemeService } from '../../services/theme.service';
 import { EngineError, ProgramError } from '../errors';
+import { CreateCommand } from '../blocks';
 import { CubePlayer } from '../engine/cube-player';
 import { Environment } from '../environment/environment';
 import { ProgramConfig } from '../program/program';
@@ -73,6 +74,18 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	 * program stops, resets or runs again.
 	 */
 	readonly environment = input<Environment>();
+
+	/**
+	 * Objects to show on the cube while nothing runs, where they start, so they can be seen
+	 * before any block exists.
+	 */
+	readonly objects = input<CreateCommand[]>();
+
+	/**
+	 * Names of the objects to keep out of sight, like a hidden layer. They are not drawn but
+	 * still exist and move.
+	 */
+	readonly hiddenObjects = input<readonly string[]>([]);
 
 	private readonly runningState = signal(false);
 
@@ -116,6 +129,19 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 		});
 
 		effect(() => {
+			const objects = this.objects();
+
+			if (objects)
+				untracked(() => this.previewObjects(objects));
+		});
+
+		effect(() => {
+			const hidden = this.hiddenObjects();
+
+			untracked(() => this.player.setHidden(hidden));
+		});
+
+		effect(() => {
 			this.theme.theme();
 			this.applyFog();
 		});
@@ -145,6 +171,22 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 		catch (error) {
 			if (!(error instanceof EngineError))
+				throw error;
+
+			this.problemState.set(error.message);
+		}
+	}
+
+	/**
+	 * Shows the objects at their starting place, reporting invalid ones as a problem.
+	 */
+	private previewObjects (objects: CreateCommand[]): void {
+		try {
+			this.player.preview(objects);
+		}
+
+		catch (error) {
+			if (!(error instanceof ProgramError))
 				throw error;
 
 			this.problemState.set(error.message);

@@ -23,6 +23,11 @@ export class ObjectsPanelComponent {
 	readonly objects = model<CreateCommand[]>([]);
 
 	/**
+	 * Names of the objects hidden from the cube, to see what is behind them. A view setting only.
+	 */
+	readonly hidden = model<string[]>([]);
+
+	/**
 	 * The object being made or edited in the dialog: the original of an edit, or null for a new one.
 	 */
 	protected readonly session = signal<{ original: CreateCommand | null } | null>(null);
@@ -51,8 +56,17 @@ export class ObjectsPanelComponent {
 		return null !== drawingFromObject(object);
 	}
 
+	protected isHidden (name: string): boolean {
+		return this.hidden().includes(name);
+	}
+
+	protected toggleHidden (name: string): void {
+		this.hidden.update((hidden) => hidden.includes(name) ? hidden.filter((candidate) => candidate !== name) : [ ...hidden, name ]);
+	}
+
 	protected remove (name: string): void {
 		this.objects.update((objects) => objects.filter((object) => object.name !== name));
+		this.hidden.update((hidden) => hidden.filter((candidate) => candidate !== name));
 	}
 
 	protected save (object: CreateCommand): void {
@@ -61,6 +75,9 @@ export class ObjectsPanelComponent {
 		this.objects.update((objects) => original
 			? objects.map((candidate) => candidate.name === original.name ? object : candidate)
 			: [ ...objects, object ]);
+
+		if (original && original.name !== object.name)
+			this.hidden.update((hidden) => hidden.map((name) => name === original.name ? object.name : name));
 		this.dialog().nativeElement.close();
 	}
 

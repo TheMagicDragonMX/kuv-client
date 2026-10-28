@@ -15,6 +15,7 @@
  */
 
 import { Environment } from '../environment/environment';
+import { CreateCommand } from '../blocks';
 import { ProgramConfig } from '../program/program';
 import { CubeState } from '../state/cube-state';
 import { CubeEngine, CubeEngineOptions } from './cube-engine';
@@ -97,6 +98,25 @@ export class CubePlayer {
 			this.sync();
 		});
 		this.sync();
+	}
+
+	/**
+	 * Keeps some objects out of sight (a hidden layer). See `CubeEngine.setHidden`.
+	 */
+	setHidden (names: readonly string[]): void {
+		this.engine.setHidden(names);
+	}
+
+	/**
+	 * Shows objects on the cube without running anything: a program with no scripts, so the
+	 * objects sit where they start. Does nothing while a program is running. Throws a
+	 * ProgramError if the objects are invalid.
+	 */
+	preview (objects: CreateCommand[]): void {
+		if (this.engine.running)
+			return;
+
+		this.engine.load({ version: 1, objects, scripts: [] });
 	}
 
 	/**
