@@ -16,9 +16,9 @@
 
 import { Environment } from '../environment/environment';
 import { CreateCommand } from '../blocks';
-import { ProgramConfig } from '../program/program';
-import { CubeState } from '../state/cube-state';
-import { CubeEngine, CubeEngineOptions } from './cube-engine';
+import { FaceName, ProgramConfig } from '../program/program';
+import { CubeState, Face } from '../state/cube-state';
+import { CubeEngine, CubeEngineOptions, Grab, Outline } from './cube-engine';
 import { DEFAULT_TICK_RATE, RunLoop } from './run-loop';
 
 /**
@@ -105,6 +105,28 @@ export class CubePlayer {
 	 */
 	setHidden (names: readonly string[]): void {
 		this.engine.setHidden(names);
+	}
+
+	/**
+	 * The rectangles of an object, one for each face, grown by `padding` cells. See `CubeEngine.outlineOf`.
+	 */
+	outlineOf (name: string, padding = 0): Outline[] {
+		return this.engine.outlineOf(name, padding);
+	}
+
+	/**
+	 * The object a press on a pixel grabs. See `CubeEngine.grabAt`.
+	 */
+	grabAt (face: Face, x: number, y: number, padding: number, preferred?: string | null): Grab | null {
+		return this.engine.grabAt(face, x, y, padding, preferred);
+	}
+
+	/**
+	 * Where a `create` block must put an object so its center lands on a pixel, or null when
+	 * objects cannot be placed there.
+	 */
+	placementAt (face: Face, x: number, y: number): { face: FaceName; x: number; y: number } | null {
+		return this.engine.placementAt(face, x, y);
 	}
 
 	/**

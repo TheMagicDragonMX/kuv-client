@@ -28,6 +28,11 @@ export class ObjectsPanelComponent {
 	readonly hidden = model<string[]>([]);
 
 	/**
+	 * The object being handled: the one dragged on the cube, even if others cover it.
+	 */
+	readonly selected = model<string | null>(null);
+
+	/**
 	 * The object being made or edited in the dialog: the original of an edit, or null for a new one.
 	 */
 	protected readonly session = signal<{ original: CreateCommand | null } | null>(null);
@@ -141,7 +146,14 @@ export class ObjectsPanelComponent {
 		this.hidden.update((hidden) => hidden.includes(name) ? hidden.filter((candidate) => candidate !== name) : [ ...hidden, name ]);
 	}
 
+	protected toggleSelected (name: string): void {
+		this.selected.update((selected) => selected === name ? null : name);
+	}
+
 	protected remove (name: string): void {
+		if (this.selected() === name)
+			this.selected.set(null);
+
 		this.objects.update((objects) => objects.filter((object) => object.name !== name));
 		this.hidden.update((hidden) => hidden.filter((candidate) => candidate !== name));
 	}
@@ -152,6 +164,9 @@ export class ObjectsPanelComponent {
 		this.objects.update((objects) => original
 			? objects.map((candidate) => candidate.name === original.name ? object : candidate)
 			: [ ...objects, object ]);
+
+		if (original && original.name !== object.name && this.selected() === original.name)
+			this.selected.set(object.name);
 
 		if (original && original.name !== object.name)
 			this.hidden.update((hidden) => hidden.map((name) => name === original.name ? object.name : name));

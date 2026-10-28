@@ -76,6 +76,38 @@ export class CubeView {
 	}
 
 	/**
+	 * The pixel of the cube under a point of the screen, or null if the point is not on the cube.
+	 * @param clientX Horizontal position in the page, as in a pointer event.
+	 * @param clientY Vertical position in the page.
+	 */
+	pixelAt (clientX: number, clientY: number): { face: Face; x: number; y: number } | null {
+		const box = this.renderer.domElement.getBoundingClientRect();
+
+		if (!box.width || !box.height)
+			return null;
+
+		const point = new THREE.Vector2(
+			(clientX - box.left) / box.width * 2 - 1,
+			-((clientY - box.top) / box.height * 2 - 1),
+		);
+		const raycaster = new THREE.Raycaster();
+
+		raycaster.setFromCamera(point, this.rig.camera);
+
+		return this.model.pick(raycaster);
+	}
+
+	/**
+	 * Shows rectangles of cells over the cube, replacing the ones shown before. An empty list
+	 * removes them.
+	 */
+	setOutlines (boxes: readonly { face: Face; x0: number; y0: number; x1: number; y1: number }[]): void {
+		this.model.setOutlines(boxes);
+		this.needsDraw = true;
+	}
+
+	/**
+	 * Smoothly orbits the camera	/**
 	 * Smoothly orbits the camera until the given face is shown head-on, and stops the auto-rotation.
 	 */
 	lookAtFace (face: Face): void {

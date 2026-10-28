@@ -72,6 +72,16 @@ export class CubeModel {
 	 */
 	private renderedVersion = -1;
 
+	/**
+	 * The dark panel of each face, indexed by `Face`. It is what pointer picking hits.
+	 */
+	private readonly panels: THREE.Mesh[] = [];
+
+	/**
+	 * Where the selection rectangles of each face go, indexed by `Face`.
+	 */
+	private readonly outlines: THREE.Group[] = [];
+
 	constructor (private readonly state: CubeState) {
 		this.group.position.y = 0.4;
 		this.addFaces();
@@ -83,6 +93,73 @@ export class CubeModel {
 	 */
 	syncIfChanged (): boolean {
 		return this.renderedVersion !== this.state.version && this.syncLeds();
+	}
+
+	/**
+	 * The LED under a ray, as a face and a pixel of the state (x to the right, y down from the
+	 * top-left, as seen from outside), or null if the ray misses the cube.
+	 */
+	pick (raycaster: THREE.Raycaster): { face: Face; x: number; y: number } | null {
+		this.group.updateMatrixWorld(true);
+
+		const hit = raycaster.intersectObjects(this.panels, false)[0];
+
+		if (!hit)
+			return null;
+
+		const face = this.panels.indexOf(hit.object as THREE.Mesh) as Face;
+		const local = hit.object.worldToLocal(hit.point.clone());
+		const clamp = (value: number) => Math.min(FACE_RESOLUTION - 1, Math.max(0, Math.floor(value)));
+
+		return {
+			face,
+			x: clamp((local.x + FACE_SIZE / 2) / FACE_SIZE * FACE_RESOLUTION),
+			y: clamp((FACE_SIZE / 2 - local.y) / FACE_SIZE * FACE_RESOLUTION),
+		};
+	}
+
+	/**
+	 * Shows rectangles of cells over the faces (and removes the ones shown before): a frame
+	 * and a light fill, so an object can be seen and grabbed even when it is small.
+	 */
+	setOutlines (boxes: readonly { face: Face; x0: number; y0: number; x1: number; y1: number }[]): void {
+		for (const group of this.outlines)
+			for (const child of [ ...group.children ]) {
+				group.remove(child);
+
+				if (child instanceof THREE.Mesh || child instanceof THREE.LineLoop) {
+					child.geometry.dispose();
+					(child.material as THREE.Material).dispose();
+				}
+			}
+
+		const cell = FACE_SIZE / FACE_RESOLUTION;
+
+		for (const box of boxes) {
+			const left = -FACE_SIZE / 2 + box.x0 * cell;
+			const right = -FACE_SIZE / 2 + (box.x1 + 1) * cell;
+			const top = FACE_SIZE / 2 - box.y0 * cell;
+			const bottom = FACE_SIZE / 2 - (box.y1 + 1) * cell;
+			const z = LED_DEPTH + 0.01;
+
+			const fill = new THREE.Mesh(
+				new THREE.PlaneGeometry(right - left, top - bottom),
+				new THREE.MeshBasicMaterial({ color: 0xf9a8d4, transparent: true, opacity: 0.18, depthWrite: false }),
+			);
+			fill.position.set((left + right) / 2, (top + bottom) / 2, z);
+
+			const frame = new THREE.LineLoop(
+				new THREE.BufferGeometry().setFromPoints([
+					new THREE.Vector3(left, top, z + 0.001),
+					new THREE.Vector3(right, top, z + 0.001),
+					new THREE.Vector3(right, bottom, z + 0.001),
+					new THREE.Vector3(left, bottom, z + 0.001),
+				]),
+				new THREE.LineBasicMaterial({ color: 0xf9a8d4 }),
+			);
+
+			this.outlines[box.face].add(fill, frame);
+		}
 	}
 
 	/**
@@ -145,6 +222,7 @@ export class CubeModel {
 			panel.castShadow = true;
 			panel.receiveShadow = true;
 			faceGroup.add(panel);
+			this.panels.push(panel);
 
 			// Unlit material so each LED shows exactly its own color.
 			const ledMatrix = new THREE.InstancedMesh(
@@ -176,6 +254,10 @@ export class CubeModel {
 			this.ledColors.push(ledColors);
 			this.shownPixels.push(new Uint32Array(FACE_RESOLUTION * FACE_RESOLUTION));
 			faceGroup.add(ledMatrix);
+
+			const outline = new THREE.Group();
+			faceGroup.add(outline);
+			this.outlines.push(outline);
 
 			this.group.add(faceGroup);
 		}

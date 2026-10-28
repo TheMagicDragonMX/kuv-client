@@ -245,6 +245,21 @@ export class CubeGeometry {
 	}
 
 	/**
+	 * The placement that puts an object on a pixel of the cube state, or null if objects cannot
+	 * be placed there (below the floor of the sides). It is the inverse of `place` for the
+	 * position; the top face is addressed through the top anchor.
+	 */
+	placementOf (pixel: FacePixel): Placement | null {
+		if (pixel.face === Face.TOP) {
+			const [ x, y ] = rotateCell(pixel.x, pixel.y, -this.anchorTurns);
+
+			return { face: Face.TOP, x, y };
+		}
+
+		return SIDES.includes(pixel.face) && pixel.y <= this.floor ? { face: pixel.face, x: pixel.x, y: pixel.y } : null;
+	}
+
+	/**
 	 * Moves a pose a number of cells in a direction relative to its heading, one cell at a
 	 * time. Crossing an edge keeps the object facing the way it was going, so the heading
 	 * changes with respect to the screen. The move stops early at the floor.

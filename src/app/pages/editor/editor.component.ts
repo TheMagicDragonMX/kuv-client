@@ -1,6 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { CreateCommand, CubeComponent, Environment, Face } from '../../cube';
+import { CreateCommand, CubeComponent, Environment, Face, ObjectMove } from '../../cube';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { BlocksTabComponent } from './blocks-tab.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
@@ -44,9 +44,23 @@ export class EditorPage {
 	protected readonly hiddenObjects = signal<string[]>([]);
 
 	/**
+	 * The object being handled: the one the cube drags, picked in the Objects tab or on the cube.
+	 */
+	protected readonly selectedObject = signal<string | null>(null);
+
+	/**
 	 * The stage of the cube, edited by the background panel.
 	 */
 	protected readonly environment = signal<Environment>({});
+
+	/**
+	 * The user dragged an object on the cube: its starting place is now the cell it was dropped on.
+	 */
+	protected moveObject (move: ObjectMove): void {
+		this.objects.update((objects) => objects.map((object) => object.name === move.name
+			? { ...object, face: move.face, x: move.x, y: move.y }
+			: object));
+	}
 
 	/**
 	 * Faces the camera can turn to.

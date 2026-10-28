@@ -1,11 +1,14 @@
 <section class="flex h-full flex-col gap-3" aria-label="Objects">
 	<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Objects</h2>
-	<p class="text-[0.76rem] leading-relaxed text-slate-300">Make the objects of your program here. They start in the middle of the front face; in the Blocks tab you move them. The list is the layers: the top one is in front. Drag an object up or down to change its layer.</p>
+	<p class="text-[0.76rem] leading-relaxed text-slate-300">Make the objects of your program here. They start in the middle of the front face; click an object to handle it (it is framed on the cube, even when others cover it), then drag it on the cube to place it, or move it with blocks. The list is the layers: the top one is in front. Drag an object up or down to change its layer.</p>
 
 	<ul class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
 		@for (object of layers(); track object.name) {
 			<li
-				class="flex items-center gap-3 rounded-2xl border border-l-4 border-slate-400/25 border-l-pink-400 bg-slate-400/10 p-3"
+				class="flex cursor-pointer items-center gap-3 rounded-2xl border border-l-4 border-l-pink-400 bg-slate-400/10 p-3"
+				[class]="selected() === object.name ? 'border-pink-300/70 bg-pink-300/10' : 'border-slate-400/25'"
+				[attr.aria-selected]="selected() === object.name"
+				(click)="toggleSelected(object.name)"
 				[style.opacity]="dragging() === object.name ? 0.4 : null"
 				[style.box-shadow]="dropShadow(object.name)"
 				draggable="true"
@@ -19,7 +22,8 @@
 				<span class="shrink-0 cursor-grab text-slate-500 select-none" title="Drag to change the layer" aria-hidden="true">⠿</span>
 					<div class="min-w-0 flex-1">
 					<h3 class="truncate text-[0.76rem] font-bold text-slate-100">{{ object.name }}</h3>
-					<p class="text-[0.7rem] text-slate-400">{{ object.pixels ? object.pixels.length + ' pixels' : 'One pixel' }} · starts at {{ object.face.toLowerCase() }} {{ object.x }}, {{ object.y }}</p>
+					<p class="text-[0.7rem] text-slate-400">{{ object.pixels ? object.pixels.length + ' pixels' : 'One pixel' }}</p>
+						<p class="font-mono text-[0.7rem] text-pink-300" [attr.aria-label]="'Position of ' + object.name">{{ object.face }} · x {{ object.x }}, y {{ object.y }}</p>
 				</div>
 				<button
 						type="button"
@@ -28,7 +32,7 @@
 						[attr.aria-label]="(isHidden(object.name) ? 'Show ' : 'Hide ') + object.name"
 						[attr.aria-pressed]="isHidden(object.name)"
 						[title]="isHidden(object.name) ? 'Hidden on the cube: click to show' : 'Visible on the cube: click to hide'"
-						(click)="toggleHidden(object.name)"
+						(click)="$event.stopPropagation(); toggleHidden(object.name)"
 					>
 						<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" />
@@ -39,9 +43,9 @@
 						</svg>
 					</button>
 					@if (editable(object)) {
-					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" [attr.aria-label]="'Edit ' + object.name" (click)="edit(object)">Edit</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" [attr.aria-label]="'Edit ' + object.name" (click)="$event.stopPropagation(); edit(object)">Edit</button>
 				}
-				<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" [attr.aria-label]="'Delete ' + object.name" (click)="remove(object.name)">✕</button>
+				<button type="button" class="cursor-pointer rounded-full px-2 py-1 text-[0.76rem] text-slate-300 hover:bg-slate-400/15" [attr.aria-label]="'Delete ' + object.name" (click)="$event.stopPropagation(); remove(object.name)">✕</button>
 			</li>
 		} @empty {
 			<li class="px-2 py-6 text-center text-[0.76rem] text-slate-400">No objects yet. Make the first one.</li>
