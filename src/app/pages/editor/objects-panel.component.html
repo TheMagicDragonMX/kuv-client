@@ -1,12 +1,23 @@
 <section class="flex h-full flex-col gap-3" aria-label="Objects">
 	<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Objects</h2>
-	<p class="text-[0.76rem] leading-relaxed text-slate-300">Make the objects of your program here. They start in the middle of the front face; in the Blocks tab you move them.</p>
+	<p class="text-[0.76rem] leading-relaxed text-slate-300">Make the objects of your program here. They start in the middle of the front face; in the Blocks tab you move them. The list is the layers: the top one is in front. Drag an object up or down to change its layer.</p>
 
 	<ul class="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto">
-		@for (object of objects(); track object.name) {
-			<li class="flex items-center gap-3 rounded-2xl border border-l-4 border-slate-400/25 border-l-pink-400 bg-slate-400/10 p-3">
+		@for (object of layers(); track object.name) {
+			<li
+				class="flex items-center gap-3 rounded-2xl border border-l-4 border-slate-400/25 border-l-pink-400 bg-slate-400/10 p-3"
+				[style.opacity]="dragging() === object.name ? 0.4 : null"
+				[style.box-shadow]="dropShadow(object.name)"
+				draggable="true"
+				(dragstart)="dragStart($event, object.name)"
+				(dragenter)="dragOver($event, object.name)"
+				(dragover)="dragOver($event, object.name)"
+				(drop)="dropLayer($event)"
+				(dragend)="dragEnd()"
+			>
 				<app-object-preview class="size-16 shrink-0 rounded-lg bg-slate-900/80 p-1" [object]="object" />
-				<div class="min-w-0 flex-1">
+				<span class="shrink-0 cursor-grab text-slate-500 select-none" title="Drag to change the layer" aria-hidden="true">⠿</span>
+					<div class="min-w-0 flex-1">
 					<h3 class="truncate text-[0.76rem] font-bold text-slate-100">{{ object.name }}</h3>
 					<p class="text-[0.7rem] text-slate-400">{{ object.pixels ? object.pixels.length + ' pixels' : 'One pixel' }} · starts at {{ object.face.toLowerCase() }} {{ object.x }}, {{ object.y }}</p>
 				</div>

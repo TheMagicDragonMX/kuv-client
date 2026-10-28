@@ -56,6 +56,83 @@ export class ObjectsPanelComponent {
 		return null !== drawingFromObject(object);
 	}
 
+	/**
+	 * The objects as layers, frontmost first. Objects are drawn in list order (later ones on
+	 * top), so a new object lands on the front layer and the list here is the reverse of it.
+	 */
+	protected readonly layers = computed(() => [ ...this.objects() ].reverse());
+
+	/**
+	 * The layer being dragged, and where it would land: next to the layer `name`, before it
+	 * (toward the front) or after it (toward the back).
+	 */
+	protected readonly dragging = signal<string | null>(null);
+
+	protected readonly drop = signal<{ name: string; before: boolean } | null>(null);
+
+	protected dragStart (event: DragEvent, name: string): void {
+		if (event.dataTransfer) {
+			event.dataTransfer.effectAllowed = 'move';
+			event.dataTransfer.setData('text/plain', name);
+		}
+
+		// Marked after the browser has taken the drag image; changing the row while it starts can cancel the drag.
+		setTimeout(() => this.dragging.set(name));
+	}
+
+	/**
+	 * Tracks which half of the layer under the pointer it is over, to show where the dragged one lands.
+	 */
+	protected dragOver (event: DragEvent, name: string): void {
+		event.preventDefault();
+
+		if (event.dataTransfer)
+			event.dataTransfer.dropEffect = 'move';
+
+		const box = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+		this.drop.set({ name, before: event.clientY < box.top + box.height / 2 });
+	}
+
+	/**
+	 * The line that shows where the dragged layer would land, on the layer it is over.
+	 */
+	protected dropShadow (name: string): string | null {
+		const target = this.drop();
+
+		if (null === this.dragging() || this.dragging() === name || target?.name !== name)
+			return null;
+
+		return target.before ? '0 -3px 0 0 #f9a8d4' : '0 3px 0 0 #f9a8d4';
+	}
+
+	protected dropLayer (event: DragEvent): void {
+		event.preventDefault();
+
+		const name = this.dragging();
+		const target = this.drop();
+
+		this.dragEnd();
+
+		if (null === name || null === target)
+			return;
+
+		const layers = this.layers().filter((object) => object.name !== name);
+		const moved = this.objects().find((object) => object.name === name);
+		const index = layers.findIndex((object) => object.name === target.name);
+
+		if (!moved || 0 > index)
+			return;
+
+		layers.splice(target.before ? index : index + 1, 0, moved);
+		this.objects.set(layers.reverse());
+	}
+
+	protected dragEnd (): void {
+		this.dragging.set(null);
+		this.drop.set(null);
+	}
+
 	protected isHidden (name: string): boolean {
 		return this.hidden().includes(name);
 	}
