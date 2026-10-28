@@ -25,6 +25,25 @@ import { CubeState, FACE_RESOLUTION, Face } from '../state/cube-state';
 import { EDGE_PADDING, FACE_OFFSET, FACE_SIZE, FRAME_DEPTH, LED_DEPTH, PANEL_DEPTH } from './view-settings';
 
 /**
+ * One side of a cell on a face, part of the outline of a rectangle.
+ */
+export interface SelectionEdge {
+	face: Face;
+	x: number;
+	y: number;
+	side: 'left' | 'right' | 'top' | 'bottom';
+}
+
+/**
+ * A rectangle over the cube: the part of it on each face, and the sides of cells that draw
+ * its outline.
+ */
+export interface SelectionFrame {
+	boxes: readonly { face: Face; x0: number; y0: number; x1: number; y1: number }[];
+	edges: readonly SelectionEdge[];
+}
+
+/**
  * Where each face sits and how it is turned, in `Face` order.
  */
 const FACE_PLACEMENTS = [
@@ -97,68 +116,113 @@ export class CubeModel {
 
 	/**
 	 * The LED under a ray, as a face and a pixel of the state (x to the right, y down from the
-	 * top-left, as seen from outside), or null if the ray misses the cube.
+	 * top-left, as seen from outside), or null if the ray misses the cube. The ray is cut with
+	 * the plane of each face in the frame of that face, and the nearest cut inside a face wins.
 	 */
-	pick (raycaster: THREE.Raycaster): { face: Face; x: number; y: number } | null {
+	pick (origin: THREE.Vector3, direction: THREE.Vector3): { face: Face; x: number; y: number } | null {
 		this.group.updateMatrixWorld(true);
 
-		const hit = raycaster.intersectObjects(this.panels, false)[0];
-
-		if (!hit)
-			return null;
-
-		const face = this.panels.indexOf(hit.object as THREE.Mesh) as Face;
-		const local = hit.object.worldToLocal(hit.point.clone());
+		let best: { face: Face; x: number; y: number } | null = null;
+		let bestDistance = Infinity;
+		const inverse = new THREE.Matrix4();
+		const start = new THREE.Vector3();
+		const way = new THREE.Vector3();
+		const half = FACE_SIZE / 2;
 		const clamp = (value: number) => Math.min(FACE_RESOLUTION - 1, Math.max(0, Math.floor(value)));
 
-		return {
-			face,
-			x: clamp((local.x + FACE_SIZE / 2) / FACE_SIZE * FACE_RESOLUTION),
-			y: clamp((FACE_SIZE / 2 - local.y) / FACE_SIZE * FACE_RESOLUTION),
-		};
+		this.panels.forEach((panel, face: Face) => {
+			inverse.copy(panel.matrixWorld).invert();
+			start.copy(origin).applyMatrix4(inverse);
+			way.copy(direction).transformDirection(inverse);
+
+			// Only from outside (in front of the face, going toward it).
+			if (0 >= start.z || 0 <= way.z)
+				return;
+
+			const distance = -start.z / way.z;
+			const x = start.x + way.x * distance;
+			const y = start.y + way.y * distance;
+
+			if (distance < bestDistance && Math.abs(x) <= half && Math.abs(y) <= half) {
+				bestDistance = distance;
+				best = { face, x: clamp((x + half) / FACE_SIZE * FACE_RESOLUTION), y: clamp((half - y) / FACE_SIZE * FACE_RESOLUTION) };
+			}
+		});
+
+		return best;
 	}
 
 	/**
-	 * Shows rectangles of cells over the faces (and removes the ones shown before): a frame
-	 * and a light fill, so an object can be seen and grabbed even when it is small.
+	 * Shows one rectangle over the cube (and removes the one shown before): a light fill on each
+	 * face it covers, and an outline made only of the sides of the rectangle, so where it goes
+	 * over an edge of the cube it is not cut in two. The color is 0xRRGGBB.
 	 */
-	setOutlines (boxes: readonly { face: Face; x0: number; y0: number; x1: number; y1: number }[]): void {
+	setOutlines (frame: SelectionFrame, color: number): void {
 		for (const group of this.outlines)
 			for (const child of [ ...group.children ]) {
 				group.remove(child);
 
-				if (child instanceof THREE.Mesh || child instanceof THREE.LineLoop) {
+				if (child instanceof THREE.Mesh) {
 					child.geometry.dispose();
 					(child.material as THREE.Material).dispose();
 				}
 			}
 
 		const cell = FACE_SIZE / FACE_RESOLUTION;
+		const thickness = cell / 3;
+		const z = LED_DEPTH + 0.01;
+		const fill = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.18, depthWrite: false });
+		const border = new THREE.MeshBasicMaterial({ color, depthWrite: false });
+		const piece = (face: Face, width: number, height: number, centerX: number, centerY: number, paint: THREE.Material) => {
+			const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), paint);
 
-		for (const box of boxes) {
-			const left = -FACE_SIZE / 2 + box.x0 * cell;
-			const right = -FACE_SIZE / 2 + (box.x1 + 1) * cell;
-			const top = FACE_SIZE / 2 - box.y0 * cell;
-			const bottom = FACE_SIZE / 2 - (box.y1 + 1) * cell;
-			const z = LED_DEPTH + 0.01;
+			mesh.position.set(centerX, centerY, z);
+			this.outlines[face].add(mesh);
+		};
+		// Position on a face of the left and top side of a pixel.
+		const leftOf = (x: number) => -FACE_SIZE / 2 + x * cell;
+		const topOf = (y: number) => FACE_SIZE / 2 - y * cell;
 
-			const fill = new THREE.Mesh(
-				new THREE.PlaneGeometry(right - left, top - bottom),
-				new THREE.MeshBasicMaterial({ color: 0xf9a8d4, transparent: true, opacity: 0.18, depthWrite: false }),
-			);
-			fill.position.set((left + right) / 2, (top + bottom) / 2, z);
+		for (const box of frame.boxes) {
+			const width = (box.x1 + 1 - box.x0) * cell;
+			const height = (box.y1 + 1 - box.y0) * cell;
 
-			const frame = new THREE.LineLoop(
-				new THREE.BufferGeometry().setFromPoints([
-					new THREE.Vector3(left, top, z + 0.001),
-					new THREE.Vector3(right, top, z + 0.001),
-					new THREE.Vector3(right, bottom, z + 0.001),
-					new THREE.Vector3(left, bottom, z + 0.001),
-				]),
-				new THREE.LineBasicMaterial({ color: 0xf9a8d4 }),
-			);
+			piece(box.face, width, height, leftOf(box.x0) + width / 2, topOf(box.y0) - height / 2, fill);
+		}
 
-			this.outlines[box.face].add(fill, frame);
+		// Neighbouring sides on the same line are joined into one strip.
+		const lines = new Map<string, { face: Face; side: SelectionEdge['side']; line: number; cells: number[] }>();
+
+		for (const edge of frame.edges) {
+			const horizontal = 'top' === edge.side || 'bottom' === edge.side;
+			const line = horizontal ? edge.y : edge.x;
+			const key = `${edge.face}/${edge.side}/${line}`;
+			const found = lines.get(key) ?? { face: edge.face, side: edge.side, line, cells: [] };
+
+			found.cells.push(horizontal ? edge.x : edge.y);
+			lines.set(key, found);
+		}
+
+		for (const { face, side, line, cells } of lines.values()) {
+			cells.sort((first, second) => first - second);
+
+			let start = 0;
+
+			for (let index = 1; index <= cells.length; index += 1) {
+				if (index < cells.length && cells[index] === cells[index - 1] + 1)
+					continue;
+
+				const first = cells[start];
+				const length = (cells[index - 1] - first + 1) * cell;
+
+				if ('top' === side || 'bottom' === side)
+					piece(face, length, thickness, leftOf(first) + length / 2, topOf('top' === side ? line : line + 1), border);
+
+				else
+					piece(face, thickness, length, leftOf('left' === side ? line : line + 1), topOf(first) - length / 2, border);
+
+				start = index;
+			}
 		}
 	}
 

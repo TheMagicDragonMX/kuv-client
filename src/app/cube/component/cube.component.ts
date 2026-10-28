@@ -44,9 +44,43 @@ import { EngineError, ProgramError } from '../errors';
 import { CreateCommand } from '../blocks';
 import { CubePlayer } from '../engine/cube-player';
 import { Environment } from '../environment/environment';
+import { parseColor } from '../program/names';
 import { FaceName, ProgramConfig } from '../program/program';
 import { FACE_RESOLUTION, Face } from '../state/cube-state';
 import { CubeView } from '../view/cube-view';
+
+/**
+ * Color of the rectangle when an object has no lit pixel to take it from.
+ */
+const OUTLINE_COLOR = 0xf9a8d4;
+
+/**
+ * The color most of the pixels of an object have, which is what its rectangle is painted with.
+ * Black is an LED that is off, so it does not count. On a tie the first color found wins.
+ */
+function dominantColor (object: CreateCommand): number {
+	const counts = new Map<number, number>();
+	const base = parseColor(object.color);
+
+	const colors = object.pixels
+		? object.pixels.map((pixel) => pixel.color === undefined ? base : parseColor(pixel.color))
+		: [ base ];
+
+	for (const color of colors)
+		if (0 !== color)
+			counts.set(color, (counts.get(color) ?? 0) + 1);
+
+	let best = OUTLINE_COLOR;
+	let most = 0;
+
+	for (const [ color, count ] of counts)
+		if (count > most) {
+			best = color;
+			most = count;
+		}
+
+	return best;
+}
 
 /**
  * A new starting place for an object, as the user dragged it: the same face, x and y a
@@ -227,7 +261,12 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	private refreshOutline (): void {
 		const name = this.selected();
 
-		this.view?.setOutlines(name && !this.player.running ? this.player.outlineOf(name, CubeComponent.GRAB_PADDING) : []);
+		const object = this.objects()?.find((candidate) => candidate.name === name);
+
+		this.view?.setOutlines(
+			object && !this.player.running ? this.player.frameOf(object.name, CubeComponent.GRAB_PADDING) : { boxes: [], edges: [] },
+			object ? dominantColor(object) : OUTLINE_COLOR,
+		);
 	}
 
 	/**

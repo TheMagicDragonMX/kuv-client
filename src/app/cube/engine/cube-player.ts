@@ -18,7 +18,7 @@ import { Environment } from '../environment/environment';
 import { CreateCommand } from '../blocks';
 import { FaceName, ProgramConfig } from '../program/program';
 import { CubeState, Face } from '../state/cube-state';
-import { CubeEngine, CubeEngineOptions, Grab, Outline } from './cube-engine';
+import { CubeEngine, CubeEngineOptions, Frame, Grab } from './cube-engine';
 import { DEFAULT_TICK_RATE, RunLoop } from './run-loop';
 
 /**
@@ -108,10 +108,10 @@ export class CubePlayer {
 	}
 
 	/**
-	 * The rectangles of an object, one for each face, grown by `padding` cells. See `CubeEngine.outlineOf`.
+	 * The rectangle of an object on the cube, grown by `padding` cells. See `CubeEngine.frameOf`.
 	 */
-	outlineOf (name: string, padding = 0): Outline[] {
-		return this.engine.outlineOf(name, padding);
+	frameOf (name: string, padding = 0): Frame {
+		return this.engine.frameOf(name, padding);
 	}
 
 	/**

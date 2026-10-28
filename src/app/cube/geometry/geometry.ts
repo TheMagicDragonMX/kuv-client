@@ -315,6 +315,23 @@ export class CubeGeometry {
 	}
 
 	/**
+	 * Like `pixelAt`, and also says which way the object's right and down point on the face at
+	 * that cell, as steps of the pixel (x, y). They differ from (1, 0) and (0, 1) after the
+	 * object has turned around an edge, so they tell how a shape that wraps over an edge is
+	 * laid out on each face.
+	 */
+	cellAt (pose: Pose, dx: number, dy: number): { pixel: FacePixel; right: readonly [ number, number ]; down: readonly [ number, number ] } | null {
+		const cell = this.offset(pose, dx, dy);
+		const pixel = cell && this.toPixel(cell);
+
+		return cell && pixel && {
+			pixel,
+			right: OFFSETS[turn(cell.heading, STEP_TURNS.right)],
+			down: OFFSETS[turn(cell.heading, STEP_TURNS.down)],
+		};
+	}
+
+	/**
 	 * Finds the cube state pixel that the cell `dx` right and `dy` down from a pose is drawn
 	 * on, or null if there is none. It is `toPixel(offset(pose, dx, dy))` without making the
 	 * pose in between, because the renderer asks this for every pixel of every shape.

@@ -20,7 +20,7 @@
 import * as THREE from 'three';
 import { CubeState, Face } from '../state/cube-state';
 import { CameraRig } from './camera-rig';
-import { CubeModel } from './cube-model';
+import { CubeModel, SelectionFrame } from './cube-model';
 import { Stage } from './stage';
 import { BACKGROUND } from './view-settings';
 
@@ -90,19 +90,18 @@ export class CubeView {
 			(clientX - box.left) / box.width * 2 - 1,
 			-((clientY - box.top) / box.height * 2 - 1),
 		);
-		const raycaster = new THREE.Raycaster();
+		const origin = this.rig.camera.position.clone();
+		const direction = new THREE.Vector3(point.x, point.y, 0.5).unproject(this.rig.camera).sub(origin).normalize();
 
-		raycaster.setFromCamera(point, this.rig.camera);
-
-		return this.model.pick(raycaster);
+		return this.model.pick(origin, direction);
 	}
 
 	/**
-	 * Shows rectangles of cells over the cube, replacing the ones shown before. An empty list
-	 * removes them.
+	 * Shows a rectangle over the cube, replacing the one shown before, in a color (0xRRGGBB).
+	 * Where it goes over an edge it is still one rectangle. An empty frame removes it.
 	 */
-	setOutlines (boxes: readonly { face: Face; x0: number; y0: number; x1: number; y1: number }[]): void {
-		this.model.setOutlines(boxes);
+	setOutlines (frame: SelectionFrame, color: number): void {
+		this.model.setOutlines(frame, color);
 		this.needsDraw = true;
 	}
 

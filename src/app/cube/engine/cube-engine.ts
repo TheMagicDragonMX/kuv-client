@@ -47,6 +47,25 @@ export interface Outline {
 }
 
 /**
+ * One side of a cell on a face.
+ */
+export interface Edge {
+	face: Face;
+	x: number;
+	y: number;
+	side: 'left' | 'right' | 'top' | 'bottom';
+}
+
+/**
+ * The rectangle of an object on the cube: its part on each face, and the sides of cells that
+ * draw its outline.
+ */
+export interface Frame {
+	boxes: Outline[];
+	edges: Edge[];
+}
+
+/**
  * What a press on the cube grabs: an object, and the pixel of its center.
  */
 export interface Grab {
@@ -172,11 +191,14 @@ export class CubeEngine {
 	}
 
 	/**
-	 * The rectangles an object covers, one for each face it is drawn on, grown by `padding`
-	 * cells on every side (and cut at the edges of the face). Empty if the object is hidden or
-	 * does not exist.
+	 * The frame of an object: its rectangle (the cells of its shape grown by `padding` cells on
+	 * every side) as it lies on the cube. The rectangle is one thing in the frame of the object,
+	 * so where it goes over an edge it continues on the next face: `boxes` are the parts on each
+	 * face, and `edges` are the sides of cells that make up its outline, which does not run along
+	 * the edges of the cube. Empty if the object is hidden or does not exist.
 	 */
-	outlineOf (name: string, padding = 0): Outline[] {
+	frameOf (name: string, padding = 0): Frame {
+		const frame: Frame = { boxes: [], edges: [] };
 		let object: CubeObject;
 
 		try {
@@ -184,42 +206,56 @@ export class CubeEngine {
 		}
 
 		catch {
-			return [];
+			return frame;
 		}
 
 		if (!object.visible)
-			return [];
+			return frame;
 
+		const columns = object.shape.map((part) => part.dx);
+		const rows = object.shape.map((part) => part.dy);
+		const left = Math.min(...columns) - padding;
+		const right = Math.max(...columns) + padding;
+		const top = Math.min(...rows) - padding;
+		const bottom = Math.max(...rows) + padding;
 		const boxes = new Map<Face, Outline>();
 
-		for (const part of object.shape) {
-			const pixel = this.world.geometry.pixelAt(object.pose, part.dx, part.dy);
+		for (let dy = top; dy <= bottom; dy += 1)
+			for (let dx = left; dx <= right; dx += 1) {
+				const cell = this.world.geometry.cellAt(object.pose, dx, dy);
 
-			if (!pixel)
-				continue;
+				if (!cell)
+					continue;
 
-			const box = boxes.get(pixel.face);
+				const { pixel } = cell;
+				const box = boxes.get(pixel.face);
 
-			if (box) {
-				box.x0 = Math.min(box.x0, pixel.x);
-				box.y0 = Math.min(box.y0, pixel.y);
-				box.x1 = Math.max(box.x1, pixel.x);
-				box.y1 = Math.max(box.y1, pixel.y);
+				if (box) {
+					box.x0 = Math.min(box.x0, pixel.x);
+					box.y0 = Math.min(box.y0, pixel.y);
+					box.x1 = Math.max(box.x1, pixel.x);
+					box.y1 = Math.max(box.y1, pixel.y);
+				}
+
+				else
+					boxes.set(pixel.face, { face: pixel.face, x0: pixel.x, y0: pixel.y, x1: pixel.x, y1: pixel.y });
+
+				// Each side of the rectangle, in the direction it points on this face.
+				const sides: [ boolean, number, number ][] = [
+					[ dx === left, -cell.right[0], -cell.right[1] ],
+					[ dx === right, cell.right[0], cell.right[1] ],
+					[ dy === top, -cell.down[0], -cell.down[1] ],
+					[ dy === bottom, cell.down[0], cell.down[1] ],
+				];
+
+				for (const [ onSide, sideX, sideY ] of sides)
+					if (onSide)
+						frame.edges.push({ face: pixel.face, x: pixel.x, y: pixel.y, side: 0 > sideX ? 'left' : 0 < sideX ? 'right' : 0 > sideY ? 'top' : 'bottom' });
 			}
 
-			else
-				boxes.set(pixel.face, { face: pixel.face, x0: pixel.x, y0: pixel.y, x1: pixel.x, y1: pixel.y });
-		}
+		frame.boxes = [ ...boxes.values() ];
 
-		const last = FACE_RESOLUTION - 1;
-
-		return [ ...boxes.values() ].map((box) => ({
-			face: box.face,
-			x0: Math.max(0, box.x0 - padding),
-			y0: Math.max(0, box.y0 - padding),
-			x1: Math.min(last, box.x1 + padding),
-			y1: Math.min(last, box.y1 + padding),
-		}));
+		return frame;
 	}
 
 	/**
@@ -230,7 +266,7 @@ export class CubeEngine {
 	 * pixel of the center of the object (null if it is not on a visible cell).
 	 */
 	grabAt (face: Face, x: number, y: number, padding: number, preferred?: string | null): Grab | null {
-		const contains = (name: string) => this.outlineOf(name, padding)
+		const contains = (name: string) => this.frameOf(name, padding).boxes
 			.some((box) => box.face === face && box.x0 <= x && x <= box.x1 && box.y0 <= y && y <= box.y1);
 		let found: CubeObject | null = null;
 
