@@ -21,6 +21,9 @@
 import { CubeState } from '../state/cube-state';
 import { World } from '../world/world';
 
+/**
+ * Draws the world onto the cube state, only when the world changed since the last draw.
+ */
 export class Renderer {
 	/**
 	 * World version the output currently shows. -1 means nothing has been drawn yet.
@@ -51,8 +54,10 @@ export class Renderer {
 				continue;
 
 			for (const part of object.shape) {
-				// The geometry finds where each pixel of the shape lands, across edges too. Pixels
-				// below the last visible row have no cell, so they are simply not drawn.
+				/**
+				 * The geometry finds where each pixel of the shape lands, across edges too. Pixels
+				 * below the last visible row have no cell, so they are simply not drawn.
+				 */
 				const pixel = this.world.geometry.pixelAt(object.pose, part.dx, part.dy);
 				if (pixel)
 					this.output.set(pixel.face, pixel.x, pixel.y, part.color ?? object.color);

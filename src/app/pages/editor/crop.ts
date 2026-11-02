@@ -9,11 +9,22 @@
 /**
  * The square of the picture that is kept: top-left corner and side, in pixels of the picture.
  */
-export interface Crop {
+export type Crop = {
+	/**
+	 * Left edge, in pixels of the picture.
+	 */
 	x: number;
+
+	/**
+	 * Top edge, in pixels of the picture.
+	 */
 	y: number;
+
+	/**
+	 * Side of the square, in pixels of the picture.
+	 */
 	side: number;
-}
+};
 
 /**
  * How much the user can zoom in. At 1 the window is as big as the short side of the picture.
@@ -40,6 +51,9 @@ export function centerOf (crop: Crop): { x: number; y: number } {
 	return { x: crop.x + crop.side / 2, y: crop.y + crop.side / 2 };
 }
 
+/**
+ * Keeps a value between the limits.
+ */
 function clamp (value: number, min: number, max: number): number {
 	return Math.min(Math.max(value, min), max);
 }

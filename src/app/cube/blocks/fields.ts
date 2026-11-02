@@ -42,10 +42,17 @@ export type FieldKind =
 /**
  * One field of a block.
  */
-export interface FieldSchema {
+export type FieldSchema = {
+	/**
+	 * What kind of value the field takes.
+	 */
 	kind: FieldKind;
+
+	/**
+	 * True when the field may be left out.
+	 */
 	optional?: boolean;
-}
+};
 
 /**
  * Fields of a block, by name (without `op`).

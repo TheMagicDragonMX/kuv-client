@@ -2,6 +2,9 @@ import { ProgramError } from '../errors';
 import { Face } from '../state/cube-state';
 import { CubePlayer } from './cube-player';
 
+/**
+ * A program with one object that moves to the right forever.
+ */
 const mover = {
 	version: 1,
 	scripts: [

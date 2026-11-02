@@ -17,18 +17,35 @@ import { FIELD } from '../fields';
  * Puts a picture on the background of each face in `faces`. `pixels` has
  * `FACE_RESOLUTION * FACE_RESOLUTION` colors, row after row.
  */
-export interface SetBackgroundImageCommand {
+export type SetBackgroundImageCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'setBackgroundImage';
-	faces: FaceName[];
-	pixels: ColorValue[];
-}
 
+	/**
+	 * The faces to put the picture on.
+	 */
+	faces: FaceName[];
+
+	/**
+	 * The picture, row after row.
+	 */
+	pixels: ColorValue[];
+};
+
+/**
+ * The shape of the command, its fields, and how it draws the picture.
+ */
 export const setBackgroundImageBlock: CommandDefinition<SetBackgroundImageCommand> = {
 	schema: {
 		faces: FIELD.faces,
 		pixels: FIELD.image,
 	},
 
+	/**
+	 * Draws the picture on the background of each face.
+	 */
 	apply (world, command) {
 		const pixels = command.pixels.map(parseColor);
 

@@ -24,13 +24,28 @@ import { CubeModel, SelectionFrame } from './cube-model';
 import { Stage } from './stage';
 import { BACKGROUND } from './view-settings';
 
+/**
+ * Draws the cube in a host element with three.js and lets the user orbit around it.
+ */
 export class CubeView {
+	/**
+	 * The three.js renderer that draws into the host element.
+	 */
 	private readonly renderer: THREE.WebGLRenderer;
 
+	/**
+	 * The scene around the cube.
+	 */
 	private readonly stage = new Stage();
 
+	/**
+	 * The cube itself, kept in sync with the cube state.
+	 */
 	private readonly model: CubeModel;
 
+	/**
+	 * The camera and its controls.
+	 */
 	private readonly rig: CameraRig;
 
 	/**
@@ -59,7 +74,10 @@ export class CubeView {
 	) {
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 		this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-		// Transparent canvas so the cube blends with whatever is behind it.
+
+		/**
+		 * Transparent canvas so the cube blends with whatever is behind it.
+		 */
 		this.renderer.setClearColor(BACKGROUND, 0);
 		this.renderer.shadowMap.enabled = true;
 		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -186,7 +204,9 @@ export class CubeView {
 	 */
 	private startRenderLoop (): void {
 		const render = () => {
-			// Both run every frame, so neither is skipped by the other short-circuiting.
+			/**
+			 * Both run every frame, so neither is skipped by the other short-circuiting.
+			 */
 			const ledsChanged = this.model.syncIfChanged();
 			const cameraMoved = this.rig.update();
 

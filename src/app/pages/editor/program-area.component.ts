@@ -24,14 +24,23 @@ export class ProgramAreaComponent {
 	 */
 	readonly visible = input(false);
 
+	/**
+	 * The program as formatted JSON, empty while it is not needed.
+	 */
 	protected readonly source = computed(() => {
 		const program = this.program();
 
 		return this.visible() && program ? JSON.stringify(program, null, 2) : '';
 	});
 
+	/**
+	 * True for a moment after the text was copied, to show the confirmation.
+	 */
 	protected readonly copied = signal(false);
 
+	/**
+	 * Copies the JSON to the clipboard.
+	 */
 	protected async copy (): Promise<void> {
 		await navigator.clipboard.writeText(this.source());
 		this.copied.set(true);

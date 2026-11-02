@@ -12,11 +12,21 @@ import { Block } from '../index';
 /**
  * Runs its body again and again until the program is stopped.
  */
-export interface ForeverBlock {
+export type ForeverBlock = {
+	/**
+	 * Identifies the block.
+	 */
 	op: 'forever';
-	body: Block[];
-}
 
+	/**
+	 * The blocks to repeat.
+	 */
+	body: Block[];
+};
+
+/**
+ * The shape of the block and its fields. What it does is handled by the interpreter.
+ */
 export const foreverBlock: BlockDefinition<ForeverBlock> = {
 	schema: {
 		body: FIELD.blocks,

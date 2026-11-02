@@ -4,22 +4,74 @@ import { ObjectEditorComponent } from './object-editor.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
 import { CENTER, GRID } from './stage-object';
 
-interface EditorInternals {
+/**
+ * The protected members of the object editor that the tests drive.
+ */
+type EditorInternals = {
+	/**
+	 * The name typed for the object.
+	 */
 	name: { (): string; set(value: string): void };
-	drawing: () => (number | null)[];
-	color: { set(value: string): void };
-	erasing: { set(value: boolean): void };
-	problem: () => string | null;
-	begin(index: number, event: PointerEvent): void;
-	over(index: number): void;
-	end(): void;
-	touch(index: number): void;
-	clear(): void;
-	save(): void;
-}
 
+	/**
+	 * The colors of the cells.
+	 */
+	drawing: () => (number | null)[];
+
+	/**
+	 * The color chosen to paint with.
+	 */
+	color: { set(value: string): void };
+
+	/**
+	 * True when the pointer erases.
+	 */
+	erasing: { set(value: boolean): void };
+
+	/**
+	 * Why the object cannot be saved, or null.
+	 */
+	problem: () => string | null;
+
+	/**
+	 * Starts painting at a cell.
+	 */
+	begin(index: number, event: PointerEvent): void;
+
+	/**
+	 * Paints a cell when the pointer slides over it.
+	 */
+	over(index: number): void;
+
+	/**
+	 * Stops painting.
+	 */
+	end(): void;
+
+	/**
+	 * Paints or empties a cell.
+	 */
+	touch(index: number): void;
+
+	/**
+	 * Empties the drawing.
+	 */
+	clear(): void;
+
+	/**
+	 * Hands back the object.
+	 */
+	save(): void;
+};
+
+/**
+ * Index of the center cell of the drawing.
+ */
 const CENTER_CELL = CENTER * GRID + CENTER;
 
+/**
+ * Creates the editor for a new object, or for an existing one, and gives access to its internals.
+ */
 function createEditor (object: CreateCommand | null = null, taken: string[] = []) {
 	const fixture = TestBed.createComponent(ObjectEditorComponent);
 	fixture.componentRef.setInput('object', object);
@@ -117,6 +169,9 @@ describe('ObjectEditorComponent', () => {
 describe('ObjectsPanelComponent', () => {
 	const ball: CreateCommand = { op: 'create', name: 'ball', face: 'FRONT', x: 32, y: 32, color: '#ff0000' };
 
+	/**
+	 * Creates the panel with some objects and stops its dialogs from needing a real browser.
+	 */
 	function createPanel (objects: CreateCommand[]) {
 		const fixture = TestBed.createComponent(ObjectsPanelComponent);
 		fixture.componentRef.setInput('objects', objects);
@@ -127,11 +182,34 @@ describe('ObjectsPanelComponent', () => {
 		fixture.detectChanges();
 
 		return { fixture, panel: fixture.componentInstance as unknown as {
+			/**
+			 * The objects of the program.
+			 */
 			objects: { (): CreateCommand[] };
+
+			/**
+			 * Opens the editor for a new object.
+			 */
 			create(): void;
+
+			/**
+			 * Opens the editor for an object.
+			 */
 			edit(object: CreateCommand): void;
+
+			/**
+			 * Deletes an object.
+			 */
 			remove(name: string): void;
+
+			/**
+			 * Keeps an object from the editor.
+			 */
 			save(object: CreateCommand): void;
+
+			/**
+			 * The names the editor must not repeat.
+			 */
 			taken: () => string[];
 		} };
 	}

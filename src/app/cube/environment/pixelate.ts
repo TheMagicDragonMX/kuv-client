@@ -20,11 +20,22 @@ import { Color, FACE_RESOLUTION } from '../state/cube-state';
  * A picture as raw bytes: `data` has 4 bytes (red, green, blue, alpha) per pixel, row after
  * row, which is what a canvas `ImageData` holds.
  */
-export interface RawImage {
+export type RawImage = {
+	/**
+	 * Width in pixels.
+	 */
 	width: number;
+
+	/**
+	 * Height in pixels.
+	 */
 	height: number;
+
+	/**
+	 * The bytes: red, green, blue and alpha for each pixel.
+	 */
 	data: ArrayLike<number>;
-}
+};
 
 /**
  * Shrinks (or stretches) a picture to `size` x `size` pixels. Crop it to a square first, or
@@ -70,7 +81,9 @@ function average (image: RawImage, left: number, top: number, cellWidth: number,
 			const weight = rowWeight * (Math.min(x + 1, right) - Math.max(x, left));
 			const index = (y * width + x) * 4;
 
-			// A transparent pixel adds black: its color counts for as much as it is opaque.
+			/**
+			 * A transparent pixel adds black: its color counts for as much as it is opaque.
+			 */
 			const opacity = data[index + 3] / 255;
 
 			red += data[index] * opacity * weight;

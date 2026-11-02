@@ -44,7 +44,9 @@ describe('CubeEngine', () => {
 		));
 		engine.start(0);
 
-		// Over the top it arrives on BACK at column 31, and "right" now goes towards the left.
+		/**
+		 * Over the top it arrives on BACK at column 31, and "right" now goes towards the left.
+		 */
 		expect(engine.state.get(Face.BACK, 30, 0)).toBe(0xff0000);
 	});
 
@@ -160,7 +162,9 @@ describe('CubeEngine', () => {
 			engine.load({ ...onTop, config: { topAnchor: 'LEFT' } });
 			engine.start(0);
 
-			// The bottom edge of the addressed top face is the one that touches LEFT.
+			/**
+			 * The bottom edge of the addressed top face is the one that touches LEFT.
+			 */
 			expect(engine.state.get(Face.TOP, 0, 32)).toBe(0xffffff);
 		});
 

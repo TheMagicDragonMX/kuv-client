@@ -14,6 +14,9 @@ import { CreateCommand, ShapePixelDefinition, formatColor, parseColor } from '..
  */
 export const GRID = 15;
 
+/**
+ * Index of the center cell along one side of the grid.
+ */
 export const CENTER = (GRID - 1) / 2;
 
 /**
@@ -80,7 +83,9 @@ export function drawingFromObject (object: CreateCommand): Drawing | null {
 		drawing[row * GRID + column] = pixel.color === undefined ? color : parseColor(pixel.color);
 	}
 
-	// The center is always part of the object, even if its shape does not list it.
+	/**
+	 * The center is always part of the object, even if its shape does not list it.
+	 */
 	drawing[CENTER * GRID + CENTER] ??= color;
 
 	return drawing;

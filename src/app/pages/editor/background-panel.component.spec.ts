@@ -5,17 +5,51 @@ import { BackgroundPanelComponent } from './background-panel.component';
  * The protected members the template uses, so the steps of the panel can be driven without a
  * browser (picking a file and cropping need real canvases, which the test environment lacks).
  */
-interface PanelInternals {
+type PanelInternals = {
+	/**
+	 * The picture, as if already cropped.
+	 */
 	pixels: { set(value: Uint32Array | null): void };
-	selected: () => ReadonlySet<string>;
-	allSelected: () => boolean;
-	toggle(name: string): void;
-	toggleAll(): void;
-	apply(): void;
-	remove(): void;
-	hasImage(name: string): boolean;
-}
 
+	/**
+	 * The faces chosen.
+	 */
+	selected: () => ReadonlySet<string>;
+
+	/**
+	 * True when every face is chosen.
+	 */
+	allSelected: () => boolean;
+
+	/**
+	 * Chooses or unchooses a face.
+	 */
+	toggle(name: string): void;
+
+	/**
+	 * Chooses every face, or none.
+	 */
+	toggleAll(): void;
+
+	/**
+	 * Puts the picture on the chosen faces.
+	 */
+	apply(): void;
+
+	/**
+	 * Takes the picture off the chosen faces.
+	 */
+	remove(): void;
+
+	/**
+	 * True when the face has a picture.
+	 */
+	hasImage(name: string): boolean;
+};
+
+/**
+ * Creates the panel and gives access to its internals.
+ */
 function createPanel () {
 	const fixture = TestBed.createComponent(BackgroundPanelComponent);
 	const panel = fixture.componentInstance;

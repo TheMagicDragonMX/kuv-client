@@ -30,6 +30,9 @@ export class EditorPage {
 		{ id: 'program', label: 'Program' },
 	] as const;
 
+	/**
+	 * The tab being shown.
+	 */
 	protected readonly tab = signal<(typeof this.tabs)[number]['id']>('blocks');
 
 	/**

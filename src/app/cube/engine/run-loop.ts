@@ -11,7 +11,13 @@
  */
 export const DEFAULT_TICK_RATE = 30;
 
+/**
+ * Calls a function at a steady rate until stopped.
+ */
 export class RunLoop {
+	/**
+	 * The interval that drives the ticks, while running.
+	 */
 	private timer?: ReturnType<typeof setInterval>;
 
 	/**

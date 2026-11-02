@@ -15,18 +15,35 @@ import { FIELD } from '../fields';
 /**
  * Paints the background of each face in `faces` one color.
  */
-export interface SetBackgroundColorCommand {
+export type SetBackgroundColorCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'setBackgroundColor';
-	faces: FaceName[];
-	color: ColorValue;
-}
 
+	/**
+	 * The faces to paint.
+	 */
+	faces: FaceName[];
+
+	/**
+	 * The color to fill them with.
+	 */
+	color: ColorValue;
+};
+
+/**
+ * The shape of the command, its fields, and how it fills the faces.
+ */
 export const setBackgroundColorBlock: CommandDefinition<SetBackgroundColorCommand> = {
 	schema: {
 		faces: FIELD.faces,
 		color: FIELD.color,
 	},
 
+	/**
+	 * Fills the background of each face with the color.
+	 */
 	apply (world, command) {
 		const color = parseColor(command.color);
 

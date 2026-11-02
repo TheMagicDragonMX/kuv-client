@@ -4,6 +4,9 @@ import { Face } from '../state/cube-state';
 import { CubeObject, SINGLE_PIXEL } from './cube-object';
 import { World } from './world';
 
+/**
+ * A one-pixel object with this name, at this column.
+ */
 function pixel (name: string, x = 0): CubeObject {
 	return {
 		name,

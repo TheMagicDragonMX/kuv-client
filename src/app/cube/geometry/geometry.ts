@@ -25,9 +25,24 @@ import { FACE_RESOLUTION, Face } from '../state/cube-state';
  * turns clockwise from north, so adding a number rotates a direction.
  */
 export enum Heading {
+	/**
+	 * Facing the top of the surface.
+	 */
 	NORTH = 0,
+
+	/**
+	 * Facing its right.
+	 */
 	EAST = 1,
+
+	/**
+	 * Facing the bottom.
+	 */
 	SOUTH = 2,
+
+	/**
+	 * Facing its left.
+	 */
 	WEST = 3,
 }
 
@@ -69,38 +84,79 @@ export type Surface = 'strip' | 'top';
  * On the top face the coordinates are the ones stored in the cube state: seen from above
  * with the front at the bottom. Headings are directions on the screen of that surface.
  */
-export interface Pose {
+export type Pose = {
+	/**
+	 * The surface the object is on.
+	 */
 	surface: Surface;
+
+	/**
+	 * Column on that surface.
+	 */
 	x: number;
+
+	/**
+	 * Row on that surface.
+	 */
 	y: number;
+
+	/**
+	 * The way the object faces.
+	 */
 	heading: Heading;
-}
+};
 
 /**
  * Where a user puts a new object. For a side face, x and y are local to that face. For
  * the top face they follow the configured top anchor (see GeometryConfig.topAnchor), and
  * so does the heading.
  */
-export interface Placement {
+export type Placement = {
+	/**
+	 * The face to place the object on.
+	 */
 	face: Face;
+
+	/**
+	 * Column on that face.
+	 */
 	x: number;
+
+	/**
+	 * Row on that face.
+	 */
 	y: number;
+
+	/**
+	 * The way the object faces. North when omitted.
+	 */
 	heading?: Heading;
-}
+};
 
 /**
  * A pixel of the cube state.
  */
-export interface FacePixel {
+export type FacePixel = {
+	/**
+	 * The face the pixel belongs to.
+	 */
 	face: Face;
+
+	/**
+	 * Column on that face.
+	 */
 	x: number;
+
+	/**
+	 * Row on that face.
+	 */
 	y: number;
-}
+};
 
 /**
  * Settings of the geometry. Both are optional.
  */
-export interface GeometryConfig {
+export type GeometryConfig = {
 
 	/**
 	 * Last row objects can reach on the sides. Rows below the last visible one exist but
@@ -114,7 +170,7 @@ export interface GeometryConfig {
 	 * how the top face is addressed and never changes how objects move. Defaults to FRONT.
 	 */
 	topAnchor?: Face;
-}
+};
 
 /**
  * Screen offset of one cell in each direction, indexed by Heading.
@@ -168,7 +224,9 @@ function rotateCell (x: number, y: number, quarterTurns: number): [ number, numb
  * is still on the surface, every cell on the way was too.
  */
 function straightOffset (pose: Pose, dx: number, dy: number): [ number, number ] {
-	// Left is minus right and up is minus down, so a negative dx or dy needs no case of its own.
+	/**
+	 * Left is minus right and up is minus down, so a negative dx or dy needs no case of its own.
+	 */
 	const [ rightX, rightY ] = OFFSETS[turn(pose.heading, STEP_TURNS.right)];
 	const [ downX, downY ] = OFFSETS[turn(pose.heading, STEP_TURNS.down)];
 
@@ -196,6 +254,9 @@ export class CubeGeometry {
 	 */
 	private readonly anchorTurns: number;
 
+	/**
+	 * Builds the geometry from the settings, using defaults for what is missing.
+	 */
 	constructor (config: GeometryConfig = {}) {
 		const floor = config.floor ?? FACE_RESOLUTION - 1;
 		const topAnchor = config.topAnchor ?? Face.FRONT;
@@ -293,9 +354,11 @@ export class CubeGeometry {
 		if (!Number.isInteger(dx) || !Number.isInteger(dy))
 			throw new RangeError(`The offset must be whole numbers, got (${dx}, ${dy})`);
 
-		// The walk only needs to follow the edges when it leaves the surface it started on:
-		// over the top of the strip, or off the top face. Anywhere else the answer is plain
-		// arithmetic on the cell (see `straightOffset`).
+		/**
+		 * The walk only needs to follow the edges when it leaves the surface it started on: over
+		 * the top of the strip, or off the top face. Anywhere else the answer is plain arithmetic
+		 * on the cell (see `straightOffset`).
+		 */
 		const [ x, y ] = straightOffset(pose, dx, dy);
 
 		if ('strip' === pose.surface) {
@@ -337,8 +400,10 @@ export class CubeGeometry {
 	 * pose in between, because the renderer asks this for every pixel of every shape.
 	 */
 	pixelAt (pose: Pose, dx: number, dy: number): FacePixel | null {
-		// The same arithmetic as `straightOffset`, written out because this runs for every
-		// pixel of every shape and returning a pair from a function costs an allocation each.
+		/**
+		 * The same arithmetic as `straightOffset`, written out because this runs for every pixel of
+		 * every shape and returning a pair from a function costs an allocation each.
+		 */
 		const right = OFFSETS[turn(pose.heading, STEP_TURNS.right)];
 		const down = OFFSETS[turn(pose.heading, STEP_TURNS.down)];
 		const x = pose.x + right[0] * dx + down[0] * dy;

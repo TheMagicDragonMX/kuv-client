@@ -14,10 +14,29 @@
  * builds its faces, so they double as indexes into the pixel buffer.
  */
 export enum Face {
+	/**
+	 * The face in front of the viewer.
+	 */
 	FRONT = 0,
+
+	/**
+	 * The face on the right.
+	 */
 	RIGHT = 1,
+
+	/**
+	 * The face on the left.
+	 */
 	LEFT = 2,
+
+	/**
+	 * The face behind.
+	 */
 	BACK = 3,
+
+	/**
+	 * The face on top.
+	 */
 	TOP = 4,
 }
 

@@ -29,16 +29,34 @@ export class ObjectEditorComponent {
 	 */
 	readonly saved = output<CreateCommand>();
 
+	/**
+	 * The user closed the editor without saving.
+	 */
 	readonly cancelled = output<void>();
 
+	/**
+	 * One entry per cell of the grid, to repeat the cell in the template.
+	 */
 	protected readonly cells = Array.from({ length: GRID * GRID }, (_, index) => index);
 
+	/**
+	 * Cells per side of the grid.
+	 */
 	protected readonly grid = GRID;
 
+	/**
+	 * Index of the center cell, the object's own cell.
+	 */
 	protected readonly center = CENTER * GRID + CENTER;
 
+	/**
+	 * The name typed for the object. Starts from the object being edited, or a free name.
+	 */
 	protected readonly name = linkedSignal(() => this.object()?.name ?? freeObjectName(this.taken()));
 
+	/**
+	 * The colors of the cells being drawn.
+	 */
 	protected readonly drawing = linkedSignal<Drawing>(() => {
 		const object = this.object();
 
@@ -50,10 +68,19 @@ export class ObjectEditorComponent {
 	 */
 	protected readonly color = signal('#f9a8d4');
 
+	/**
+	 * True when the pointer erases cells instead of painting them.
+	 */
 	protected readonly erasing = signal(false);
 
+	/**
+	 * Why the object cannot be saved yet, or null.
+	 */
 	protected readonly problem = computed(() => this.object() ? null : nameProblem(this.name(), this.taken()));
 
+	/**
+	 * True while the pointer is held down over the grid.
+	 */
 	private painting = false;
 
 	/**
@@ -65,18 +92,29 @@ export class ObjectEditorComponent {
 		return null === color ? null : formatColor(color);
 	}
 
+	/**
+	 * Starts painting at the cell.
+	 */
 	protected begin (index: number, event: PointerEvent): void {
-		// A finger would keep sending its events to the first cell; let each cell have its own.
+		/**
+		 * A finger would keep sending its events to the first cell; let each cell have its own.
+		 */
 		(event.target as Element).releasePointerCapture?.(event.pointerId);
 		this.painting = true;
 		this.touch(index);
 	}
 
+	/**
+	 * Paints the cell when the pointer slides over it while pressed.
+	 */
 	protected over (index: number): void {
 		if (this.painting)
 			this.touch(index);
 	}
 
+	/**
+	 * Stops painting.
+	 */
 	protected end (): void {
 		this.painting = false;
 	}
@@ -96,10 +134,16 @@ export class ObjectEditorComponent {
 		this.drawing.update((drawing) => drawing[index] === color ? drawing : drawing.map((cell, at) => at === index ? color : cell));
 	}
 
+	/**
+	 * Empties the drawing, leaving the center cell.
+	 */
 	protected clear (): void {
 		this.drawing.set(newDrawing(this.drawing()[this.center] ?? parseColor(this.color())));
 	}
 
+	/**
+	 * Hands back the object when it has no problem.
+	 */
 	protected save (): void {
 		if (!this.problem())
 			this.saved.emit(objectFromDrawing(this.name(), this.drawing()));

@@ -25,12 +25,24 @@ import { pictureOfObject } from './stage-object';
 	`,
 })
 export class ObjectPreviewComponent {
+	/**
+	 * The object to draw.
+	 */
 	readonly object = input.required<CreateCommand>();
 
+	/**
+	 * The object as colors on a small grid.
+	 */
 	protected readonly picture = computed(() => pictureOfObject(this.object()));
 
+	/**
+	 * The canvas the object is drawn on.
+	 */
 	private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
 
+	/**
+	 * Redraws the canvas whenever the object changes.
+	 */
 	constructor () {
 		afterRenderEffect(() => {
 			const { width, height, colors } = this.picture();

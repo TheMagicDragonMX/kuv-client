@@ -37,6 +37,9 @@ export class ObjectsPanelComponent {
 	 */
 	protected readonly session = signal<{ original: CreateCommand | null } | null>(null);
 
+	/**
+	 * The dialog where objects are made and edited.
+	 */
 	private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
 	/**
@@ -46,10 +49,16 @@ export class ObjectsPanelComponent {
 		.map((object) => object.name)
 		.filter((name) => name !== this.session()?.original?.name));
 
+	/**
+	 * Opens the editor for a new object.
+	 */
 	protected create (): void {
 		this.open(null);
 	}
 
+	/**
+	 * Opens the editor for an existing object.
+	 */
 	protected edit (object: CreateCommand): void {
 		this.open(object);
 	}
@@ -75,6 +84,9 @@ export class ObjectsPanelComponent {
 
 	protected readonly drop = signal<{ name: string; before: boolean } | null>(null);
 
+	/**
+	 * Starts dragging a layer.
+	 */
 	protected dragStart (event: DragEvent, name: string): void {
 		if (event.dataTransfer) {
 			event.dataTransfer.effectAllowed = 'move';
@@ -111,6 +123,9 @@ export class ObjectsPanelComponent {
 		return target.before ? '0 -3px 0 0 #f9a8d4' : '0 3px 0 0 #f9a8d4';
 	}
 
+	/**
+	 * Drops the dragged layer where it would land, which changes the order of the objects.
+	 */
 	protected dropLayer (event: DragEvent): void {
 		event.preventDefault();
 
@@ -133,23 +148,38 @@ export class ObjectsPanelComponent {
 		this.objects.set(layers.reverse());
 	}
 
+	/**
+	 * Ends the drag, whether or not the layer was dropped.
+	 */
 	protected dragEnd (): void {
 		this.dragging.set(null);
 		this.drop.set(null);
 	}
 
+	/**
+	 * True when the object is hidden from the cube.
+	 */
 	protected isHidden (name: string): boolean {
 		return this.hidden().includes(name);
 	}
 
+	/**
+	 * Hides the object, or shows it again.
+	 */
 	protected toggleHidden (name: string): void {
 		this.hidden.update((hidden) => hidden.includes(name) ? hidden.filter((candidate) => candidate !== name) : [ ...hidden, name ]);
 	}
 
+	/**
+	 * Selects the object, or deselects it when it already is the selected one.
+	 */
 	protected toggleSelected (name: string): void {
 		this.selected.update((selected) => selected === name ? null : name);
 	}
 
+	/**
+	 * Deletes the object.
+	 */
 	protected remove (name: string): void {
 		if (this.selected() === name)
 			this.selected.set(null);
@@ -158,6 +188,9 @@ export class ObjectsPanelComponent {
 		this.hidden.update((hidden) => hidden.filter((candidate) => candidate !== name));
 	}
 
+	/**
+	 * Keeps the object from the editor, renaming it in the hidden list when its name changed.
+	 */
 	protected save (object: CreateCommand): void {
 		const original = this.session()?.original;
 
@@ -173,10 +206,16 @@ export class ObjectsPanelComponent {
 		this.dialog().nativeElement.close();
 	}
 
+	/**
+	 * Forgets the object that was being edited once the dialog closes.
+	 */
 	protected closed (): void {
 		this.session.set(null);
 	}
 
+	/**
+	 * Opens the dialog for the object being edited, or for a new one when null.
+	 */
 	private open (original: CreateCommand | null): void {
 		this.session.set({ original });
 		this.dialog().nativeElement.showModal();

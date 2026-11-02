@@ -18,12 +18,25 @@ import { Block, FACE_RESOLUTION, FaceName, HeadingName, formatColor, parseColor 
  */
 export type FieldValue = string | number | FaceName[] | Uint32Array | null;
 
+/**
+ * The values of a block's fields, by field key.
+ */
 export type Values = Record<string, FieldValue>;
 
-interface FieldBase {
+/**
+ * What every kind of field has.
+ */
+type FieldBase = {
+	/**
+	 * Name of the value in the block's values.
+	 */
 	key: string;
+
+	/**
+	 * Text shown next to the control.
+	 */
 	label: string;
-}
+};
 
 /**
  * A field of a block. The kind decides the control the tab draws.
@@ -43,28 +56,54 @@ export type FieldSpec = FieldBase & (
 	| { kind: 'choice'; options: { value: string; label: string }[] }
 );
 
+/**
+ * Group a block belongs to in the picker.
+ */
 export type Category = 'Background' | 'Objects' | 'Control';
 
 /**
  * What a block can know about the rest of the program.
  */
-export interface Context {
+export type Context = {
 	/**
 	 * Names of the objects the user made in the Objects tab: what the blocks can act on.
 	 */
 	objects: string[];
-}
+};
 
-export interface VisualBlockSpec {
+/**
+ * Everything the tab needs to know about one kind of block: how it looks, and how it turns into an
+ * engine block and back.
+ */
+export type VisualBlockSpec = {
+	/**
+	 * Identifies the kind of block in the workspace.
+	 */
 	type: string;
 
 	/**
 	 * The engine block it stands for.
 	 */
 	op: Block['op'];
+
+	/**
+	 * Name shown on the block.
+	 */
 	label: string;
+
+	/**
+	 * Group of the picker the block is listed in.
+	 */
 	category: Category;
+
+	/**
+	 * One sentence shown in the picker.
+	 */
 	description: string;
+
+	/**
+	 * The fields the user can fill in.
+	 */
 	fields: FieldSpec[];
 
 	/**
@@ -91,25 +130,46 @@ export interface VisualBlockSpec {
 	 * The values that make this block from an engine block. The reverse of `compile`.
 	 */
 	read(block: Block): Values;
-}
+};
 
 /**
  * The order the categories are listed in, and so the order of the picker.
  */
 export const CATEGORIES: Category[] = [ 'Background', 'Objects', 'Control' ];
 
+/**
+ * The field to choose one face.
+ */
 const FACE_FIELD: FieldSpec = { key: 'face', label: 'Face', kind: 'face' };
 
+/**
+ * The field to choose several faces.
+ */
 const FACES_FIELD: FieldSpec = { key: 'faces', label: 'Faces', kind: 'faces' };
 
+/**
+ * The field to choose a color.
+ */
 const COLOR_FIELD: FieldSpec = { key: 'color', label: 'Color', kind: 'color' };
 
+/**
+ * The field to choose which object the block acts on.
+ */
 const TARGET_FIELD: FieldSpec = { key: 'target', label: 'Object', kind: 'object' };
 
+/**
+ * The field for a column, a whole number from zero.
+ */
 const X_FIELD: FieldSpec = { key: 'x', label: 'X', kind: 'number', min: 0, integer: true };
 
+/**
+ * The field for a row, a whole number from zero.
+ */
 const Y_FIELD: FieldSpec = { key: 'y', label: 'Y', kind: 'number', min: 0, integer: true };
 
+/**
+ * The field to choose where an object faces.
+ */
 const HEADING_FIELD: FieldSpec = {
 	key: 'heading',
 	label: 'Facing',
@@ -122,6 +182,9 @@ const HEADING_FIELD: FieldSpec = {
 	],
 };
 
+/**
+ * The directions of a move, as the user sees them.
+ */
 const DIRECTIONS = [
 	{ value: 'up', label: 'Up' },
 	{ value: 'right', label: 'Right' },
@@ -132,12 +195,26 @@ const DIRECTIONS = [
 /**
  * Checks that `compile` and `read` of a block agree on which engine block it is.
  */
-interface Definition<Op extends Block['op']> extends Omit<VisualBlockSpec, 'op' | 'compile' | 'read'> {
+type Definition<Op extends Block['op']> = Omit<VisualBlockSpec, 'op' | 'compile' | 'read'> & {
+	/**
+	 * The engine block it compiles to.
+	 */
 	op: Op;
-	compile(values: Values, body: Block[]): Extract<Block, { op: Op }>;
-	read(block: Extract<Block, { op: Op }>): Values;
-}
 
+	/**
+	 * Builds the engine block from the field values and the blocks inside.
+	 */
+	compile(values: Values, body: Block[]): Extract<Block, { op: Op }>;
+
+	/**
+	 * Reads the field values back from an engine block.
+	 */
+	read(block: Extract<Block, { op: Op }>): Values;
+};
+
+/**
+ * Gives a definition its final type, once `compile` and `read` are known to match.
+ */
 function define<Op extends Block['op']> (definition: Definition<Op>): VisualBlockSpec {
 	return definition as unknown as VisualBlockSpec;
 }
@@ -149,6 +226,9 @@ function lastObject (objects: string[]): string {
 	return objects.at(-1) ?? '';
 }
 
+/**
+ * Says the block needs an object when its target is not one of the existing objects.
+ */
 function targetProblem (values: Values, context: Context): string | null {
 	return context.objects.includes(values['target'] as string)
 		? null
@@ -180,6 +260,9 @@ function onlyTarget (type: string, op: 'show' | 'hide' | 'delete' | 'pointUp', l
 	});
 }
 
+/**
+ * Every kind of block the user can add.
+ */
 export const VISUAL_BLOCKS: VisualBlockSpec[] = [
 	define({
 		type: 'setBackgroundImage',

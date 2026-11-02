@@ -139,3 +139,53 @@ When generating, editing, or refactoring code for Kü-V, follow these rules:
 3. **Embedded / SBC Scripting (Python / C++ on Raspberry Pi):**
    - Ensure matrix rendering handles cross-face mapping without visual gaps [23, 28, 48].
    - Monitor SBC CPU temperature and keep execution non-blocking to prevent frame drops [44, 70].
+
+---
+
+## 7. Coding Style Rules
+
+> **Note:** This list is open-ended. More rules will be added over time. When the user says something like *"hey new rule, we need to..."*, treat it as a new coding style rule: add it to this section and apply it to all new and edited code from then on.
+
+### Comments
+- Write comments in JSDoc notation (`/** ... */`), always spread over multiple lines. A comment on a line of code takes at least three lines: the opening, the text, and the closing.
+- Always leave a blank line before a comment, so it never sits right under the code above it.
+
+```ts
+// Good
+const a = 1;
+
+/**
+ * A comment
+ */
+const b = 2;
+
+// Bad
+const a = 1;
+/** A comment */
+const b = 2;
+```
+
+### Documentation
+- Every declaration needs a JSDoc comment saying what it is for: classes, functions, methods, properties, variables, behavior constants defined before any logic, type aliases, and each property of a TS type.
+
+### Blocks of code
+- In chained blocks (`if` / `else`, `try` / `catch` / `finally`), leave a blank line before each following block (`else`, `else if`, `catch`, `finally`).
+- Single-statement bodies stay brace-less (ESLint `curly: multi`).
+
+```ts
+// Good
+if (condition)
+	console.log('hey');
+
+else
+	console.log('not hey');
+
+// Bad
+if (condition)
+	console.log('hey');
+else
+	console.log('not hey');
+```
+
+### Others
+- Use `type` aliases instead of `interface`, everywhere. The only exception is augmenting an existing global or library interface (declaration merging), which requires `interface`.

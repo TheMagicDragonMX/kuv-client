@@ -11,6 +11,9 @@ import { FACE_OPTIONS } from './faces';
 import { ImageCropperComponent } from './image-cropper.component';
 import { PixelPreviewComponent } from './pixel-preview.component';
 
+/**
+ * The faces the picture can go on, with their labels.
+ */
 const FACES = FACE_OPTIONS;
 
 /**
@@ -40,8 +43,14 @@ export class BackgroundPanelComponent implements OnDestroy {
 	 */
 	protected readonly modes = [ { id: 'image', label: 'Image' } ];
 
+	/**
+	 * The way of handling the background that is selected.
+	 */
 	protected readonly mode = signal('image');
 
+	/**
+	 * The faces the user can choose from.
+	 */
 	protected readonly faces = FACES;
 
 	/**
@@ -54,8 +63,14 @@ export class BackgroundPanelComponent implements OnDestroy {
 	 */
 	protected readonly pixels = signal<Uint32Array | null>(null);
 
+	/**
+	 * The faces the picture will be put on or removed from.
+	 */
 	protected readonly selected = signal<ReadonlySet<FaceName>>(new Set());
 
+	/**
+	 * True when every face is selected.
+	 */
 	protected readonly allSelected = computed(() => this.selected().size === FACES.length);
 
 	/**
@@ -64,18 +79,33 @@ export class BackgroundPanelComponent implements OnDestroy {
 	protected readonly selectedHaveImage = computed(() =>
 		[ ...this.selected() ].some((name) => this.hasImage(name)));
 
+	/**
+	 * What the last action did, or null.
+	 */
 	protected readonly message = signal<string | null>(null);
 
+	/**
+	 * Why the last action failed, or null.
+	 */
 	protected readonly problem = signal<string | null>(null);
 
+	/**
+	 * Releases the picture.
+	 */
 	ngOnDestroy (): void {
 		this.picture()?.close();
 	}
 
+	/**
+	 * True when the face already has a picture.
+	 */
 	protected hasImage (name: FaceName): boolean {
 		return !!this.environment().background?.[name];
 	}
 
+	/**
+	 * Reads the file the user picked and shows it for cropping.
+	 */
 	protected async pick (event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];
@@ -98,6 +128,9 @@ export class BackgroundPanelComponent implements OnDestroy {
 		}
 	}
 
+	/**
+	 * Shrinks the cropped square to the size of a face.
+	 */
 	protected crop (cropped: RawImage): void {
 		this.pixels.set(pixelate(cropped));
 		this.message.set(null);
@@ -113,6 +146,9 @@ export class BackgroundPanelComponent implements OnDestroy {
 		this.message.set(null);
 	}
 
+	/**
+	 * Adds the face to the selection, or removes it when already selected.
+	 */
 	protected toggle (name: FaceName): void {
 		const selected = new Set(this.selected());
 
@@ -122,6 +158,9 @@ export class BackgroundPanelComponent implements OnDestroy {
 		this.selected.set(selected);
 	}
 
+	/**
+	 * Selects every face, or none when all are selected.
+	 */
 	protected toggleAll (): void {
 		this.selected.set(this.allSelected() ? new Set() : new Set(FACES.map((face) => face.name)));
 	}
@@ -154,6 +193,9 @@ export class BackgroundPanelComponent implements OnDestroy {
 		this.message.set(`Cleared ${this.describe(this.selected())}.`);
 	}
 
+	/**
+	 * Lists the faces in plain words, for the messages.
+	 */
 	private describe (names: ReadonlySet<FaceName>): string {
 		return FACES.filter((face) => names.has(face.name)).map((face) => face.label.toLowerCase()).join(', ');
 	}

@@ -32,9 +32,12 @@ export type BackgroundImages = Partial<Record<FaceName, ArrayLike<Color>>>;
 /**
  * The settings of the stage.
  */
-export interface Environment {
+export type Environment = {
+	/**
+	 * Pictures behind the objects, by face.
+	 */
 	background?: BackgroundImages;
-}
+};
 
 /**
  * Pixels on one face.

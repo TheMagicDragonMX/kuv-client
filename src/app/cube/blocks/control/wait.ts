@@ -10,11 +10,21 @@ import { FIELD } from '../fields';
 /**
  * Pauses the script for some seconds of real time.
  */
-export interface WaitBlock {
+export type WaitBlock = {
+	/**
+	 * Identifies the block.
+	 */
 	op: 'wait';
-	seconds: number;
-}
 
+	/**
+	 * How long to pause, in seconds.
+	 */
+	seconds: number;
+};
+
+/**
+ * The shape of the block and its fields. What it does is handled by the interpreter.
+ */
 export const waitBlock: BlockDefinition<WaitBlock> = {
 	schema: {
 		seconds: FIELD.seconds,

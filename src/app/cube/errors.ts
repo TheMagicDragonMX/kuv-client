@@ -8,6 +8,9 @@
  * message says where the problem is (for example `scripts[0].blocks[2].count`).
  */
 export class ProgramError extends Error {
+	/**
+	 * Name shown when the error is printed.
+	 */
 	override name = 'ProgramError';
 }
 
@@ -16,5 +19,8 @@ export class ProgramError extends Error {
  * object that does not exist. Only the script that caused it stops.
  */
 export class EngineError extends Error {
+	/**
+	 * Name shown when the error is printed.
+	 */
 	override name = 'EngineError';
 }

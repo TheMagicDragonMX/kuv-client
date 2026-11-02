@@ -12,13 +12,31 @@ import { FIELD, optional } from '../fields';
 /**
  * Moves an object some cells in a direction relative to its own heading. Defaults to one cell.
  */
-export interface MoveCommand {
+export type MoveCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'move';
-	target: string;
-	step: Step;
-	count?: number;
-}
 
+	/**
+	 * Name of the object to move.
+	 */
+	target: string;
+
+	/**
+	 * The direction to move in, relative to the object's heading.
+	 */
+	step: Step;
+
+	/**
+	 * How many cells to move. Defaults to one.
+	 */
+	count?: number;
+};
+
+/**
+ * The shape of the command, its fields, and how it moves the object.
+ */
 export const moveBlock: CommandDefinition<MoveCommand> = {
 	schema: {
 		target: FIELD.text,
@@ -26,6 +44,9 @@ export const moveBlock: CommandDefinition<MoveCommand> = {
 		count: optional(FIELD.count),
 	},
 
+	/**
+	 * Moves the object, doing nothing when the move changes nothing.
+	 */
 	apply (world, command) {
 		const object = world.get(command.target);
 		const pose = world.geometry.move(object.pose, command.step, command.count ?? 1);

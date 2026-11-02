@@ -12,12 +12,26 @@ import { Block } from '../index';
 /**
  * Runs its body a fixed number of times.
  */
-export interface RepeatBlock {
+export type RepeatBlock = {
+	/**
+	 * Identifies the block.
+	 */
 	op: 'repeat';
-	times: number;
-	body: Block[];
-}
 
+	/**
+	 * How many times to run the body.
+	 */
+	times: number;
+
+	/**
+	 * The blocks to repeat.
+	 */
+	body: Block[];
+};
+
+/**
+ * The shape of the block and its fields. What it does is handled by the interpreter.
+ */
 export const repeatBlock: BlockDefinition<RepeatBlock> = {
 	schema: {
 		times: FIELD.count,

@@ -26,7 +26,9 @@ describe('pixelate', () => {
 	});
 
 	it('averages the area each pixel covers when shrinking', () => {
-		// 128x128, left half black and right half white, with the split inside no output pixel.
+		/**
+		 * 128x128, left half black and right half white, with the split inside no output pixel.
+		 */
 		const image = picture(128, 128, (x) => 64 > x ? [ 0, 0, 0, 255 ] : [ 255, 255, 255, 255 ]);
 
 		const pixels = pixelate(image);
@@ -36,19 +38,25 @@ describe('pixelate', () => {
 	});
 
 	it('mixes the colors under a pixel and does not skip any', () => {
-		// 2x2 pixels shrunk to 1x1: the plain average of the four.
+		/**
+		 * 2x2 pixels shrunk to 1x1: the plain average of the four.
+		 */
 		const image = picture(2, 2, (x, y) => [ [ 0, 100, 200, 40 ][y * 2 + x], 0, 0, 255 ]);
 
 		expect(pixelate(image, 1)[0]).toBe(85 << 16);
 	});
 
 	it('weights pixels cut by the border of a cell by the part that is inside', () => {
-		// 3 pixels shrunk to 2: each output pixel covers 1.5 of them.
+		/**
+		 * 3 pixels shrunk to 2: each output pixel covers 1.5 of them.
+		 */
 		const image = picture(3, 1, (x) => [ [ 0, 90, 180 ][x], 0, 0, 255 ]);
 
 		const [ left, right ] = pixelate(image, 2).slice(0, 2);
 
-		// Left covers 1 of the first pixel and 0.5 of the second: (0 * 1 + 90 * 0.5) / 1.5.
+		/**
+		 * Left covers 1 of the first pixel and 0.5 of the second: (0 * 1 + 90 * 0.5) / 1.5.
+		 */
 		expect(left).toBe(30 << 16);
 		expect(right).toBe(150 << 16);
 	});

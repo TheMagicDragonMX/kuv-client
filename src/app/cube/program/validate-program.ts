@@ -21,10 +21,19 @@ import { FACE_RESOLUTION } from '../state/cube-state';
 import { FACE_BY_NAME, HEADING_BY_NAME, isColorValue } from './names';
 import { Program } from './program';
 
+/**
+ * Names of the faces around the cube, as programs write them.
+ */
 const SIDE_NAMES = [ 'FRONT', 'RIGHT', 'BACK', 'LEFT' ];
 
+/**
+ * Names of the directions a move can take, as programs write them.
+ */
 const STEP_NAMES = [ 'up', 'right', 'down', 'left' ];
 
+/**
+ * The fields of a block, before they are checked.
+ */
 type Fields = Record<string, unknown>;
 
 /**

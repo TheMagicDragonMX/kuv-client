@@ -21,6 +21,9 @@ import { CubeObject } from './cube-object';
  */
 export type ObjectChanges = Partial<Pick<CubeObject, 'pose' | 'color' | 'visible'>>;
 
+/**
+ * The objects of the program and the background behind them, placed on the geometry of the cube.
+ */
 export class World {
 
 	/**
@@ -48,6 +51,9 @@ export class World {
 	 */
 	private objectChanges = 0;
 
+	/**
+	 * Builds an empty world with the given geometry settings.
+	 */
 	constructor (config: GeometryConfig = {}) {
 		this.geometry = new CubeGeometry(config);
 	}
