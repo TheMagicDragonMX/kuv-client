@@ -7,15 +7,29 @@
  * contains a raw newline, so the newline always marks the end of a message.
  */
 
-/** Bytes per write from the page. Bigger writes are fine for Chrome and BlueZ (long writes). */
+/**
+ * Bytes per write from the page. Bigger writes are fine for Chrome and BlueZ (long writes).
+ */
 export const CHUNK_SIZE = 180;
 
-/** A message that grows past this without a newline is garbage; the buffer is dropped. */
+/**
+ * A message that grows past this without a newline is garbage; the buffer is dropped.
+ */
 export const MAX_MESSAGE_SIZE = 64 * 1024;
 
+/**
+ * Byte that ends every message: `\n`.
+ */
 const NEWLINE = 0x0a;
 
+/**
+ * Turns messages into bytes.
+ */
 const encoder = new TextEncoder();
+
+/**
+ * Turns bytes back into text.
+ */
 const decoder = new TextDecoder();
 
 /**
@@ -38,8 +52,14 @@ export function encodeMessage (message: unknown, chunkSize = CHUNK_SIZE): Uint8A
  * are dropped.
  */
 export class MessageDecoder {
+	/**
+	 * Bytes received so far that do not yet end in a newline.
+	 */
 	private buffer = new Uint8Array(0);
 
+	/**
+	 * Adds a chunk and returns the messages it completed.
+	 */
 	push (chunk: Uint8Array): unknown[] {
 		const joined = new Uint8Array(this.buffer.length + chunk.length);
 		joined.set(this.buffer);
@@ -68,7 +88,9 @@ export class MessageDecoder {
 	}
 }
 
-/** The JSON on one line, or undefined when the line is empty or not JSON. */
+/**
+ * The JSON on one line, or undefined when the line is empty or not JSON.
+ */
 function parseLine (line: string): unknown {
 	if (!line.trim())
 		return undefined;

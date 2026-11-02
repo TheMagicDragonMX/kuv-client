@@ -8,9 +8,18 @@
 import * as THREE from 'three';
 import { BACKGROUND } from './view-settings';
 
+/**
+ * The 3D scene around the cube: lights, fog and the base it stands on.
+ */
 export class Stage {
+	/**
+	 * The scene the cube model is added to.
+	 */
 	readonly scene = new THREE.Scene();
 
+	/**
+	 * Sets up the fog, the lights and the base.
+	 */
 	constructor () {
 		this.scene.fog = new THREE.Fog(BACKGROUND, 8, 18);
 		this.addLights();

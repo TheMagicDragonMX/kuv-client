@@ -49,8 +49,14 @@ export class ImageCropperComponent {
 	 */
 	readonly cancelled = output<void>();
 
+	/**
+	 * The most the user can zoom in, for the slider.
+	 */
 	protected readonly maxZoom = MAX_ZOOM;
 
+	/**
+	 * Size in pixels of the square window as drawn on screen.
+	 */
 	protected readonly windowSize = WINDOW;
 
 	/**
@@ -67,6 +73,9 @@ export class ImageCropperComponent {
 		computation: () => null,
 	});
 
+	/**
+	 * The square of the picture that is kept right now.
+	 */
 	private readonly crop = computed(() => {
 		const { width, height } = this.image();
 		const center = this.center() ?? { x: width / 2, y: height / 2 };
@@ -74,10 +83,19 @@ export class ImageCropperComponent {
 		return cropOf(width, height, this.zoom(), center.x, center.y);
 	});
 
+	/**
+	 * The canvas that shows the kept square.
+	 */
 	private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
 
+	/**
+	 * Where the pointer was last seen while dragging, or null when not dragging.
+	 */
 	private drag: { x: number; y: number } | null = null;
 
+	/**
+	 * Redraws the canvas whenever the square or the picture changes.
+	 */
 	constructor () {
 		afterRenderEffect(() => {
 			const { x, y, side } = this.crop();
@@ -92,25 +110,39 @@ export class ImageCropperComponent {
 		});
 	}
 
+	/**
+	 * Zooms to the value the slider gives.
+	 */
 	protected setZoom (value: number): void {
 		this.zoomTo(value);
 	}
 
+	/**
+	 * Zooms in or out with the mouse wheel.
+	 */
 	protected wheel (event: WheelEvent): void {
 		event.preventDefault();
 		this.setZoom(this.zoom() * (0 > event.deltaY ? 1.1 : 1 / 1.1));
 	}
 
+	/**
+	 * Starts dragging the picture.
+	 */
 	protected pointerDown (event: PointerEvent): void {
 		this.drag = { x: event.clientX, y: event.clientY };
 		(event.target as HTMLElement).setPointerCapture(event.pointerId);
 	}
 
+	/**
+	 * Moves the window while dragging.
+	 */
 	protected pointerMove (event: PointerEvent): void {
 		if (!this.drag)
 			return;
 
-		// The picture follows the pointer, so the window goes the other way.
+		/**
+		 * The picture follows the pointer, so the window goes the other way.
+		 */
 		const crop = this.crop();
 		const scale = crop.side / (event.target as HTMLElement).getBoundingClientRect().width;
 		const center = centerOf(crop);
@@ -125,10 +157,16 @@ export class ImageCropperComponent {
 		this.drag = { x: event.clientX, y: event.clientY };
 	}
 
+	/**
+	 * Stops dragging.
+	 */
 	protected pointerUp (): void {
 		this.drag = null;
 	}
 
+	/**
+	 * Moves the window with the arrow keys.
+	 */
 	protected key (event: KeyboardEvent): void {
 		const arrows: Record<string, [ number, number ]> = {
 			ArrowLeft: [ -1, 0 ],

@@ -37,7 +37,7 @@ import { World } from '../world/world';
 /**
  * Settings of the engine.
  */
-export interface CubeEngineOptions {
+export type CubeEngineOptions = {
 	/**
 	 * Engine settings to use when a program does not set its own (top anchor, floor).
 	 */
@@ -47,8 +47,11 @@ export interface CubeEngineOptions {
 	 * Called when a script has to stop because of a problem while running.
 	 */
 	onError?: (error: ScriptError) => void;
-}
+};
 
+/**
+ * Loads a program, runs it on a world and keeps `state` up to date with what the cube shows.
+ */
 export class CubeEngine {
 	/**
 	 * What the cube shows. The same object for the whole life of the engine, so a view can
@@ -61,10 +64,19 @@ export class CubeEngine {
 	 */
 	private program: Program = { version: 1, scripts: [] };
 
+	/**
+	 * The objects and background the program acts on.
+	 */
 	private world!: World;
 
+	/**
+	 * Paints the world onto `state`.
+	 */
 	private renderer!: Renderer;
 
+	/**
+	 * Runs the program's scripts over time.
+	 */
 	private scheduler!: Scheduler;
 
 	/**
@@ -83,7 +95,15 @@ export class CubeEngine {
 	 */
 	private hidden = new Set<string>();
 
-	constructor (private readonly options: CubeEngineOptions = {}) {
+	/**
+	 * Builds the engine with the given options.
+	 */
+	constructor (
+		/**
+		 * Settings, callbacks and the clock the engine runs with.
+		 */
+		private readonly options: CubeEngineOptions = {},
+	) {
 		this.defaults = options.defaults;
 		this.build();
 	}
@@ -141,13 +161,18 @@ export class CubeEngine {
 			this.setVisible(name, false);
 	}
 
+	/**
+	 * Shows or hides one object, ignoring names with no object.
+	 */
 	private setVisible (name: string, visible: boolean): void {
 		try {
 			this.world.update(name, { visible });
 		}
 
 		catch {
-			// No object with that name (yet): nothing to change.
+			/**
+			 * No object with that name (yet): nothing to change.
+			 */
 		}
 	}
 

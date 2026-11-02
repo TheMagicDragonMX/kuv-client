@@ -55,18 +55,48 @@ export async function connectBluetooth (): Promise<CubeTransport> {
 	}
 }
 
+/**
+ * A transport over a real Bluetooth connection: writes to the RX characteristic and listens to the
+ * TX one.
+ */
 class BluetoothTransport implements CubeTransport {
+	/**
+	 * The device's advertised name, or the name prefix when it has none.
+	 */
 	readonly name: string;
 
+	/**
+	 * Joins notification chunks back into messages.
+	 */
 	private readonly decoder = new MessageDecoder();
+
+	/**
+	 * Called with every message the cube sends.
+	 */
 	private readonly messageListeners: ((message: unknown) => void)[] = [];
+
+	/**
+	 * Called once when the Bluetooth connection drops.
+	 */
 	private readonly disconnectListeners: (() => void)[] = [];
 
-	/** GATT allows one operation at a time, so writes wait for the one before. */
+	/**
+	 * GATT allows one operation at a time, so writes wait for the one before.
+	 */
 	private writes: Promise<void> = Promise.resolve();
 
+	/**
+	 * Starts listening to the notifications and to the connection dropping.
+	 */
 	constructor (
+		/**
+		 * The Bluetooth device the page is connected to.
+		 */
 		private readonly device: BluetoothDevice,
+
+		/**
+		 * The characteristic the page writes requests to.
+		 */
 		private readonly rx: BluetoothRemoteGATTCharacteristic,
 		tx: BluetoothRemoteGATTCharacteristic,
 	) {
@@ -87,25 +117,39 @@ class BluetoothTransport implements CubeTransport {
 		}, { once: true });
 	}
 
+	/**
+	 * Writes the request in chunks, after any write still in progress.
+	 */
 	send (request: Request): Promise<void> {
 		const write = this.writes.then(async () => {
 			for (const chunk of encodeMessage(request))
 				await this.rx.writeValueWithResponse(chunk);
 		});
 
-		// A failed write must not block the next ones.
+		/**
+		 * A failed write must not block the next ones.
+		 */
 		this.writes = write.catch(() => undefined);
 		return write;
 	}
 
+	/**
+	 * Registers a listener for the cube's messages.
+	 */
 	onMessage (listener: (message: unknown) => void): void {
 		this.messageListeners.push(listener);
 	}
 
+	/**
+	 * Registers a listener for the connection dropping.
+	 */
 	onDisconnect (listener: () => void): void {
 		this.disconnectListeners.push(listener);
 	}
 
+	/**
+	 * Drops the Bluetooth connection.
+	 */
 	disconnect (): void {
 		this.device.gatt?.disconnect();
 	}

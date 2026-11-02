@@ -15,20 +15,26 @@ import { FieldSchema } from './fields';
 
 /**
  * The fields a block must describe: exactly the ones in its interface, except `op`. The
- * compiler fails if the schema misses a field, or has one the interface does not.
+ * compiler fails if the schema misses a field, or has one the type does not.
  */
 export type SchemaOf<B extends { op: string }> = { [K in keyof Omit<B, 'op'>]-?: FieldSchema };
 
 /**
  * Everything the engine needs to know about a block, except what it does.
  */
-export interface BlockDefinition<B extends { op: string }> {
+export type BlockDefinition<B extends { op: string }> = {
+	/**
+	 * Which fields the block has and what kind of value each takes.
+	 */
 	schema: SchemaOf<B>;
-}
+};
 
 /**
  * A block that takes effect immediately.
  */
-export interface CommandDefinition<C extends { op: string }> extends BlockDefinition<C> {
+export type CommandDefinition<C extends { op: string }> = BlockDefinition<C> & {
+	/**
+	 * What the block does to the world when it runs.
+	 */
 	apply(world: World, command: C): void;
-}
+};

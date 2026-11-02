@@ -44,10 +44,16 @@ export const COMMAND_BLOCKS: { [K in Command['op']]: CommandDefinition<Extract<C
 /**
  * What the engine needs to know about any block, whatever its category.
  */
-export interface AnyBlockDefinition {
+export type AnyBlockDefinition = {
+	/**
+	 * Which fields the block has and what kind of value each takes.
+	 */
 	schema: BlockSchema;
-}
+};
 
+/**
+ * The definition of every block, by its `op`.
+ */
 const DEFINITIONS: { [K in Block['op']]: BlockDefinition<Extract<Block, { op: K }>> } = {
 	...COMMAND_BLOCKS,
 	...CONTROL_BLOCKS,

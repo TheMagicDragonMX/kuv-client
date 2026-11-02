@@ -13,24 +13,61 @@ import { ColorValue, Program, Script, ShapePixelDefinition, SideName } from '../
 /**
  * A program with a name and a description for showing in a menu.
  */
-export interface ExampleProgram {
+export type ExampleProgram = {
+	/**
+	 * Identifier used to pick the example.
+	 */
 	id: string;
+
+	/**
+	 * Name shown in the menu.
+	 */
 	name: string;
+
+	/**
+	 * One sentence saying what the example does.
+	 */
 	description: string;
+
+	/**
+	 * The program that runs when the example is picked.
+	 */
 	program: Program;
-}
+};
 
 /**
  * One falling pixel for the rain example: where it falls, how fast, and when it starts.
  */
-interface Drop {
+type Drop = {
+	/**
+	 * The face the drop falls on.
+	 */
 	face: SideName;
-	x: number;
-	color: ColorValue;
-	delay: number;
-	pace: number;
-}
 
+	/**
+	 * The column the drop falls along.
+	 */
+	x: number;
+
+	/**
+	 * The drop's color.
+	 */
+	color: ColorValue;
+
+	/**
+	 * Seconds before the drop starts falling.
+	 */
+	delay: number;
+
+	/**
+	 * Seconds between one step down and the next.
+	 */
+	pace: number;
+};
+
+/**
+ * The drops of the plain rain example.
+ */
 const RAIN_DROPS: Drop[] = [
 	{ face: 'FRONT', x: 6, color: '#7dd3fc', delay: 0, pace: 0.03 },
 	{ face: 'FRONT', x: 21, color: '#38bdf8', delay: 0.7, pace: 0.05 },
@@ -96,6 +133,9 @@ const DROP_SHAPE: ShapePixelDefinition[] = [
 	{ dx: 0, dy: 2 },
 ];
 
+/**
+ * The drops of the rain example with shaped objects.
+ */
 const SHAPED_DROPS: Drop[] = [
 	{ face: 'FRONT', x: 8, color: '#38bdf8', delay: 0, pace: 0.05 },
 	{ face: 'FRONT', x: 30, color: '#0ea5e9', delay: 0.9, pace: 0.07 },
@@ -151,6 +191,9 @@ const BELT_COLORS: ColorValue[] = [ '#ff0000', '#ffff00', '#00ff00', '#00ffff', 
  */
 const BELT_SECONDS = 1;
 
+/**
+ * The blocks that cycle the belt through its colors, waiting a second on each.
+ */
 const BELT_STEPS: Block[] = BELT_COLORS.flatMap((color): Block[] => [
 	{ op: 'setColor', target: 'belt', color },
 	{ op: 'wait', seconds: BELT_SECONDS },
@@ -161,6 +204,10 @@ const BELT_STEPS: Block[] = BELT_COLORS.flatMap((color): Block[] => [
  * A full turn of the color wheel takes 6 * FADE_STEPS * FADE_SECONDS seconds.
  */
 const FADE_STEPS = 20;
+
+/**
+ * Seconds each in-between color lasts.
+ */
 const FADE_SECONDS = 0.05;
 
 /**
@@ -187,6 +234,9 @@ const FADE_COLORS: ColorValue[] = BELT_COLORS.flatMap((color, index) => {
 	return Array.from({ length: FADE_STEPS }, (_, step) => mixColors(color, next, step / FADE_STEPS));
 });
 
+/**
+ * The blocks that fade the belt through the color wheel.
+ */
 const FADE_BELT_STEPS: Block[] = FADE_COLORS.flatMap((color): Block[] => [
 	{ op: 'setColor', target: 'belt', color },
 	{ op: 'wait', seconds: FADE_SECONDS },
@@ -266,6 +316,9 @@ function waveProgram (y: number, height: number, seconds: number): Program {
 	};
 }
 
+/**
+ * Every example the app offers.
+ */
 export const EXAMPLE_PROGRAMS: ExampleProgram[] = [
 	{
 		id: 'around',

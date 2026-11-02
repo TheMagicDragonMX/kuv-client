@@ -27,12 +27,24 @@ export class PixelPreviewComponent {
 	 */
 	readonly pixels = input.required<ArrayLike<number>>();
 
+	/**
+	 * Description read by screen readers.
+	 */
 	readonly label = input('The picture as the cube will show it, 64 by 64 pixels');
 
+	/**
+	 * Pixels per side of the canvas.
+	 */
 	protected readonly resolution = FACE_RESOLUTION;
 
+	/**
+	 * The canvas the picture is drawn on.
+	 */
 	private readonly canvas = viewChild.required<ElementRef<HTMLCanvasElement>>('canvas');
 
+	/**
+	 * Redraws the canvas whenever the pixels change.
+	 */
 	constructor () {
 		afterRenderEffect(() => {
 			const pixels = this.pixels();

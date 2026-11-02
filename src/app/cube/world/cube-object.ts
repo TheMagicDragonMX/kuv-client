@@ -16,11 +16,22 @@ import { Pose } from '../geometry/geometry';
  * turns (crossing the top face, or created with another heading) the shape turns with it.
  * A pixel without a color is drawn with the color of the object.
  */
-export interface ShapePixel {
+export type ShapePixel = {
+	/**
+	 * Cells to the right of the center, when the object faces north.
+	 */
 	readonly dx: number;
+
+	/**
+	 * Cells down from the center, when the object faces north.
+	 */
 	readonly dy: number;
+
+	/**
+	 * Color of this pixel. The object's own color when omitted.
+	 */
 	readonly color?: Color;
-}
+};
 
 /**
  * The shape of a plain pixel: just the center.
@@ -34,7 +45,7 @@ export const SINGLE_PIXEL: readonly ShapePixel[] = [ { dx: 0, dy: 0 } ];
  * geometry finds where every other pixel lands, so a shape that reaches over an edge is
  * drawn on the other side of it.
  */
-export interface CubeObject {
+export type CubeObject = {
 	/**
 	 * Unique name; commands use it to say which object they act on.
 	 */
@@ -60,4 +71,4 @@ export interface CubeObject {
 	 * Hidden objects still exist and keep moving, but are not drawn.
 	 */
 	readonly visible: boolean;
-}
+};

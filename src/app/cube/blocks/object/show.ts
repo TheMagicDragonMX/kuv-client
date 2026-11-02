@@ -10,16 +10,29 @@ import { FIELD } from '../fields';
 /**
  * Makes an object visible.
  */
-export interface ShowCommand {
+export type ShowCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'show';
-	target: string;
-}
 
+	/**
+	 * Name of the object to show.
+	 */
+	target: string;
+};
+
+/**
+ * The shape of the command, its fields, and how it shows the object.
+ */
 export const showBlock: CommandDefinition<ShowCommand> = {
 	schema: {
 		target: FIELD.text,
 	},
 
+	/**
+	 * Marks the object as visible.
+	 */
 	apply (world, command) {
 		if (!world.get(command.target).visible)
 			world.update(command.target, { visible: true });

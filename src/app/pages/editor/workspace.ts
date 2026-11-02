@@ -15,32 +15,71 @@ import { Context, FieldValue, Values, fieldProblem, specForOp, specOf } from './
 /**
  * A block of a script. Blocks like "Repeat" hold more blocks in `body`.
  */
-export interface VisualBlock {
+export type VisualBlock = {
+	/**
+	 * Identifies the block among all blocks and scripts.
+	 */
 	id: number;
+
+	/**
+	 * The kind of block, see `VisualBlockSpec.type`.
+	 */
 	type: string;
+
+	/**
+	 * What the user filled in.
+	 */
 	values: Values;
+
+	/**
+	 * The blocks inside, for blocks like "Repeat".
+	 */
 	body?: VisualBlock[];
-}
+};
 
 /**
  * A stack of blocks and the event that starts it.
  */
-export interface VisualScript {
+export type VisualScript = {
+	/**
+	 * Identifies the script among all blocks and scripts.
+	 */
 	id: number;
-	trigger: Trigger;
-	blocks: VisualBlock[];
-}
 
-export interface Workspace {
+	/**
+	 * The event that starts the script.
+	 */
+	trigger: Trigger;
+
+	/**
+	 * The blocks it runs, in order.
+	 */
+	blocks: VisualBlock[];
+};
+
+/**
+ * Everything the user built with blocks.
+ */
+export type Workspace = {
+	/**
+	 * Settings of the program.
+	 */
 	config: ProgramConfig;
+
+	/**
+	 * The scripts, in order.
+	 */
 	scripts: VisualScript[];
-}
+};
 
 /**
  * Hands out ids that are not used by any block or script.
  */
 export type NextId = () => number;
 
+/**
+ * A workspace with no scripts and the default settings.
+ */
 export function emptyWorkspace (): Workspace {
 	return { config: {}, scripts: [] };
 }
@@ -58,11 +97,16 @@ export function newBlock (type: string, id: number, objects: string[]): VisualBl
 	return block;
 }
 
+/**
+ * A script with no blocks. It runs when the program starts unless told otherwise.
+ */
 export function newScript (id: number, trigger: Trigger = { type: 'start' }): VisualScript {
 	return { id, trigger, blocks: [] };
 }
 
-// --- Reading
+/**
+ * --- Reading
+ */
 
 /**
  * Calls `visit` for every block, in the order the program reads: script after script, and a
@@ -80,6 +124,9 @@ export function eachBlock (workspace: Workspace, visit: (block: VisualBlock) => 
 		walk(script.blocks);
 }
 
+/**
+ * The number of blocks in the whole workspace, including the ones inside other blocks.
+ */
 export function countBlocks (workspace: Workspace): number {
 	let count = 0;
 	eachBlock(workspace, () => count += 1);
@@ -113,7 +160,9 @@ export function problemsOf (workspace: Workspace, objects: string[]): Map<number
 	return problems;
 }
 
-// --- Turning into a program
+/**
+ * --- Turning into a program
+ */
 
 /**
  * The program the workspace stands for: one script for each script of blocks, and the objects
@@ -168,7 +217,9 @@ export function blocksFromProgram (program: Program, nextId: NextId): { workspac
 	return { workspace: { config: { ...program.config }, scripts }, objects };
 }
 
-// --- Editing
+/**
+ * --- Editing
+ */
 
 /**
  * Applies `edit` to the list that holds the block with this id, wherever it is.
@@ -189,10 +240,17 @@ function editBlock (blocks: VisualBlock[], id: number, edit: (block: VisualBlock
 	return editList(blocks, id, (list, index) => list.map((block, at) => at === index ? edit(block) : block));
 }
 
+/**
+ * Applies `edit` to the blocks of every script.
+ */
 function editScripts (workspace: Workspace, edit: (blocks: VisualBlock[]) => VisualBlock[]): Workspace {
 	return { ...workspace, scripts: workspace.scripts.map((script) => ({ ...script, blocks: edit(script.blocks) })) };
 }
 
+/**
+ * The list with the item at `index` swapped with its neighbor, or the same list when there is no
+ * neighbor.
+ */
 function swapped<T> (list: T[], index: number, offset: -1 | 1): T[] {
 	const target = index + offset;
 
@@ -205,6 +263,9 @@ function swapped<T> (list: T[], index: number, offset: -1 | 1): T[] {
 	return moved;
 }
 
+/**
+ * Adds a script after the others.
+ */
 export function addScript (workspace: Workspace, script: VisualScript): Workspace {
 	return { ...workspace, scripts: [ ...workspace.scripts, script ] };
 }
@@ -243,11 +304,17 @@ export function moveItem (workspace: Workspace, id: number, offset: -1 | 1): Wor
 	return editScripts(workspace, (blocks) => editList(blocks, id, (list, at) => swapped(list, at, offset)));
 }
 
+/**
+ * Changes one field of a block.
+ */
 export function setValue (workspace: Workspace, id: number, key: string, value: FieldValue): Workspace {
 	return editScripts(workspace, (blocks) => editBlock(blocks, id, (block) =>
 		({ ...block, values: { ...block.values, [key]: value } })));
 }
 
+/**
+ * Changes the event that starts a script.
+ */
 export function setTrigger (workspace: Workspace, id: number, trigger: Trigger): Workspace {
 	return { ...workspace, scripts: workspace.scripts.map((script) => script.id === id ? { ...script, trigger } : script) };
 }

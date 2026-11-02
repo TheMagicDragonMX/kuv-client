@@ -40,25 +40,45 @@ export type ColorValue = string;
 /**
  * Engine settings a program can carry. See `GeometryConfig` for what each one does.
  */
-export interface ProgramConfig {
+export type ProgramConfig = {
+	/**
+	 * The side face the top face is lined up with.
+	 */
 	topAnchor?: SideName;
+
+	/**
+	 * Row of the floor objects cannot go below.
+	 */
 	floor?: number;
-}
+};
 
 /**
  * One pixel of an object's shape: `dx` cells to the right and `dy` cells down from the
  * center of the object, as seen when it faces north (the shape turns with the object).
  * Without a color it takes the color of the object.
  */
-export interface ShapePixelDefinition {
+export type ShapePixelDefinition = {
+	/**
+	 * Cells to the right of the center, when the object faces north.
+	 */
 	dx: number;
-	dy: number;
-	color?: ColorValue;
-}
 
-// ---------------------------------------------------------------------------------------
-// Scripts and programs
-// ---------------------------------------------------------------------------------------
+	/**
+	 * Cells down from the center, when the object faces north.
+	 */
+	dy: number;
+
+	/**
+	 * Color of this pixel. The object's own color when omitted.
+	 */
+	color?: ColorValue;
+};
+
+/**
+ * --------------------------------------------------------------------------------------- Scripts
+ * and programs
+ * ---------------------------------------------------------------------------------------
+ */
 
 /**
  * The event that starts a script.
@@ -73,16 +93,30 @@ export type Trigger =
 /**
  * A stack of blocks and the event that starts it.
  */
-export interface Script {
+export type Script = {
+	/**
+	 * The event that starts the script.
+	 */
 	trigger: Trigger;
+
+	/**
+	 * The blocks the script runs, in order.
+	 */
 	blocks: Block[];
-}
+};
 
 /**
  * A complete program.
  */
-export interface Program {
+export type Program = {
+	/**
+	 * Version of the program format.
+	 */
 	version: 1;
+
+	/**
+	 * Engine settings for this program.
+	 */
 	config?: ProgramConfig;
 
 	/**
@@ -90,5 +124,9 @@ export interface Program {
 	 * They are `create` blocks, with names that are not repeated. Scripts act on them by name.
 	 */
 	objects?: CreateCommand[];
+
+	/**
+	 * The scripts of the program.
+	 */
 	scripts: Script[];
-}
+};

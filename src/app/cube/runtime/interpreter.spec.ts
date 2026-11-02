@@ -2,8 +2,14 @@ import { Block } from '../blocks';
 import { World } from '../world/world';
 import { Pause, runBlocks } from './interpreter';
 
+/**
+ * The block that creates the ball.
+ */
 const ball: Block = { op: 'create', name: 'ball', face: 'FRONT', x: 0, y: 0, color: '#ffffff' };
 
+/**
+ * The block that moves the ball to the right.
+ */
 const right: Block = { op: 'move', target: 'ball', step: 'right' };
 
 /**

@@ -50,6 +50,9 @@ const SRGB_TO_LINEAR = (() => {
 	return table;
 })();
 
+/**
+ * The 3D model of the cube: five faces of LEDs that copy their colors from the cube state.
+ */
 export class CubeModel {
 	/**
 	 * Parent of the five faces, so the cube can be positioned as one unit.
@@ -72,7 +75,15 @@ export class CubeModel {
 	 */
 	private renderedVersion = -1;
 
-	constructor (private readonly state: CubeState) {
+	/**
+	 * Builds the faces of the cube.
+	 */
+	constructor (
+		/**
+		 * The cube state the LEDs copy their colors from.
+		 */
+		private readonly state: CubeState,
+	) {
 		this.group.position.y = 0.4;
 		this.addFaces();
 	}
@@ -108,13 +119,18 @@ export class CubeModel {
 			roughness: 0.72,
 		});
 
-		// Layout along each face's local Z (outward normal), relative to the face plane:
-		//   frame:  [-FRAME_DEPTH, 0]  -> outer surface flush with the cube shell
-		//   panel:  [0, PANEL_DEPTH]
-		//   LEDs:   just above the panel surface
+		/**
+		 * Layout along each face's local Z (outward normal), relative to the face plane: frame:
+		 * [-FRAME_DEPTH, 0] -> outer surface flush with the cube shell panel: [0, PANEL_DEPTH]
+		 * LEDs: just above the panel surface
+		 */
 		const ledSpan = FACE_SIZE - EDGE_PADDING * 2;
 		const ledSize = (ledSpan / FACE_RESOLUTION) * 0.7;
-		// Outer LEDs sit flush with the panel edge so neighbouring faces' LEDs end up one pitch apart.
+
+		/**
+		 * Outer LEDs sit flush with the panel edge so neighbouring faces' LEDs end up one pitch
+		 * apart.
+		 */
 		const ledPitch = (ledSpan - ledSize) / (FACE_RESOLUTION - 1);
 		const ledGeometry = new THREE.BoxGeometry(ledSize, ledSize, LED_DEPTH);
 
@@ -135,7 +151,9 @@ export class CubeModel {
 			const panel = new THREE.Mesh(
 				new THREE.BoxGeometry(FACE_SIZE, FACE_SIZE, PANEL_DEPTH),
 				new THREE.MeshStandardMaterial({
-					// Dark backing so the lit LEDs read as individual pixels.
+					/**
+					 * Dark backing so the lit LEDs read as individual pixels.
+					 */
 					color: 0x0b0d10,
 					roughness: 0.55,
 					metalness: 0.15,
@@ -146,7 +164,9 @@ export class CubeModel {
 			panel.receiveShadow = true;
 			faceGroup.add(panel);
 
-			// Unlit material so each LED shows exactly its own color.
+			/**
+			 * Unlit material so each LED shows exactly its own color.
+			 */
 			const ledMatrix = new THREE.InstancedMesh(
 				ledGeometry,
 				new THREE.MeshBasicMaterial({ color: 0xffffff }),
@@ -170,7 +190,10 @@ export class CubeModel {
 
 
 			ledMatrix.instanceMatrix.needsUpdate = true;
-			// Every LED starts black (all zeros) on both sides: the buffer and what it shows.
+
+			/**
+			 * Every LED starts black (all zeros) on both sides: the buffer and what it shows.
+			 */
 			const ledColors = new THREE.InstancedBufferAttribute(new Float32Array(FACE_RESOLUTION * FACE_RESOLUTION * 3), 3);
 			ledMatrix.instanceColor = ledColors;
 			this.ledColors.push(ledColors);
@@ -197,7 +220,10 @@ export class CubeModel {
 
 			for (let y = 0; y < FACE_RESOLUTION; y += 1) {
 				const stateRow = y * FACE_RESOLUTION;
-				// Instances are laid out from the bottom row up, the state from the top row down.
+
+				/**
+				 * Instances are laid out from the bottom row up, the state from the top row down.
+				 */
 				const ledRow = (FACE_RESOLUTION - 1 - y) * FACE_RESOLUTION;
 
 				for (let x = 0; x < FACE_RESOLUTION; x += 1) {

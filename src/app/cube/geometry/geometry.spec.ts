@@ -126,7 +126,9 @@ describe('CubeGeometry', () => {
 			expect(pose).toEqual(strip(2 * 64 + 31, 0, Heading.SOUTH));
 			expect(geometry.toPixel(pose)).toEqual({ face: Face.BACK, x: 31, y: 0 });
 
-			// On the screen of the back face "up" now goes down and "right" goes left.
+			/**
+			 * On the screen of the back face "up" now goes down and "right" goes left.
+			 */
 			expect(geometry.move(pose, 'up').y).toBe(1);
 			expect(geometry.move(pose, 'right').x).toBe(pose.x - 1);
 		});
@@ -151,9 +153,15 @@ describe('CubeGeometry', () => {
 			const anchored = new CubeGeometry({ topAnchor: Face.LEFT });
 			const pose = anchored.place({ face: Face.TOP, x: 32, y: 63 });
 
-			// The bottom edge of the addressed top face is the one touching the left side.
+			/**
+			 * The bottom edge of the addressed top face is the one touching the left side.
+			 */
 			expect(pose).toEqual(top(0, 32, Heading.EAST));
-			// Going down on it leaves to the left side, walking backwards so its up points away from it.
+
+			/**
+			 * Going down on it leaves to the left side, walking backwards so its up points away
+			 * from it.
+			 */
 			expect(anchored.move(pose, 'down')).toEqual(strip(3 * 64 + 32, 0, Heading.NORTH));
 		});
 
@@ -219,16 +227,22 @@ describe('CubeGeometry', () => {
 
 					const found = geometry.offset(start, dx, dy);
 
-					// A walk blocked by the floor gives null here, but `move` just stops early.
+					/**
+					 * A walk blocked by the floor gives null here, but `move` just stops early.
+					 */
 					if (found)
 						expect(found).toEqual(walked);
+
 					else
 						expect(walked.y).toBe(geometry.floor);
 				}
 		});
 
 		it('gives the same cell as walking step by step on the top face, inside it and off its edges', () => {
-			// A floor far below the last row, so no walk is blocked and `move` is the exact reference.
+			/**
+			 * A floor far below the last row, so no walk is blocked and `move` is the exact
+			 * reference.
+			 */
 			const deep = new CubeGeometry({ floor: 300 });
 
 			for (const heading of [ Heading.NORTH, Heading.EAST, Heading.SOUTH, Heading.WEST ])

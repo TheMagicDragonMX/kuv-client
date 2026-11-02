@@ -6,16 +6,24 @@ import { SetupPage } from './setup.component';
 describe('SetupPage with the simulated cube', () => {
 	let fixture: ComponentFixture<SetupPage>;
 
-	/** Lets the simulated cube answer, then renders what changed. */
+	/**
+	 * Lets the simulated cube answer, then renders what changed.
+	 */
 	async function wait (ms: number): Promise<void> {
 		await vi.advanceTimersByTimeAsync(ms);
 		fixture.detectChanges();
 	}
 
+	/**
+	 * The text shown on the page.
+	 */
 	function text (): string {
 		return fixture.nativeElement.textContent;
 	}
 
+	/**
+	 * The button with this label.
+	 */
 	function button (label: string): HTMLButtonElement {
 		const found = [ ...fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement> ]
 			.find((candidate) => candidate.textContent?.trim().startsWith(label));
@@ -26,6 +34,9 @@ describe('SetupPage with the simulated cube', () => {
 		return found;
 	}
 
+	/**
+	 * Types into an input as the user would.
+	 */
 	function type (input: HTMLInputElement, value: string): void {
 		input.value = value;
 		input.dispatchEvent(new Event('input'));

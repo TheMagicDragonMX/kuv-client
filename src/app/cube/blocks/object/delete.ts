@@ -10,16 +10,29 @@ import { FIELD } from '../fields';
 /**
  * Removes an object.
  */
-export interface DeleteCommand {
+export type DeleteCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'delete';
-	target: string;
-}
 
+	/**
+	 * Name of the object to delete.
+	 */
+	target: string;
+};
+
+/**
+ * The shape of the command, its fields, and how it removes the object from the world.
+ */
 export const deleteBlock: CommandDefinition<DeleteCommand> = {
 	schema: {
 		target: FIELD.text,
 	},
 
+	/**
+	 * Removes the object from the world.
+	 */
 	apply (world, command) {
 		world.remove(command.target);
 	},

@@ -12,15 +12,41 @@ import { FIELD, optional } from '../fields';
 /**
  * Puts an object on a cell of a face. The heading is reset to the given one, or north.
  */
-export interface MoveToCommand {
+export type MoveToCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'moveTo';
-	target: string;
-	face: FaceName;
-	x: number;
-	y: number;
-	heading?: HeadingName;
-}
 
+	/**
+	 * Name of the object to move.
+	 */
+	target: string;
+
+	/**
+	 * The face to move it to.
+	 */
+	face: FaceName;
+
+	/**
+	 * Column on that face.
+	 */
+	x: number;
+
+	/**
+	 * Row on that face.
+	 */
+	y: number;
+
+	/**
+	 * Where the object faces afterwards. Keeps its heading when omitted.
+	 */
+	heading?: HeadingName;
+};
+
+/**
+ * The shape of the command, its fields, and how it moves the object.
+ */
 export const moveToBlock: CommandDefinition<MoveToCommand> = {
 	schema: {
 		target: FIELD.text,
@@ -30,6 +56,9 @@ export const moveToBlock: CommandDefinition<MoveToCommand> = {
 		heading: optional(FIELD.heading),
 	},
 
+	/**
+	 * Puts the object at the new place.
+	 */
 	apply (world, command) {
 		world.get(command.target);
 

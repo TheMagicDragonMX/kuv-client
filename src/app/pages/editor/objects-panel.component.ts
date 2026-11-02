@@ -32,6 +32,9 @@ export class ObjectsPanelComponent {
 	 */
 	protected readonly session = signal<{ original: CreateCommand | null } | null>(null);
 
+	/**
+	 * The dialog where objects are made and edited.
+	 */
 	private readonly dialog = viewChild.required<ElementRef<HTMLDialogElement>>('dialog');
 
 	/**
@@ -41,10 +44,16 @@ export class ObjectsPanelComponent {
 		.map((object) => object.name)
 		.filter((name) => name !== this.session()?.original?.name));
 
+	/**
+	 * Opens the editor for a new object.
+	 */
 	protected create (): void {
 		this.open(null);
 	}
 
+	/**
+	 * Opens the editor for an existing object.
+	 */
 	protected edit (object: CreateCommand): void {
 		this.open(object);
 	}
@@ -56,19 +65,31 @@ export class ObjectsPanelComponent {
 		return null !== drawingFromObject(object);
 	}
 
+	/**
+	 * True when the object is hidden from the cube.
+	 */
 	protected isHidden (name: string): boolean {
 		return this.hidden().includes(name);
 	}
 
+	/**
+	 * Hides the object, or shows it again.
+	 */
 	protected toggleHidden (name: string): void {
 		this.hidden.update((hidden) => hidden.includes(name) ? hidden.filter((candidate) => candidate !== name) : [ ...hidden, name ]);
 	}
 
+	/**
+	 * Deletes the object.
+	 */
 	protected remove (name: string): void {
 		this.objects.update((objects) => objects.filter((object) => object.name !== name));
 		this.hidden.update((hidden) => hidden.filter((candidate) => candidate !== name));
 	}
 
+	/**
+	 * Keeps the object from the editor, renaming it in the hidden list when its name changed.
+	 */
 	protected save (object: CreateCommand): void {
 		const original = this.session()?.original;
 
@@ -81,10 +102,16 @@ export class ObjectsPanelComponent {
 		this.dialog().nativeElement.close();
 	}
 
+	/**
+	 * Forgets the object that was being edited once the dialog closes.
+	 */
 	protected closed (): void {
 		this.session.set(null);
 	}
 
+	/**
+	 * Opens the dialog for the object being edited, or for a new one when null.
+	 */
 	private open (original: CreateCommand | null): void {
 		this.session.set({ original });
 		this.dialog().nativeElement.showModal();

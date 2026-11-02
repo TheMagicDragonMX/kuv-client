@@ -15,15 +15,40 @@ import { FACE_AZIMUTH, SIDE_VIEW_POLAR, TOP_VIEW_POLAR, VIEW_TRANSITION_MS } fro
 /**
  * An in-progress camera move, interpolated from the starting angles to the target ones.
  */
-interface ViewTransition {
+type ViewTransition = {
+	/**
+	 * When the move started, in milliseconds.
+	 */
 	startTime: number;
-	fromTheta: number;
-	fromPhi: number;
-	toTheta: number;
-	toPhi: number;
-}
 
+	/**
+	 * Horizontal angle the move starts from.
+	 */
+	fromTheta: number;
+
+	/**
+	 * Vertical angle the move starts from.
+	 */
+	fromPhi: number;
+
+	/**
+	 * Horizontal angle the move ends at.
+	 */
+	toTheta: number;
+
+	/**
+	 * Vertical angle the move ends at.
+	 */
+	toPhi: number;
+};
+
+/**
+ * The camera and its controls, which can also be sent to look at a face.
+ */
 export class CameraRig {
+	/**
+	 * The camera that looks at the cube.
+	 */
 	readonly camera: THREE.PerspectiveCamera;
 
 	/**
@@ -55,7 +80,9 @@ export class CameraRig {
 		this.controls.autoRotateSpeed = 1.1;
 		this.controls.target.set(0, 0.6, 0);
 
-		// Grabbing the cube cancels any camera animation that is still playing.
+		/**
+		 * Grabbing the cube cancels any camera animation that is still playing.
+		 */
 		this.controls.addEventListener('start', () => {
 			this.transition = undefined;
 		});
@@ -69,9 +96,14 @@ export class CameraRig {
 		const spherical = new THREE.Spherical().setFromVector3(offset);
 		const toTheta = FACE_AZIMUTH[face];
 
-		// Top view keeps the current azimuth so the camera does not swing around for nothing.
+		/**
+		 * Top view keeps the current azimuth so the camera does not swing around for nothing.
+		 */
 		const targetTheta = face === Face.TOP ? spherical.theta : toTheta;
-		// Take the shortest way around instead of unwinding a full turn.
+
+		/**
+		 * Take the shortest way around instead of unwinding a full turn.
+		 */
 		const delta = Math.atan2(Math.sin(targetTheta - spherical.theta), Math.cos(targetTheta - spherical.theta));
 
 		this.controls.autoRotate = false;
@@ -108,8 +140,10 @@ export class CameraRig {
 	update (): boolean {
 		this.advanceTransition();
 
-		// The controls compare the camera with where it was last time they reported a move,
-		// so this also catches the moves `advanceTransition` just made.
+		/**
+		 * The controls compare the camera with where it was last time they reported a move, so this
+		 * also catches the moves `advanceTransition` just made.
+		 */
 		return this.controls.update();
 	}
 
@@ -130,7 +164,10 @@ export class CameraRig {
 
 		const { startTime, fromTheta, fromPhi, toTheta, toPhi } = this.transition;
 		const progress = Math.min((performance.now() - startTime) / VIEW_TRANSITION_MS, 1);
-		// Ease in and out so the motion starts and ends gently.
+
+		/**
+		 * Ease in and out so the motion starts and ends gently.
+		 */
 		const eased = 0.5 > progress ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
 
 		const offset = this.camera.position.clone().sub(this.controls.target);

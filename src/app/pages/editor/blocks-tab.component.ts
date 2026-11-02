@@ -86,10 +86,19 @@ export class BlocksTabComponent implements OnDestroy {
 	 */
 	readonly reset = output<void>();
 
+	/**
+	 * The faces a block can name.
+	 */
 	protected readonly faces = FACE_OPTIONS;
 
+	/**
+	 * The examples the user can load.
+	 */
 	protected readonly examples = EXAMPLE_PROGRAMS;
 
+	/**
+	 * The side faces, for the top anchor setting.
+	 */
 	protected readonly sides: SideName[] = [ 'FRONT', 'RIGHT', 'BACK', 'LEFT' ];
 
 	/**
@@ -122,6 +131,9 @@ export class BlocksTabComponent implements OnDestroy {
 	 */
 	protected readonly problems = computed(() => problemsOf(this.workspace(), this.names()));
 
+	/**
+	 * True when there are blocks and none has a problem, so the program can run.
+	 */
 	protected readonly ready = computed(() => 0 < countBlocks(this.workspace()) && 0 === this.problems().size);
 
 	/**
@@ -145,25 +157,48 @@ export class BlocksTabComponent implements OnDestroy {
 	 */
 	protected readonly picture = signal<ImageBitmap | null>(null);
 
+	/**
+	 * Why the picture could not be loaded, or null.
+	 */
 	protected readonly imageProblem = signal<string | null>(null);
 
+	/**
+	 * The id the next block or script will get.
+	 */
 	private nextId = 1;
 
+	/**
+	 * The dialog where a block is picked.
+	 */
 	private readonly picker = viewChild.required<ElementRef<HTMLDialogElement>>('picker');
 
+	/**
+	 * The dialog where a picture is chosen for a block.
+	 */
 	private readonly imageDialog = viewChild.required<ElementRef<HTMLDialogElement>>('imageDialog');
 
+	/**
+	 * Releases the picture.
+	 */
 	ngOnDestroy (): void {
 		this.picture()?.close();
 	}
 
+	/**
+	 * Looks up the description of a kind of block, for the template.
+	 */
 	protected readonly specOf: (type: string) => VisualBlockSpec = specOf;
 
+	/**
+	 * The color of a category.
+	 */
 	protected accent (category: Category): string {
 		return ACCENTS[category];
 	}
 
-	// --- The workspace
+	/**
+	 * --- The workspace
+	 */
 
 	/**
 	 * Opens the picker to add a block to a script, or inside a block.
@@ -173,6 +208,9 @@ export class BlocksTabComponent implements OnDestroy {
 		this.picker().nativeElement.showModal();
 	}
 
+	/**
+	 * Closes a dialog.
+	 */
 	protected closeDialog (dialog: HTMLDialogElement): void {
 		dialog.close();
 	}
@@ -185,6 +223,9 @@ export class BlocksTabComponent implements OnDestroy {
 		this.picker().nativeElement.close();
 	}
 
+	/**
+	 * Adds a script that runs when the program starts.
+	 */
 	protected addScript (): void {
 		this.workspace.update((workspace) => addScript(workspace, newScript(this.nextId++)));
 	}
@@ -196,26 +237,44 @@ export class BlocksTabComponent implements OnDestroy {
 		this.workspace.update((workspace) => removeItem(workspace, id));
 	}
 
+	/**
+	 * Moves a script or a block one place up or down.
+	 */
 	protected move (id: number, offset: -1 | 1): void {
 		this.workspace.update((workspace) => moveItem(workspace, id, offset));
 	}
 
+	/**
+	 * Changes one field of a block.
+	 */
 	protected setValue (id: number, key: string, value: FieldValue): void {
 		this.workspace.update((workspace) => setValue(workspace, id, key, value));
 	}
 
+	/**
+	 * Changes the event that starts a script.
+	 */
 	protected setEvent (script: VisualScript, type: string): void {
 		this.workspace.update((workspace) => setTrigger(workspace, script.id, 'every' === type ? { type: 'every', seconds: 1 } : { type: 'start' }));
 	}
 
+	/**
+	 * Changes how often an `every` script runs.
+	 */
 	protected setEvery (script: VisualScript, seconds: number): void {
 		this.workspace.update((workspace) => setTrigger(workspace, script.id, { type: 'every', seconds }));
 	}
 
+	/**
+	 * Changes the floor setting of the program.
+	 */
 	protected setFloor (value: number): void {
 		this.workspace.update((workspace) => setConfig(workspace, 'floor', Number.isFinite(value) ? value : undefined));
 	}
 
+	/**
+	 * Changes the top anchor setting of the program.
+	 */
 	protected setTopAnchor (value: string): void {
 		this.workspace.update((workspace) => setConfig(workspace, 'topAnchor', value ? value as SideName : undefined));
 	}
@@ -235,14 +294,23 @@ export class BlocksTabComponent implements OnDestroy {
 		this.objects.set(objects);
 	}
 
+	/**
+	 * True when the face is chosen in a faces field.
+	 */
 	protected hasFace (block: VisualBlock, key: string, name: FaceName): boolean {
 		return (block.values[key] as FaceName[]).includes(name);
 	}
 
+	/**
+	 * True when every face is chosen in a faces field.
+	 */
 	protected allFaces (block: VisualBlock, key: string): boolean {
 		return (block.values[key] as FaceName[]).length === FACE_OPTIONS.length;
 	}
 
+	/**
+	 * Chooses or unchooses a face in a faces field.
+	 */
 	protected toggleFace (block: VisualBlock, key: string, name: FaceName): void {
 		const current = block.values[key] as FaceName[];
 		const next = current.includes(name) ? current.filter((face) => face !== name) : [ ...current, name ];
@@ -250,11 +318,16 @@ export class BlocksTabComponent implements OnDestroy {
 		this.setValue(block.id, key, FACE_OPTIONS.map((face) => face.name).filter((face) => next.includes(face)));
 	}
 
+	/**
+	 * Chooses every face in a faces field, or none when all are chosen.
+	 */
 	protected toggleAllFaces (block: VisualBlock, key: string): void {
 		this.setValue(block.id, key, this.allFaces(block, key) ? [] : FACE_OPTIONS.map((face) => face.name));
 	}
 
-	// --- Running
+	/**
+	 * --- Running
+	 */
 
 	protected play (): void {
 		const program = this.program();
@@ -263,7 +336,9 @@ export class BlocksTabComponent implements OnDestroy {
 			this.run.emit(program);
 	}
 
-	// --- Choosing an image for a block
+	/**
+	 * --- Choosing an image for a block
+	 */
 
 	protected openImage (id: number, key: string): void {
 		this.imageTarget.set({ id, key });
@@ -288,6 +363,9 @@ export class BlocksTabComponent implements OnDestroy {
 		this.picture.set(null);
 	}
 
+	/**
+	 * Reads the file the user picked and shows it for cropping.
+	 */
 	protected async pick (event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement;
 		const file = input.files?.[0];

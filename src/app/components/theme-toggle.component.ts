@@ -29,5 +29,8 @@ import { ThemeService } from '../services/theme.service';
 	`,
 })
 export class ThemeToggleComponent {
+	/**
+	 * The theme service the button switches.
+	 */
 	protected readonly theme = inject(ThemeService);
 }

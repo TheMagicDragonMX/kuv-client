@@ -3,6 +3,9 @@ import { SetupClient, SetupError } from './setup-client';
 import { connectSimulated, SIMULATED_PIN } from './simulated-cube';
 import { CubeTransport } from './transport';
 
+/**
+ * Connects a client to a simulated cube that answers instantly and is already unlocked-ready.
+ */
 async function simulatedClient (): Promise<SetupClient> {
 	return new SetupClient(await connectSimulated({ delay: 0, joinDelay: 0 }));
 }

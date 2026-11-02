@@ -45,7 +45,7 @@ blocks/
 Each file exports two things: the **type** of the block, and its **definition**. Take [object/set-color.ts](object/set-color.ts):
 
 ```ts
-export interface SetColorCommand {          // 1. the shape in the JSON program
+export type SetColorCommand = {          // 1. the shape in the JSON program
 	op: 'setColor';
 	target: string;
 	color: ColorValue;
@@ -68,7 +68,7 @@ export const setColorBlock: CommandDefinition<SetColorCommand> = {
 | `schema` | always | The validator (`program/validate-program.ts`), and whoever builds the Blockly block: it is the list of that block's inputs |
 | `apply` | commands | The commands layer (`commands/apply-command.ts`). Control blocks have none |
 
-The compiler keeps you honest: `schema` must have exactly the fields of the interface (a missing or extra field does not compile), and `optional(...)` in the schema should match `?` in the interface.
+The compiler keeps you honest: `schema` must have exactly the fields of the type (a missing or extra field does not compile), and `optional(...)` in the schema should match `?` in the type.
 
 ## Add a block
 

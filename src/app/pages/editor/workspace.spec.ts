@@ -17,12 +17,18 @@ import {
 	setValue,
 } from './workspace';
 
+/**
+ * Gives ids that start high enough not to collide with the ones the tests write by hand.
+ */
 function counter () {
 	let id = 100;
 
 	return () => id++;
 }
 
+/**
+ * The names of the objects the tests pretend exist.
+ */
 const NAMES = [ BALL.name ];
 
 describe('compileWorkspace', () => {

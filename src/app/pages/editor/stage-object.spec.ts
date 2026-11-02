@@ -1,6 +1,9 @@
 import { CreateCommand } from '../../cube';
 import { CENTER, GRID, drawingFromObject, freeObjectName, nameProblem, newDrawing, objectFromDrawing, pictureOfObject } from './stage-object';
 
+/**
+ * A color to paint with.
+ */
 const PINK = 0xf9a8d4;
 
 describe('objects from drawings', () => {

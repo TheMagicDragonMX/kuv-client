@@ -13,7 +13,13 @@ import { CubeComponent, EXAMPLE_PROGRAMS } from '../../cube';
 	templateUrl: './test-cube.component.html',
 })
 export class TestCubePage {
+	/**
+	 * The programs the user can pick from.
+	 */
 	protected readonly examples = EXAMPLE_PROGRAMS;
 
+	/**
+	 * The program currently shown on the cube.
+	 */
 	protected readonly selected = signal(EXAMPLE_PROGRAMS[0]);
 }

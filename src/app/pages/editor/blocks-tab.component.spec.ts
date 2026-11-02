@@ -8,31 +8,99 @@ import { VisualBlock, VisualScript, Workspace } from './workspace';
  * The protected members the template uses, so the tab can be driven without a browser (the
  * dialogs and the cropper need a real one).
  */
-interface TabInternals {
+type TabInternals = {
+	/**
+	 * Everything the user built.
+	 */
 	workspace: { (): Workspace; set(value: Workspace): void };
-	objects: { (): CreateCommand[]; set(value: CreateCommand[]): void };
-	program: () => Program | null;
-	ready: () => boolean;
-	openPicker(containerId: number): void;
-	add(type: string): void;
-	addScript(): void;
-	remove(id: number): void;
-	move(id: number, offset: -1 | 1): void;
-	setValue(id: number, key: string, value: unknown): void;
-	setEvent(script: VisualScript, type: string): void;
-	setFloor(value: number): void;
-	load(id: string): void;
-	toggleFace(block: VisualBlock, key: string, name: string): void;
-	toggleAllFaces(block: VisualBlock, key: string): void;
-	play(): void;
-}
 
+	/**
+	 * The objects made in the Objects tab.
+	 */
+	objects: { (): CreateCommand[]; set(value: CreateCommand[]): void };
+
+	/**
+	 * The program the blocks stand for, or null.
+	 */
+	program: () => Program | null;
+
+	/**
+	 * True when the program can run.
+	 */
+	ready: () => boolean;
+
+	/**
+	 * Opens the picker for a script or a block.
+	 */
+	openPicker(containerId: number): void;
+
+	/**
+	 * Adds a block where the picker was opened.
+	 */
+	add(type: string): void;
+
+	/**
+	 * Adds a script.
+	 */
+	addScript(): void;
+
+	/**
+	 * Removes a script or a block.
+	 */
+	remove(id: number): void;
+
+	/**
+	 * Moves a script or a block one place.
+	 */
+	move(id: number, offset: -1 | 1): void;
+
+	/**
+	 * Changes a field of a block.
+	 */
+	setValue(id: number, key: string, value: unknown): void;
+
+	/**
+	 * Changes the event of a script.
+	 */
+	setEvent(script: VisualScript, type: string): void;
+
+	/**
+	 * Changes the floor setting.
+	 */
+	setFloor(value: number): void;
+
+	/**
+	 * Replaces everything with an example.
+	 */
+	load(id: string): void;
+
+	/**
+	 * Chooses or unchooses a face in a field.
+	 */
+	toggleFace(block: VisualBlock, key: string, name: string): void;
+
+	/**
+	 * Chooses every face in a field, or none.
+	 */
+	toggleAllFaces(block: VisualBlock, key: string): void;
+
+	/**
+	 * Runs the program.
+	 */
+	play(): void;
+};
+
+/**
+ * Creates the tab and gives access to its internals.
+ */
 function createTab () {
 	const fixture = TestBed.createComponent(BlocksTabComponent);
 	const tab = fixture.componentInstance;
 	const programs: Program[] = [];
 
-	// The dialogs are a browser feature; the tab only opens and closes the picker.
+	/**
+	 * The dialogs are a browser feature; the tab only opens and closes the picker.
+	 */
 	fixture.nativeElement.querySelectorAll('dialog').forEach((dialog: HTMLDialogElement) => {
 		dialog.close = () => undefined;
 		dialog.showModal = () => undefined;

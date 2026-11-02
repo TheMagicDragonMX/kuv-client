@@ -4,6 +4,9 @@ import { CubeState, Face } from '../state/cube-state';
 import { World } from '../world/world';
 import { Renderer } from './renderer';
 
+/**
+ * Builds an empty world, a cube state and a renderer between them.
+ */
 function setup (config = {}) {
 	const world = new World(config);
 	const output = new CubeState();

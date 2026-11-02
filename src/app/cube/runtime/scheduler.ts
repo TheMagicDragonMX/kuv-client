@@ -37,7 +37,7 @@ const MAX_CATCH_UP = 100;
 /**
  * A problem that stopped one script.
  */
-export interface ScriptError {
+export type ScriptError = {
 	/**
 	 * Index of the script in the program.
 	 */
@@ -47,13 +47,20 @@ export interface ScriptError {
 	 * What went wrong, in words a user can read.
 	 */
 	message: string;
-}
+};
 
 /**
  * One running script.
  */
-interface Task {
+type Task = {
+	/**
+	 * Index of the script in the program.
+	 */
 	script: number;
+
+	/**
+	 * Where the script is in its blocks.
+	 */
 	run: Run;
 
 	/**
@@ -66,25 +73,60 @@ interface Task {
 	 * paused with a tick: then it continues "from now".
 	 */
 	scheduledAt?: number;
-}
+};
 
 /**
  * Starts a script again every so often.
  */
-interface IntervalTimer {
+type IntervalTimer = {
+	/**
+	 * Index of the script in the program.
+	 */
 	script: number;
-	milliseconds: number;
-	nextAt: number;
-}
 
+	/**
+	 * Time between starts.
+	 */
+	milliseconds: number;
+
+	/**
+	 * When the script starts next.
+	 */
+	nextAt: number;
+};
+
+/**
+ * Runs the scripts of a program over time: starts them on their trigger, resumes the ones that
+ * paused, and reports the ones that fail.
+ */
 export class Scheduler {
+	/**
+	 * The scripts running or paused right now.
+	 */
 	private tasks: Task[] = [];
 
+	/**
+	 * The timers that will start scripts again.
+	 */
 	private timers: IntervalTimer[] = [];
 
+	/**
+	 * Builds the scheduler for a program's scripts.
+	 */
 	constructor (
+		/**
+		 * The world the scripts act on.
+		 */
 		private readonly world: World,
+
+		/**
+		 * The scripts of the program.
+		 */
 		private readonly scripts: Script[],
+
+		/**
+		 * Called when a script stops because of an error.
+		 */
 		private readonly onError: (error: ScriptError) => void,
 	) {}
 
@@ -152,7 +194,9 @@ export class Scheduler {
 			if (!this.tasks.some((task) => task.script === timer.script))
 				this.spawn(timer.script, now);
 
-			// Skip any whole intervals that were missed instead of firing them all at once.
+			/**
+			 * Skip any whole intervals that were missed instead of firing them all at once.
+			 */
 			while (timer.nextAt <= now)
 				timer.nextAt += timer.milliseconds;
 

@@ -4,17 +4,29 @@ import { Request } from './protocol';
  * A live connection to one cube, at the level of whole messages. The Bluetooth transport does
  * the chunking; the simulated one skips it.
  */
-export interface CubeTransport {
-	/** The cube's name, as the browser saw it. */
+export type CubeTransport = {
+	/**
+	 * The cube's name, as the browser saw it.
+	 */
 	readonly name: string;
 
+	/**
+	 * Sends a request to the cube, resolving once it is written.
+	 */
 	send (request: Request): Promise<void>;
 
-	/** Called with every message the cube sends (responses and events). */
+	/**
+	 * Called with every message the cube sends (responses and events).
+	 */
 	onMessage (listener: (message: unknown) => void): void;
 
-	/** Called once, when the connection drops for any reason, including `disconnect()`. */
+	/**
+	 * Called once, when the connection drops for any reason, including `disconnect()`.
+	 */
 	onDisconnect (listener: () => void): void;
 
+	/**
+	 * Drops the connection.
+	 */
 	disconnect (): void;
-}
+};

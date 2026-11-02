@@ -46,6 +46,9 @@ import { ProgramConfig } from '../program/program';
 import { Face } from '../state/cube-state';
 import { CubeView } from '../view/cube-view';
 
+/**
+ * Shows the virtual cube in 3D and plays the program it is given.
+ */
 @Component({
 	selector: 'app-cube',
 	standalone: true,
@@ -87,10 +90,19 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	 */
 	readonly hiddenObjects = input<readonly string[]>([]);
 
+	/**
+	 * Writable state behind `running`.
+	 */
 	private readonly runningState = signal(false);
 
+	/**
+	 * Writable state behind `problem`.
+	 */
 	private readonly problemState = signal<string | null>(null);
 
+	/**
+	 * Writable state behind `camera`.
+	 */
 	private readonly cameraState = signal<Face | 'spin'>('spin');
 
 	/**
@@ -108,17 +120,32 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	 */
 	readonly camera = this.cameraState.asReadonly();
 
+	/**
+	 * The element the 3D view is drawn in.
+	 */
 	private readonly host = viewChild.required<ElementRef<HTMLElement>>('host');
 
+	/**
+	 * The 3D view, created once the template exists.
+	 */
 	private view?: CubeView;
 
+	/**
+	 * The theme, to match the scene's colors to it.
+	 */
 	private readonly theme = inject(ThemeService);
 
+	/**
+	 * The player that runs the program and updates what the view shows.
+	 */
 	private readonly player = new CubePlayer({
 		onRunningChange: (running) => this.runningState.set(running),
 		onError: (error) => this.problemState.set(`Script ${error.script + 1} stopped: ${error.message}`),
 	});
 
+	/**
+	 * Wires the inputs to the player.
+	 */
 	constructor () {
 		effect(() => this.player.setDefaults(this.config()));
 
@@ -156,6 +183,9 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 		});
 	}
 
+	/**
+	 * Creates the 3D view once the host element exists.
+	 */
 	ngAfterViewInit (): void {
 		this.view = new CubeView(this.host().nativeElement, this.player.state);
 		this.applyFog();
@@ -203,6 +233,9 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 			this.view?.setFogColor(fog);
 	}
 
+	/**
+	 * Stops the player and releases the 3D view.
+	 */
 	ngOnDestroy (): void {
 		this.view?.dispose();
 		this.player.dispose();

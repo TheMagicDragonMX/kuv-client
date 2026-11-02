@@ -17,17 +17,51 @@ import { FIELD, optional } from '../fields';
  * a single pixel on the center. For a plus sign:
  *   [ {dx: 0, dy: 0}, {dx: 0, dy: -1}, {dx: 1, dy: 0}, {dx: 0, dy: 1}, {dx: -1, dy: 0} ]
  */
-export interface CreateCommand {
+export type CreateCommand = {
+	/**
+	 * Identifies the command.
+	 */
 	op: 'create';
-	name: string;
-	face: FaceName;
-	x: number;
-	y: number;
-	color: ColorValue;
-	heading?: HeadingName;
-	pixels?: ShapePixelDefinition[];
-}
 
+	/**
+	 * Name of the new object. It must not be taken.
+	 */
+	name: string;
+
+	/**
+	 * The face the object starts on.
+	 */
+	face: FaceName;
+
+	/**
+	 * Column of the object's center cell.
+	 */
+	x: number;
+
+	/**
+	 * Row of the object's center cell.
+	 */
+	y: number;
+
+	/**
+	 * The object's color.
+	 */
+	color: ColorValue;
+
+	/**
+	 * Where the object faces. Defaults to north.
+	 */
+	heading?: HeadingName;
+
+	/**
+	 * The cells of the shape around its center. Defaults to a single pixel.
+	 */
+	pixels?: ShapePixelDefinition[];
+};
+
+/**
+ * The shape of the command, its fields, and how it adds the object to the world.
+ */
 export const createBlock: CommandDefinition<CreateCommand> = {
 	schema: {
 		name: FIELD.text,
@@ -39,6 +73,9 @@ export const createBlock: CommandDefinition<CreateCommand> = {
 		pixels: optional(FIELD.shape),
 	},
 
+	/**
+	 * Adds a visible object, with the shape, pose and color of the command.
+	 */
 	apply (world, command) {
 		world.add({
 			name: command.name,

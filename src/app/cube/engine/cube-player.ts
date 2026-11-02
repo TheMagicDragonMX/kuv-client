@@ -24,7 +24,7 @@ import { DEFAULT_TICK_RATE, RunLoop } from './run-loop';
 /**
  * Settings of the player: those of the engine, plus timing and a status callback.
  */
-export interface CubePlayerOptions extends CubeEngineOptions {
+export type CubePlayerOptions = CubeEngineOptions & {
 	/**
 	 * Ticks per second.
 	 */
@@ -39,11 +39,21 @@ export interface CubePlayerOptions extends CubeEngineOptions {
 	 * Called whenever the program starts or stops running.
 	 */
 	onRunningChange?: (running: boolean) => void;
-}
+};
 
+/**
+ * Runs a program in real time: an engine driven by a run loop, which reports when it starts and
+ * stops.
+ */
 export class CubePlayer {
+	/**
+	 * The engine that runs the program.
+	 */
 	private readonly engine: CubeEngine;
 
+	/**
+	 * The timer that ticks the engine.
+	 */
 	private readonly loop: RunLoop;
 
 	/**
@@ -51,7 +61,15 @@ export class CubePlayer {
 	 */
 	private reportedRunning = false;
 
-	constructor (private readonly options: CubePlayerOptions = {}) {
+	/**
+	 * Builds the player with the given options.
+	 */
+	constructor (
+		/**
+		 * Engine settings plus the tick rate and the callbacks of the player.
+		 */
+		private readonly options: CubePlayerOptions = {},
+	) {
 		this.engine = new CubeEngine(options);
 		this.loop = new RunLoop(options.tickRate ?? DEFAULT_TICK_RATE, options.clock);
 	}
