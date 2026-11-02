@@ -44,7 +44,7 @@ import { EngineError, ProgramError } from '../errors';
 import { CreateCommand } from '../blocks';
 import { CubePlayer } from '../engine/cube-player';
 import { Environment } from '../environment/environment';
-import { parseColor } from '../program/names';
+import { FACE_BY_NAME, FACE_NAME, parseColor } from '../program/names';
 import { FaceName, ProgramConfig } from '../program/program';
 import { FACE_RESOLUTION, Face } from '../state/cube-state';
 import { CubeView } from '../view/cube-view';
@@ -152,7 +152,7 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 	private readonly problemState = signal<string | null>(null);
 
-	private readonly cameraState = signal<Face | 'spin'>('spin');
+	private readonly cameraState = signal<Face | 'spin' | 'still'>('spin');
 
 	/**
 	 * Whether a program is running.
@@ -165,7 +165,8 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	readonly problem = this.problemState.asReadonly();
 
 	/**
-	 * Face the camera is turned to, or 'spin' for the continuous rotation.
+	 * Face the camera is turned to, 'spin' for the continuous rotation, or 'still' when it
+	 * stopped where it was (see `holdStill`).
 	 */
 	readonly camera = this.cameraState.asReadonly();
 
@@ -247,7 +248,22 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	/**
 	 * The object being dragged: where it started and how far from its center it was grabbed.
 	 */
-	private drag?: { name: string; face: Face; offsetX: number; offsetY: number; last: string };
+	private drag?: {
+		name: string;
+		face: Face;
+		offsetX: number;
+		offsetY: number;
+		last: string;
+		/** The face the object is on now. */
+		placedOn: FaceName;
+		/** Last place of the pointer, so the drag goes on while the camera turns under a still pointer. */
+		pointer: { x: number; y: number };
+		/** The face across the edge the pointer is at, and since when. */
+		edge: { face: Face; since: number } | null;
+		/** The turn the edge started: the face, and when it ends. */
+		turning: { face: Face; until: number } | null;
+		frame: number;
+	};
 
 	/**
 	 * Cells around an object that also grab it, so small objects are easy to hit.
@@ -305,12 +321,19 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 		const sameFace = object.center?.face === pixel.face;
 
+		this.holdStill();
+
 		this.drag = {
 			name: object.name,
 			face: pixel.face,
 			offsetX: sameFace ? pixel.x - object.center!.x : 0,
 			offsetY: sameFace ? pixel.y - object.center!.y : 0,
 			last: '',
+			placedOn: FACE_NAME[pixel.face],
+			pointer: { x: event.clientX, y: event.clientY },
+			edge: null,
+			turning: null,
+			frame: requestAnimationFrame(() => this.followEachFrame()),
 		};
 		this.host().nativeElement.style.cursor = 'grabbing';
 
@@ -320,12 +343,163 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	};
 
 	/**
-	 * Moves the dragged object to the cell under the pointer. A pointer that is not over the
-	 * cube, or over a cell where objects cannot be, leaves the object where it was.
+	 * Cells from the edge of a face where an object is "at the edge" and the cube starts to turn.
 	 */
-	private readonly onDrag = (event: PointerEvent): void => {
+	private static readonly EDGE_MARGIN = 4;
+
+	/**
+	 * How long the pointer must stay at an edge before the cube turns, so passing by does not move it.
+	 */
+	private static readonly EDGE_DWELL_MS = 120;
+
+
+	/**
+	 * How much the top face must look at the camera (1 is head-on) not to need turning to.
+	 */
+	private static readonly TOP_FACING = 0.7;
+
+	/**
+	 * A face seen at least this head-on needs no turn, even if another is seen more.
+	 */
+	private static readonly SHOWN_FACING = 0.92;
+
+	/**
+	 * The same for the sides, which are fine seen at an angle (0.5 is 60 degrees off head-on).
+	 */
+	private static readonly SIDE_FACING = 0.5;
+
+	/**
+	 * How long the cube takes to turn to the face the object was let go on.
+	 */
+	private static readonly SETTLE_MS = 1200;
+
+	private destroyed = false;
+
+	/**
+	 * How fast the cube turns, in radians per second. The time of a turn comes from how far it
+	 * is, so a quarter turn between two sides feels as calm as the turn up to the top face.
+	 */
+	private static readonly TURN_SPEED = 0.55;
+
+	/**
+	 * The face across the edge that a pixel is next to, or null if it is not at an edge.
+	 */
+	private static faceAcrossEdge (face: Face, x: number, y: number): Face | null {
+		const near = CubeComponent.EDGE_MARGIN;
+		const far = FACE_RESOLUTION - 1 - near;
+
+		if (Face.TOP === face) {
+			if (y > far)
+				return Face.FRONT;
+
+			if (x > far)
+				return Face.RIGHT;
+
+			if (y < near)
+				return Face.BACK;
+
+			return x < near ? Face.LEFT : null;
+		}
+
+		// The sides go around in this order, so the neighbours of a side are the next and the previous.
+		const sides = [ Face.FRONT, Face.RIGHT, Face.BACK, Face.LEFT ];
+		const index = sides.indexOf(face);
+
+		if (x < near)
+			return sides[(index + 3) % 4];
+
+		if (x > far)
+			return sides[(index + 1) % 4];
+
+		return y < near ? Face.TOP : null;
+	}
+
+	/**
+	 * Turns the cube slowly toward a face when the pointer stays at the edge that leads to it,
+	 * and only when that face is the one turned away from the camera. A turn that has begun goes
+	 * on to the end, even if the pointer moves away or leaves the cube for a moment: stopping it
+	 * half way, or starting it again, would make the cube jerk.
+	 */
+	private steerCamera (pixel: { face: Face; x: number; y: number } | null): void {
 		const drag = this.drag;
-		const pixel = drag && this.view?.pixelAt(event.clientX, event.clientY);
+
+		// With the pointer off the cube there is no edge to judge; whatever is going on goes on.
+		if (!drag || !this.view || !pixel)
+			return;
+
+		// The pointer on a face that is seen too much from the side turns the cube to show it, so the
+		// object can be placed with the face in view. Otherwise only the edge to a face that is turned
+		// away from the camera does.
+		const across = CubeComponent.faceAcrossEdge(pixel.face, pixel.x, pixel.y);
+		const needed = Face.TOP === pixel.face ? CubeComponent.TOP_FACING : CubeComponent.SIDE_FACING;
+		let toward: Face | null = null;
+
+		const here = this.view.facing(pixel.face);
+		const best = Math.max(...[ Face.FRONT, Face.RIGHT, Face.LEFT, Face.BACK, Face.TOP ].map((face) => this.view!.facing(face)));
+
+		// Too much from the side, or no longer the face the camera looks at most (the object went
+		// over an edge to the next face): show it.
+		if (needed > here || (here < best - 0.02 && here < CubeComponent.SHOWN_FACING))
+			toward = pixel.face;
+
+		else if (null !== across && this.view.facing(across) < this.view.facing(pixel.face))
+			toward = across;
+
+		if (null === toward) {
+			drag.edge = null;
+
+			return;
+		}
+
+		const now = performance.now();
+
+		if (drag.edge?.face !== toward)
+			drag.edge = { face: toward, since: now };
+
+		const turning = drag.turning;
+		const busy = turning && turning.face === toward && now < turning.until;
+
+		if (!busy && now - drag.edge.since >= CubeComponent.EDGE_DWELL_MS) {
+			const duration = Math.min(4000, Math.max(1000, this.view.angleTo(toward) / CubeComponent.TURN_SPEED * 1000));
+
+			drag.turning = { face: toward, until: now + duration };
+			this.view.lookAtFace(toward, duration);
+			this.cameraState.set(toward);
+		}
+	}
+
+	/**
+	 * Follows the pointer on every frame while dragging, so the object keeps up smoothly with
+	 * the cube as it turns under a still pointer.
+	 */
+	private followEachFrame (): void {
+		const drag = this.drag;
+
+		if (!drag)
+			return;
+
+		this.followPointer();
+		drag.frame = requestAnimationFrame(() => this.followEachFrame());
+	}
+
+	private readonly onDrag = (event: PointerEvent): void => {
+		if (!this.drag)
+			return;
+
+		this.drag.pointer = { x: event.clientX, y: event.clientY };
+		this.followPointer();
+	};
+
+	/**
+	 * Moves the dragged object to the cell under the pointer. A pointer that is not over the
+	 * cube, or over a cell where objects cannot be, leaves the object where it was. It also runs
+	 * while the pointer is still, because the camera may be turning and the cell under it changes.
+	 */
+	private followPointer (): void {
+		const drag = this.drag;
+		const pixel = drag && this.view?.pixelAt(drag.pointer.x, drag.pointer.y);
+
+		this.steerCamera(pixel || null);
 
 		if (!drag || !pixel)
 			return;
@@ -346,10 +520,41 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 			return;
 
 		drag.last = key;
+		drag.placedOn = placement.face;
 		this.objectMoved.emit({ name: drag.name, ...placement });
-	};
+	}
+
+	/**
+	 * When an object is let go: if it is on another face than the one it was grabbed on, the cube
+	 * turns to show it. If it is let go before leaving its face while the cube was turning to the
+	 * next one, the turn stops where it is, so the cube does not end up on an empty face.
+	 */
+	private showWhereItLanded (drag: NonNullable<CubeComponent['drag']>): void {
+		if (this.destroyed || !this.view)
+			return;
+
+		const face = FACE_BY_NAME[drag.placedOn];
+
+		if (face !== drag.face) {
+			this.view.lookAtFace(face, CubeComponent.SETTLE_MS);
+			this.cameraState.set(face);
+		}
+
+		else if (drag.turning && performance.now() < drag.turning.until && FACE_NAME[drag.turning.face] !== drag.placedOn) {
+			this.view.hold();
+			this.cameraState.set('still');
+		}
+	}
 
 	private readonly onDrop = (): void => {
+		const drag = this.drag;
+
+		if (drag) {
+			cancelAnimationFrame(drag.frame);
+
+			this.showWhereItLanded(drag);
+		}
+
 		this.drag = undefined;
 		this.host().nativeElement.style.cursor = '';
 
@@ -401,6 +606,7 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	}
 
 	ngOnDestroy (): void {
+		this.destroyed = true;
 		this.onDrop();
 		this.host().nativeElement.removeEventListener('pointerdown', this.onPointerDown, true);
 		this.host().nativeElement.removeEventListener('pointermove', this.onHover);
@@ -450,6 +656,19 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	showFace (face: Face): void {
 		this.view?.lookAtFace(face);
 		this.cameraState.set(face);
+	}
+
+	/**
+	 * Stops the slow rotation where it is, so the face being worked on stays in view. Meant for
+	 * when the user starts editing: it does nothing if the camera is already still or looking at
+	 * a face. `spin()` brings the rotation back.
+	 */
+	holdStill (): void {
+		if ('spin' !== this.cameraState())
+			return;
+
+		this.view?.hold();
+		this.cameraState.set('still');
 	}
 
 	/**

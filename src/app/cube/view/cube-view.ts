@@ -108,9 +108,31 @@ export class CubeView {
 	/**
 	 * Smoothly orbits the camera	/**
 	 * Smoothly orbits the camera until the given face is shown head-on, and stops the auto-rotation.
+	 * @param duration Milliseconds the turn takes; a longer one is gentler.
 	 */
-	lookAtFace (face: Face): void {
-		this.rig.lookAtFace(face);
+	lookAtFace (face: Face, duration?: number): void {
+		this.rig.lookAtFace(face, duration);
+	}
+
+	/**
+	 * How far the camera has to turn to look at a face head-on, in radians.
+	 */
+	angleTo (face: Face): number {
+		return this.rig.angleTo(face);
+	}
+
+	/**
+	 * Keeps the camera where it is: stops the automatic rotation and any turn in progress.
+	 */
+	hold (): void {
+		this.rig.hold();
+	}
+
+	/**
+	 * How much a face looks at the camera: 1 head-on, 0 edge-on, negative when turned away.
+	 */
+	facing (face: Face): number {
+		return this.rig.facing(face);
 	}
 
 	/**

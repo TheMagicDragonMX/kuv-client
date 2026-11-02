@@ -21,7 +21,19 @@ interface ViewTransition {
 	fromPhi: number;
 	toTheta: number;
 	toPhi: number;
+	duration: number;
 }
+
+/**
+ * Outward direction of each face, in `Face` order.
+ */
+const FACE_NORMALS: readonly THREE.Vector3[] = [
+	new THREE.Vector3(0, 0, 1),
+	new THREE.Vector3(1, 0, 0),
+	new THREE.Vector3(-1, 0, 0),
+	new THREE.Vector3(0, 0, -1),
+	new THREE.Vector3(0, 1, 0),
+];
 
 export class CameraRig {
 	readonly camera: THREE.PerspectiveCamera;
@@ -64,7 +76,7 @@ export class CameraRig {
 	/**
 	 * Smoothly orbits the camera until the given face is shown head-on, and stops the auto-rotation.
 	 */
-	lookAtFace (face: Face): void {
+	lookAtFace (face: Face, duration = VIEW_TRANSITION_MS): void {
 		const offset = this.camera.position.clone().sub(this.controls.target);
 		const spherical = new THREE.Spherical().setFromVector3(offset);
 		const toTheta = FACE_AZIMUTH[face];
@@ -81,7 +93,38 @@ export class CameraRig {
 			fromPhi: spherical.phi,
 			toTheta: spherical.theta + delta,
 			toPhi: face === Face.TOP ? TOP_VIEW_POLAR : SIDE_VIEW_POLAR,
+			duration,
 		};
+	}
+
+	/**
+	 * How far the camera has to turn to look at a face head-on, in radians (the azimuth and the
+	 * polar angle taken together).
+	 */
+	angleTo (face: Face): number {
+		const spherical = new THREE.Spherical().setFromVector3(this.camera.position.clone().sub(this.controls.target));
+		const toTheta = Face.TOP === face ? spherical.theta : FACE_AZIMUTH[face];
+		const around = Math.atan2(Math.sin(toTheta - spherical.theta), Math.cos(toTheta - spherical.theta));
+		const down = (Face.TOP === face ? TOP_VIEW_POLAR : SIDE_VIEW_POLAR) - spherical.phi;
+
+		return Math.hypot(around, down);
+	}
+
+	/**
+	 * Keeps the camera where it is: stops the automatic rotation and any turn in progress.
+	 */
+	hold (): void {
+		this.transition = undefined;
+		this.controls.autoRotate = false;
+	}
+
+	/**
+	 * How much a face looks at the camera: 1 head-on, 0 edge-on, negative when it is turned away.
+	 */
+	facing (face: Face): number {
+		const toCamera = this.camera.position.clone().sub(this.controls.target).normalize();
+
+		return FACE_NORMALS[face].dot(toCamera);
 	}
 
 	/**
@@ -128,8 +171,8 @@ export class CameraRig {
 			return;
 		
 
-		const { startTime, fromTheta, fromPhi, toTheta, toPhi } = this.transition;
-		const progress = Math.min((performance.now() - startTime) / VIEW_TRANSITION_MS, 1);
+		const { startTime, fromTheta, fromPhi, toTheta, toPhi, duration } = this.transition;
+		const progress = Math.min((performance.now() - startTime) / duration, 1);
 		// Ease in and out so the motion starts and ends gently.
 		const eased = 0.5 > progress ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
 

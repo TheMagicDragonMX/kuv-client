@@ -54,6 +54,15 @@ export class EditorPage {
 	protected readonly environment = signal<Environment>({});
 
 	/**
+	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
+	 * face being edited does not turn away. The Spin button brings the rotation back.
+	 */
+	protected holdCube (cube: CubeComponent): void {
+		if ('blocks' === this.tab() || 'objects' === this.tab())
+			cube.holdStill();
+	}
+
+	/**
 	 * The user dragged an object on the cube: its starting place is now the cell it was dropped on.
 	 */
 	protected moveObject (move: ObjectMove): void {
