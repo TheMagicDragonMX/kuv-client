@@ -27,6 +27,10 @@
 			(click)="erasing.set(true)"
 		>Erase</button>
 		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="clear()">Clear</button>
+		<span class="ml-auto flex gap-1" role="group" aria-label="History">
+			<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.9rem] leading-none text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" title="Undo (Ctrl+Z)" aria-label="Undo" [disabled]="past().length === 0" (click)="undo()">↶</button>
+			<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.9rem] leading-none text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" title="Redo (Ctrl+Y)" aria-label="Redo" [disabled]="future().length === 0" (click)="redo()">↷</button>
+		</span>
 	</div>
 
 	<!-- The canvas: a grid of pixels. The highlighted one in the middle is the object itself. -->
