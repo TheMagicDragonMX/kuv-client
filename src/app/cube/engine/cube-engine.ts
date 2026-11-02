@@ -26,8 +26,8 @@
 import { Environment, paintEnvironment } from '../environment/environment';
 import { applyCommand } from '../commands/apply-command';
 import { GeometryConfig } from '../geometry/geometry';
-import { FaceName, Program, ProgramConfig } from '../program/program';
-import { FACE_BY_NAME, FACE_NAME } from '../program/names';
+import { FaceName, HeadingName, Program, ProgramConfig } from '../program/program';
+import { FACE_BY_NAME, FACE_NAME, HEADING_BY_NAME } from '../program/names';
 import { validateProgram } from '../program/validate-program';
 import { Renderer } from '../renderer/renderer';
 import { Scheduler, ScriptError } from '../runtime/scheduler';
@@ -171,6 +171,19 @@ export class CubeEngine {
 	setEnvironment (environment: Environment | undefined): void {
 		paintEnvironment(this.world, environment, this.environment);
 		this.environment = environment;
+		this.renderer.render();
+	}
+
+	/**
+	 * Puts an object on a cell right away, without loading the program again. It is the cheap
+	 * way to follow a pointer that drags an object, which changes cell many times a second.
+	 * Throws an EngineError if there is no such object, and a RangeError if the cell is outside
+	 * the cube.
+	 */
+	moveObject (name: string, face: FaceName, x: number, y: number, heading?: HeadingName): void {
+		this.world.update(name, {
+			pose: this.world.geometry.place({ face: FACE_BY_NAME[face], x, y, heading: heading && HEADING_BY_NAME[heading] }),
+		});
 		this.renderer.render();
 	}
 

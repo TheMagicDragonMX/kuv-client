@@ -213,9 +213,11 @@ export class CameraRig {
 		const progress = Math.min((performance.now() - startTime) / duration, 1);
 
 		/**
-		 * Ease in and out so the motion starts and ends gently.
+		 * Ease in and out so the motion starts and ends gently. It is a half cosine: the speed
+		 * rises and falls smoothly and never gets above about one and a half times the average,
+		 * where a cubic curve is three times as fast in the middle and sets off too slowly.
 		 */
-		const eased = 0.5 > progress ? 4 * progress ** 3 : 1 - (-2 * progress + 2) ** 3 / 2;
+		const eased = (1 - Math.cos(Math.PI * progress)) / 2;
 
 		const offset = this.camera.position.clone().sub(this.controls.target);
 		const radius = offset.length();

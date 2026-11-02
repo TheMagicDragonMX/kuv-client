@@ -330,3 +330,15 @@ describe('CubeEngine frame of an object', () => {
 		expect(frame.edges.some((edge) => edge.face === Face.RIGHT && edge.x === 0 && 'left' === edge.side)).toBe(false);
 	});
 });
+
+describe('CubeEngine moveObject', () => {
+	it('puts an object on another face at once, without loading the program again', () => {
+		const engine = new CubeEngine();
+		engine.load({ version: 1, objects: [ { op: 'create', name: 'a', face: 'FRONT', x: 10, y: 10, color: '#ff8800' } ], scripts: [] });
+
+		engine.moveObject('a', 'RIGHT', 5, 6);
+
+		expect(engine.state.get(Face.FRONT, 10, 10)).toBe(0);
+		expect(engine.state.get(Face.RIGHT, 5, 6)).toBe(0xff8800);
+	});
+});

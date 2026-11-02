@@ -16,7 +16,7 @@
 
 import { Environment } from '../environment/environment';
 import { CreateCommand } from '../blocks';
-import { FaceName, ProgramConfig } from '../program/program';
+import { FaceName, HeadingName, ProgramConfig } from '../program/program';
 import { CubeState, Face } from '../state/cube-state';
 import { CubeEngine, CubeEngineOptions, Frame, Grab } from './cube-engine';
 import { DEFAULT_TICK_RATE, RunLoop } from './run-loop';
@@ -116,6 +116,13 @@ export class CubePlayer {
 			this.sync();
 		});
 		this.sync();
+	}
+
+	/**
+	 * Puts an object on a cell right away. See `CubeEngine.moveObject`.
+	 */
+	moveObject (name: string, face: FaceName, x: number, y: number, heading?: HeadingName): void {
+		this.engine.moveObject(name, face, x, y, heading);
 	}
 
 	/**

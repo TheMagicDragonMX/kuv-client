@@ -566,6 +566,12 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 
 		drag.last = key;
 		drag.placedOn = placement.face;
+
+		// The cube follows at once; the page is told too, but it does not need to load the objects again.
+		const heading = this.objects()?.find((object) => object.name === drag.name)?.heading;
+
+		this.player.moveObject(drag.name, placement.face, placement.x, placement.y, heading);
+		this.refreshOutline();
 		this.objectMoved.emit({ name: drag.name, ...placement });
 	}
 
@@ -603,6 +609,12 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 		this.drag = undefined;
 		this.host().nativeElement.style.cursor = '';
 
+		// Load the objects as the page has them now, so what the cube shows is what will run.
+		const objects = this.objects();
+
+		if (drag && objects && !this.destroyed)
+			this.previewObjects(objects);
+
 		window.removeEventListener('pointermove', this.onDrag);
 		window.removeEventListener('pointerup', this.onDrop);
 		window.removeEventListener('pointercancel', this.onDrop);
@@ -628,6 +640,10 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	 * Shows the objects at their starting place, reporting invalid ones as a problem.
 	 */
 	private previewObjects (objects: CreateCommand[]): void {
+		// While an object is dragged the cube already shows it where the pointer is.
+		if (this.drag)
+			return;
+
 		try {
 			this.player.preview(objects);
 		}
