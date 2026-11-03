@@ -25,3 +25,5 @@ export type { ScriptError } from './runtime/scheduler';
 export { CubeState, FACE_RESOLUTION, Face } from './state/cube-state';
 export type { Color } from './state/cube-state';
 export { CubeView } from './view/cube-view';
+export { isRecordingSupported, recordCubeVideo } from './recorder/cube-recorder';
+export type { RecordCubeOptions, RecordProgress, RecordResult } from './recorder/cube-recorder';

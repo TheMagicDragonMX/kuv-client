@@ -12,11 +12,13 @@ export const routes: Routes = [
 	{ path: 'register', component: RegisterPage },
 	{ path: 'test-cube', component: TestCubePage },
 	{ path: 'editor', component: EditorPage },
+	{ path: 'gallery', loadComponent: () => import('./pages/gallery/gallery.component').then((page) => page.GalleryPage) },
 
 	/**
 	 * Lazy: it is only needed next to a cube, and keeps the initial bundle under budget.
 	 */
 	{ path: 'setup', loadComponent: () => import('./pages/setup/setup.component').then((page) => page.SetupPage) },
+	{ path: 'cube-chat', loadComponent: () => import('./pages/cube-chat/cube-chat.component').then((page) => page.CubeChatPage) },
 	{ path: '', pathMatch: 'full', redirectTo: 'login' },
 	{ path: '**', redirectTo: 'login' },
 ];

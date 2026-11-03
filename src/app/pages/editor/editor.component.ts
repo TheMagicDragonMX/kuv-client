@@ -1,6 +1,16 @@
-import { Component, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import { CreateCommand, CubeComponent, Environment, Face, ObjectMove } from '../../cube';
+import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+	CreateCommand,
+	CubeComponent,
+	Environment,
+	Face,
+	ObjectMove,
+	RecordProgress,
+	recordCubeVideo,
+} from '../../cube';
+import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { BlocksTabComponent } from './blocks-tab.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
@@ -9,17 +19,36 @@ import { ProgramAreaComponent } from './program-area.component';
 /**
  * The editor: a cube on one side, and on the other a panel with four tabs: the blocks, the
  * objects they move, the background and the program (the JSON the blocks are turned into, read
- * only). The page only
- * connects them to the cube: the program the blocks emit is run by the cube, and the environment
- * the background panel edits is shown by it.
+ * only).
  */
 @Component({
 	selector: 'app-editor',
 	standalone: true,
-	imports: [ RouterLink, CubeComponent, ProgramAreaComponent, BackgroundPanelComponent, BlocksTabComponent, ObjectsPanelComponent ],
+	imports: [
+		RouterLink,
+		FormsModule,
+		CubeComponent,
+		ProgramAreaComponent,
+		BackgroundPanelComponent,
+		BlocksTabComponent,
+		ObjectsPanelComponent,
+	],
 	templateUrl: './editor.component.html',
 })
-export class EditorPage {
+export class EditorPage implements OnInit {
+	@ViewChild('blocks', { static: false })
+	protected blocksRef?: BlocksTabComponent;
+
+	@ViewChild('cube', { static: false })
+	protected cubeRef?: CubeComponent;
+
+	@ViewChild('exportPreviewHost', { static: false })
+	private exportPreviewHostRef?: ElementRef<HTMLDivElement>;
+
+	private readonly projectStorage = inject(ProjectStorageService);
+	private readonly route = inject(ActivatedRoute);
+	private readonly router = inject(Router);
+
 	/**
 	 * The tabs of the side panel.
 	 */
@@ -41,8 +70,7 @@ export class EditorPage {
 	protected readonly objects = signal<CreateCommand[]>([]);
 
 	/**
-	 * Names of the objects the user has hidden to see what is behind them. Only a view setting:
-	 * it is not part of the program.
+	 * Names of the objects the user has hidden to see what is behind them.
 	 */
 	protected readonly hiddenObjects = signal<string[]>([]);
 
@@ -84,4 +112,111 @@ export class EditorPage {
 		{ value: Face.BACK, label: 'Back' },
 		{ value: Face.TOP, label: 'Top' },
 	];
+
+	// --- Export & Thumbnail Modal ---
+	protected readonly showExportModal = signal(false);
+	protected readonly exportTitle = signal('My Animation');
+	protected readonly exportDescription = signal('');
+	protected readonly exportDuration = signal<number>(15);
+	protected readonly exportCameraMode = signal<'orbit' | 'front'>('orbit');
+	protected readonly isExporting = signal(false);
+	protected readonly exportProgress = signal<RecordProgress | null>(null);
+	protected readonly exportSuccess = signal(false);
+
+	async ngOnInit (): Promise<void> {
+		const projectId = this.route.snapshot.queryParamMap.get('project');
+		if (projectId) {
+			try {
+				const project = await this.projectStorage.get(projectId);
+				if (project) {
+					this.exportTitle.set(project.title);
+					this.exportDescription.set(project.description);
+					if (project.environment) 
+						this.environment.set(project.environment);
+					
+
+					setTimeout(() => {
+						this.blocksRef?.loadProgram(project.program);
+						this.cubeRef?.run(project.program);
+					}, 100);
+				}
+			}
+			catch (err) {
+				console.error('Error loading project into editor:', err);
+			}
+		}
+	}
+
+	protected openExportModal (): void {
+		this.exportSuccess.set(false);
+		this.exportProgress.set(null);
+		this.showExportModal.set(true);
+	}
+
+	protected closeExportModal (): void {
+		if (this.isExporting()) 
+			return;
+		
+		this.showExportModal.set(false);
+	}
+
+	protected async startExport (): Promise<void> {
+		const program = this.blocksRef?.program();
+		if (!program) {
+			alert('The program is not ready to export yet.');
+			return;
+		}
+
+		this.isExporting.set(true);
+		this.exportProgress.set({ currentSecond: 1, totalSeconds: this.exportDuration(), percent: 0 });
+
+		await new Promise((resolve) => setTimeout(resolve, 50));
+
+		try {
+			const rotations = 'orbit' === this.exportCameraMode() ? 1 : 0;
+			const result = await recordCubeVideo(
+				program,
+				{
+					durationSeconds: this.exportDuration(),
+					fps: 30,
+					width: 480,
+					height: 480,
+					bitrate: 2_500_000,
+					rotations,
+					environment: this.environment(),
+					previewHost: this.exportPreviewHostRef?.nativeElement,
+				},
+				(prog) => {
+					this.exportProgress.set(prog);
+				},
+			);
+
+			const id = 'proj_' + Date.now();
+			await this.projectStorage.save({
+				id,
+				title: this.exportTitle().trim() || 'Untitled',
+				description: this.exportDescription().trim(),
+				createdAt: Date.now(),
+				durationSeconds: this.exportDuration(),
+				program,
+				environment: this.environment(),
+				videoBlob: result.blob,
+				videoMimeType: result.mimeType,
+			});
+
+			this.exportSuccess.set(true);
+		}
+		catch (error) {
+			console.error('Error recording project thumbnail:', error);
+			alert('Error generating thumbnail: ' + (error as Error).message);
+		}
+		finally {
+			this.isExporting.set(false);
+		}
+	}
+
+	protected goToGallery (): void {
+		this.showExportModal.set(false);
+		this.router.navigate(['/gallery']);
+	}
 }
