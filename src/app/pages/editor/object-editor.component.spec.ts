@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { MAX_PICTURE_BYTES } from './image-object';
 import { ObjectEditorComponent } from './object-editor.component';
 import { CENTER, GRID } from './stage-object';
 
@@ -50,6 +51,70 @@ type EditorInternals = {
 	 * Handles a key press.
 	 */
 	onKey(event: KeyboardEvent): void;
+
+	/**
+	 * The picture being placed.
+	 */
+	picture: { (): unknown; set(value: { width: number; height: number; data: Uint8ClampedArray } | null): void };
+
+	/**
+	 * Changes the size of the picture in the drawing.
+	 */
+	resize(size: number): void;
+
+	/**
+	 * Keeps the picture.
+	 */
+	acceptPicture(): void;
+
+	/**
+	 * Drops the picture.
+	 */
+	cancelPicture(): void;
+
+	/**
+	 * True while the part of the picture to use is being chosen.
+	 */
+	selecting: { (): boolean; set(value: boolean): void };
+
+	/**
+	 * Makes the drawing from the part of the picture the user chose.
+	 */
+	useSelection(picture: { width: number; height: number; data: Uint8ClampedArray }): void;
+
+	/**
+	 * The user left the part chooser.
+	 */
+	stopSelecting(): void;
+
+	/**
+	 * Goes back to choosing the part of the picture.
+	 */
+	chooseAgain(): void;
+
+	/**
+	 * Chooses sharp edges or blended pixels.
+	 */
+	setCrisp(crisp: boolean): void;
+
+	/**
+	 * Reads the file the user chose.
+	 */
+	choose(event: Event): Promise<void>;
+
+	/**
+	 * Why the picture could not be used, or null.
+	 */
+	pictureProblem: () => string | null;
+};
+
+/**
+ * A 2 by 2 red picture with a see-through bottom right corner.
+ */
+const RED_PICTURE = {
+	width: 2,
+	height: 2,
+	data: new Uint8ClampedArray([ 255, 0, 0, 255, 255, 0, 0, 255, 255, 0, 0, 255, 0, 0, 0, 0 ]),
 };
 
 /**
@@ -148,5 +213,124 @@ describe('ObjectEditorComponent history', () => {
 		editor.onKey(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }));
 		editor.onKey(new KeyboardEvent('keydown', { key: 'Z', ctrlKey: true, shiftKey: true }));
 		expect(painted(editor)).toEqual([ CENTER_CELL, CENTER_CELL + 1 ]);
+	});
+
+	describe('with a picture', () => {
+		/**
+		 * Brings the picture in the way `choose` does once it has read the file.
+		 */
+		function bringIn (size: number): void {
+			editor.picture.set(RED_PICTURE);
+			(editor as unknown as { beforePicture: unknown }).beforePicture = editor.drawing();
+			editor.resize(size);
+		}
+
+		it('makes the drawing from the picture at the chosen size, leaving see-through parts empty', () => {
+			bringIn(2);
+
+			expect(painted(editor)).toHaveLength(3);
+
+			editor.resize(1);
+
+			expect(painted(editor)).toHaveLength(1);
+		});
+
+		it('is one step of the history once it is kept', () => {
+			bringIn(2);
+			editor.acceptPicture();
+
+			editor.undo();
+
+			expect(painted(editor)).toEqual([ CENTER_CELL ]);
+		});
+
+		it('goes away when it is discarded, with no step in the history', () => {
+			bringIn(2);
+			editor.cancelPicture();
+
+			expect(painted(editor)).toEqual([ CENTER_CELL ]);
+
+			editor.undo();
+
+			expect(painted(editor)).toEqual([ CENTER_CELL ]);
+		});
+
+		it('is kept when the user paints over it', () => {
+			bringIn(2);
+			stroke(editor, 0);
+
+			expect(editor.picture()).toBeNull();
+
+			editor.undo();
+			editor.undo();
+
+			expect(painted(editor)).toEqual([ CENTER_CELL ]);
+		});
+
+		it('is made from the part the user chose, and a different part can be chosen later', () => {
+			editor.selecting.set(true);
+			editor.useSelection(RED_PICTURE);
+			editor.resize(2);
+
+			expect(editor.selecting()).toBe(false);
+			expect(painted(editor)).toHaveLength(3);
+
+			editor.chooseAgain();
+
+			expect(editor.selecting()).toBe(true);
+
+			editor.useSelection({ width: 1, height: 1, data: new Uint8ClampedArray([ 0, 0, 255, 255 ]) });
+
+			// A single pixel is stretched to the size chosen.
+			expect(painted(editor)).toHaveLength(4);
+
+			editor.resize(1);
+
+			expect(painted(editor)).toEqual([ CENTER_CELL ]);
+
+			editor.cancelPicture();
+
+			expect(painted(editor)).toEqual([ CENTER_CELL ]);
+		});
+
+		it('goes back to the drawing from before it, whatever part was chosen last', () => {
+			stroke(editor, CENTER_CELL + 1);
+			editor.useSelection(RED_PICTURE);
+			editor.useSelection({ width: 1, height: 1, data: new Uint8ClampedArray([ 0, 0, 255, 255 ]) });
+
+			editor.cancelPicture();
+
+			expect(painted(editor)).toEqual([ CENTER_CELL, CENTER_CELL + 1 ]);
+		});
+
+		it('switches between blended pixels and sharp edges', () => {
+			editor.useSelection({ width: 2, height: 1, data: new Uint8ClampedArray([ 255, 0, 0, 255, 0, 0, 255, 255 ]) });
+			editor.resize(1);
+
+			expect(painted(editor)).toHaveLength(1);
+
+			editor.setCrisp(true);
+
+			expect(painted(editor)).toHaveLength(1);
+		});
+
+		it('ignores Ctrl+Z while the part is being chosen, so the picture is not lost', () => {
+			stroke(editor, CENTER_CELL + 1);
+			editor.selecting.set(true);
+
+			editor.onKey(new KeyboardEvent('keydown', { key: 'z', ctrlKey: true }));
+
+			expect(painted(editor)).toEqual([ CENTER_CELL, CENTER_CELL + 1 ]);
+		});
+
+		it('refuses a file that is too big without opening it', async () => {
+			const input = { files: [ { size: MAX_PICTURE_BYTES + 1 } ], value: 'big.png' };
+
+			await editor.choose({ target: input } as unknown as Event);
+
+			expect(editor.pictureProblem()).toContain('too big');
+			expect(editor.selecting()).toBe(false);
+			expect(input.value).toBe('');
+		});
 	});
 });

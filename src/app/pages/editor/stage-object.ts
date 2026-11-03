@@ -12,7 +12,7 @@ import { CreateCommand, ShapePixelDefinition, formatColor, parseColor } from '..
 /**
  * The drawing grid is `GRID` cells wide and tall, with the center in the middle.
  */
-export const GRID = 15;
+export const GRID = 31;
 
 /**
  * Index of the center cell along one side of the grid.
@@ -41,10 +41,12 @@ export function newDrawing (color: number): Drawing {
 
 /**
  * The object a drawing makes. The center cell is the object's color and cell; if nothing else
- * is painted it is a single pixel, otherwise the shape lists every painted cell.
+ * is painted it is a single pixel, otherwise the shape lists every painted cell. A center cell
+ * left empty (a ring, a picture with a hole in the middle) is not in the shape, and the color of
+ * the object is then black, a LED that is off, which is how it is read back as empty.
  */
 export function objectFromDrawing (name: string, drawing: Drawing): CreateCommand {
-	const center = drawing[CENTER * GRID + CENTER] ?? 0;
+	const center = drawing[CENTER * GRID + CENTER];
 	const pixels: ShapePixelDefinition[] = [];
 
 	drawing.forEach((color, index) => {
@@ -56,8 +58,8 @@ export function objectFromDrawing (name: string, drawing: Drawing): CreateComman
 		op: 'create',
 		name: name.trim(),
 		...START,
-		color: formatColor(center),
-		...1 < pixels.length ? { pixels } : {},
+		color: formatColor(center ?? 0),
+		...1 < pixels.length || (0 < pixels.length && null === center) ? { pixels } : {},
 	};
 }
 
@@ -84,9 +86,11 @@ export function drawingFromObject (object: CreateCommand): Drawing | null {
 	}
 
 	/**
-	 * The center is always part of the object, even if its shape does not list it.
+	 * The center is always part of the object, even if its shape does not list it, unless the
+	 * object has no color (black): that is how an empty center is saved.
 	 */
-	drawing[CENTER * GRID + CENTER] ??= color;
+	if (0 !== color)
+		drawing[CENTER * GRID + CENTER] ??= color;
 
 	return drawing;
 }

@@ -17,7 +17,7 @@ The blocks and the objects are the only things a program is made from: the Progr
 
 Objects are made here, **before** the blocks use them. "New object" opens a pixel editor: a grid with a highlighted pixel in the middle, which is the object itself (the cell blocks move; the pixels around it follow). The user picks a color, paints cells around the center (drag to paint, Erase to empty a cell, Clear to start over), names the object and presses "Create object". An object with only the center painted is one pixel; otherwise its shape is every painted cell. Objects start in the middle of the front face (`START` in [stage-object.ts](stage-object.ts)); the blocks move them from there. Existing objects can be edited (not renamed, because blocks use the name) or deleted; a block that used a deleted object asks for another one.
 
-The list lives in the page and goes to the Blocks tab, which puts it in the program as `objects` (see [ENGINE_MANUAL.md](../../../../ENGINE_MANUAL.md)); the engine creates them when the program starts, before any script. They show on the cube when the program runs. The grid is 15 × 15, so the editor can only open objects that fit it; the objects of some examples (a belt across all four sides) are bigger, and have no Edit button.
+The list lives in the page and goes to the Blocks tab, which puts it in the program as `objects` (see [ENGINE_MANUAL.md](../../../../ENGINE_MANUAL.md)); the engine creates them when the program starts, before any script. They show on the cube when the program runs. The grid is 31 × 31, so the editor can only open objects that fit it; the objects of some examples (a belt across all four sides) are bigger, and have no Edit button.
 
 ## The Blocks tab
 

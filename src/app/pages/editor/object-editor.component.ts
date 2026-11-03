@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, linkedSignal, output, signal } from '@angular/core';
-import { CreateCommand, formatColor, parseColor } from '../../cube';
+import { ChangeDetectionStrategy, Component, OnDestroy, computed, input, linkedSignal, output, signal } from '@angular/core';
+import { CreateCommand, RawImage, formatColor, parseColor } from '../../cube';
+import { MAX_PICTURE_BYTES, MAX_PICTURE_PIXELS, drawingFromImage, fileProblem, pixelsProblem, sizeOfImage, workingSize } from './image-object';
+import { ImageSelectorComponent } from './image-selector.component';
 import { CENTER, Drawing, GRID, drawingFromObject, freeObjectName, nameProblem, newDrawing, objectFromDrawing } from './stage-object';
 
 /**
@@ -12,17 +14,24 @@ const HISTORY_LIMIT = 100;
  * middle, which is the object itself (the cell blocks move); the user paints the cells around it
  * to give the object a shape. Saving makes the object; the component does not keep it anywhere.
  *
- * Every stroke (from pressing on the grid to letting go) and every Clear is one step of a
- * history, which Ctrl+Z (or the undo button) walks back and Ctrl+Y (or redo) walks forward again.
+ * Every stroke (from pressing on the grid to letting go), every Clear and every picture brought
+ * in is one step of a history, which Ctrl+Z (or the undo button) walks back and Ctrl+Y (or
+ * redo) walks forward again.
+ *
+ * A picture can also be brought in to make the object: the user first chooses the part of it to
+ * use, then the size (up to the whole grid), and its transparent parts stay empty. While the
+ * picture is being placed, changing the size redoes the drawing from it; painting by hand ends
+ * that.
  */
 @Component({
 	selector: 'app-object-editor',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
+	imports: [ ImageSelectorComponent ],
 	templateUrl: './object-editor.component.html',
 	host: { '(document:keydown)': 'onKey($event)' },
 })
-export class ObjectEditorComponent {
+export class ObjectEditorComponent implements OnDestroy {
 	/**
 	 * The object being edited, or nothing for a new one. Its name cannot change: blocks use it.
 	 */
@@ -91,6 +100,58 @@ export class ObjectEditorComponent {
 	});
 
 	/**
+	 * What the pictures can be like, shown on the button that opens one.
+	 */
+	protected readonly imageLimit = `Pictures of up to ${MAX_PICTURE_BYTES / 1024 / 1024} MB and ${MAX_PICTURE_PIXELS / 1_000_000} megapixels. Bigger ones are shrunk.`;
+
+	/**
+	 * The picture the user opened, while a part of it is being chosen or can be chosen again.
+	 * Whatever part is chosen is cut from this, at full quality.
+	 */
+	protected readonly bitmap = signal<ImageBitmap | null>(null);
+
+	/**
+	 * True while the user is choosing the part of the picture to use.
+	 */
+	protected readonly selecting = signal(false);
+
+	/**
+	 * The part of the picture chosen, being turned into the object while its size can still be
+	 * changed.
+	 */
+	protected readonly picture = signal<RawImage | null>(null);
+
+	/**
+	 * True to keep the edges of the picture sharp (pixel art) instead of blending the pixels
+	 * that fall in one cell, which is better for photos.
+	 */
+	protected readonly crisp = signal(false);
+
+	/**
+	 * Longest side, in cells, the picture is shrunk to.
+	 */
+	protected readonly size = signal(GRID);
+
+	/**
+	 * Largest size the picture can have: the grid.
+	 */
+	protected readonly maxSize = GRID;
+
+	/**
+	 * Why the picture could not be used, or null.
+	 */
+	protected readonly pictureProblem = signal<string | null>(null);
+
+	/**
+	 * Cells across and down the picture takes at the chosen size, to tell the user.
+	 */
+	protected readonly pictureCells = computed(() => {
+		const picture = this.picture();
+
+		return picture && sizeOfImage(picture, this.size());
+	});
+
+	/**
 	 * The color being painted.
 	 */
 	protected readonly color = signal('#f9a8d4');
@@ -116,6 +177,11 @@ export class ObjectEditorComponent {
 	private strokeStart: Drawing | null = null;
 
 	/**
+	 * The drawing before the picture was brought in, to go back to if the user cancels it.
+	 */
+	private beforePicture: Drawing | null = null;
+
+	/**
 	 * The CSS color of a cell of the grid, or nothing when it is empty.
 	 */
 	protected paint (index: number): string | null {
@@ -132,6 +198,7 @@ export class ObjectEditorComponent {
 		 * A finger would keep sending its events to the first cell; let each cell have its own.
 		 */
 		(event.target as Element).releasePointerCapture?.(event.pointerId);
+		this.acceptPicture();
 		this.painting = true;
 		this.strokeStart = this.drawing();
 		this.touch(index);
@@ -168,6 +235,8 @@ export class ObjectEditorComponent {
 	 * Goes back to the drawing before the last change.
 	 */
 	protected undo (): void {
+		this.acceptPicture();
+
 		const past = this.past();
 
 		if (0 === past.length)
@@ -182,6 +251,8 @@ export class ObjectEditorComponent {
 	 * Brings back the change that was undone last.
 	 */
 	protected redo (): void {
+		this.acceptPicture();
+
 		const future = this.future();
 
 		if (0 === future.length)
@@ -197,7 +268,7 @@ export class ObjectEditorComponent {
 	 * the keys are left to the box, which has an undo of its own for what is typed.
 	 */
 	protected onKey (event: KeyboardEvent): void {
-		if (!(event.ctrlKey || event.metaKey) || event.altKey)
+		if (!(event.ctrlKey || event.metaKey) || event.altKey || this.selecting())
 			return;
 
 		const target = event.target as HTMLElement | null;
@@ -238,8 +309,169 @@ export class ObjectEditorComponent {
 	 * Empties the drawing, leaving the center cell.
 	 */
 	protected clear (): void {
+		this.acceptPicture();
 		this.remember(this.drawing());
 		this.drawing.set(newDrawing(this.drawing()[this.center] ?? parseColor(this.color())));
+	}
+
+	/**
+	 * Reads the picture the user chose and makes the drawing from it at the chosen size.
+	 */
+	protected async choose (event: Event): Promise<void> {
+		const input = event.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = '';
+
+		if (!file)
+			return;
+
+		const tooBig = fileProblem(file.size);
+
+		this.pictureProblem.set(tooBig);
+
+		if (tooBig)
+			return;
+
+		try {
+			const opened = await createImageBitmap(file);
+			const tooMany = pixelsProblem(opened.width, opened.height);
+
+			if (tooMany) {
+				opened.close();
+				this.pictureProblem.set(tooMany);
+
+				return;
+			}
+
+			const bitmap = await this.shrunk(opened);
+
+			this.acceptPicture();
+			this.bitmap.set(bitmap);
+			this.selecting.set(true);
+		}
+
+		catch {
+			this.pictureProblem.set('That file could not be read as a picture.');
+		}
+	}
+
+	/**
+	 * The picture at the size it is worked at: the same one if it is small enough, otherwise a
+	 * smaller copy (the big one is let go of).
+	 */
+	private async shrunk (opened: ImageBitmap): Promise<ImageBitmap> {
+		const { width, height } = workingSize(opened.width, opened.height);
+
+		if (width === opened.width && height === opened.height)
+			return opened;
+
+		try {
+			return await createImageBitmap(opened, { resizeWidth: width, resizeHeight: height, resizeQuality: 'high' });
+		}
+
+		finally {
+			opened.close();
+		}
+	}
+
+	/**
+	 * The user chose the part of the picture to use: make the drawing from it.
+	 */
+	protected useSelection (picture: RawImage): void {
+		this.beforePicture ??= this.drawing();
+		this.picture.set(picture);
+		this.selecting.set(false);
+		this.place();
+	}
+
+	/**
+	 * The user left the part chooser: back to the size if a part was already chosen, otherwise
+	 * the picture is dropped.
+	 */
+	protected stopSelecting (): void {
+		this.selecting.set(false);
+
+		if (!this.picture())
+			this.closeBitmap();
+	}
+
+	/**
+	 * Goes back to choosing the part of the picture.
+	 */
+	protected chooseAgain (): void {
+		this.selecting.set(true);
+	}
+
+	/**
+	 * Changes the size of the picture in the drawing.
+	 */
+	protected resize (size: number): void {
+		this.size.set(size);
+		this.place();
+	}
+
+	/**
+	 * Chooses sharp edges or blended pixels for the picture.
+	 */
+	protected setCrisp (crisp: boolean): void {
+		this.crisp.set(crisp);
+		this.place();
+	}
+
+	/**
+	 * Makes the drawing from the picture at the chosen size, or says it has nothing to show.
+	 */
+	private place (): void {
+		const picture = this.picture();
+
+		if (!picture)
+			return;
+
+		const result = drawingFromImage(picture, this.size(), this.crisp());
+
+		this.pictureProblem.set(result.visible ? null : 'The picture has nothing to show: all of it is see-through.');
+
+		if (result.visible)
+			this.drawing.set(result.drawing);
+	}
+
+	/**
+	 * Keeps the drawing made from the picture, as one step of the history, and stops placing it.
+	 */
+	protected acceptPicture (): void {
+		if (this.beforePicture && this.beforePicture !== this.drawing())
+			this.remember(this.beforePicture);
+
+		this.picture.set(null);
+		this.beforePicture = null;
+		this.selecting.set(false);
+		this.closeBitmap();
+	}
+
+	/**
+	 * Drops the picture and goes back to the drawing from before it.
+	 */
+	protected cancelPicture (): void {
+		if (this.beforePicture)
+			this.drawing.set(this.beforePicture);
+
+		this.picture.set(null);
+		this.beforePicture = null;
+		this.selecting.set(false);
+		this.pictureProblem.set(null);
+		this.closeBitmap();
+	}
+
+	/**
+	 * Lets go of the picture that was opened.
+	 */
+	private closeBitmap (): void {
+		this.bitmap()?.close();
+		this.bitmap.set(null);
+	}
+
+	ngOnDestroy (): void {
+		this.closeBitmap();
 	}
 
 	/**

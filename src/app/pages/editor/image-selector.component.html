@@ -1,0 +1,40 @@
+<div class="flex flex-col gap-3">
+	<!-- The picture, with the part that is kept inside a frame and the rest dimmed. -->
+	<div
+		class="relative cursor-crosshair touch-none overflow-hidden rounded-[0.9rem] border border-slate-400/20 bg-slate-900/90 outline-none select-none focus:border-slate-300/40"
+		tabindex="0"
+		role="group"
+		aria-label="Choose the part of the picture to use. Drag on the picture to draw a rectangle, drag inside it to move it and drag its corners to resize it. With the keyboard, the arrow keys move it and Shift with the arrows resizes it."
+		(pointerdown)="pointerDown($event)"
+		(pointermove)="pointerMove($event)"
+		(pointerup)="pointerUp()"
+		(pointercancel)="pointerUp()"
+		(keydown)="key($event)"
+	>
+		<canvas #canvas class="block w-full" [width]="view().width" [height]="view().height" aria-hidden="true"></canvas>
+
+		<div
+			class="pointer-events-none absolute cursor-move border-2 border-pink-300 shadow-[0_0_0_9999px_rgba(2,6,23,0.62)]"
+			[style.left]="frame().left"
+			[style.top]="frame().top"
+			[style.width]="frame().width"
+			[style.height]="frame().height"
+		>
+			<span class="absolute -top-1.5 -left-1.5 size-3 rounded-full border border-slate-900 bg-pink-300"></span>
+			<span class="absolute -top-1.5 -right-1.5 size-3 rounded-full border border-slate-900 bg-pink-300"></span>
+			<span class="absolute -bottom-1.5 -left-1.5 size-3 rounded-full border border-slate-900 bg-pink-300"></span>
+			<span class="absolute -right-1.5 -bottom-1.5 size-3 rounded-full border border-slate-900 bg-pink-300"></span>
+		</div>
+	</div>
+
+	<p class="flex items-center justify-between gap-2 text-[0.7rem] text-slate-400">
+		<span>Drag to choose the part of the picture to use.</span>
+		<span class="font-mono text-slate-100" aria-live="polite">{{ size() }}</span>
+	</p>
+
+	<div class="flex flex-wrap gap-2">
+		<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 text-[0.76rem] font-bold tracking-[0.04em] text-[#0f172a] uppercase" (click)="confirm()">{{ whole() ? 'Use all' : 'Use this part' }}</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-2 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" [disabled]="whole()" (click)="selectAll()">Whole picture</button>
+		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-2 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="cancelled.emit()">Cancel</button>
+	</div>
+</div>

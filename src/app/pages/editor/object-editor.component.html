@@ -10,51 +10,86 @@
 		/>
 	</label>
 
-	<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Tools">
-		<input type="color" class="h-8 w-12 cursor-pointer rounded-lg border border-slate-400/25 bg-transparent" aria-label="Color to paint" [value]="color()" (input)="color.set($any($event.target).value); erasing.set(false)" />
-		<button
-			type="button"
-			class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.7rem] font-semibold uppercase transition duration-150"
-			[class]="!erasing() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
-			[attr.aria-pressed]="!erasing()"
-			(click)="erasing.set(false)"
-		>Paint</button>
-		<button
-			type="button"
-			class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.7rem] font-semibold uppercase transition duration-150"
-			[class]="erasing() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
-			[attr.aria-pressed]="erasing()"
-			(click)="erasing.set(true)"
-		>Erase</button>
-		<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="clear()">Clear</button>
-		<span class="ml-auto flex gap-1" role="group" aria-label="History">
-			<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.9rem] leading-none text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" title="Undo (Ctrl+Z)" aria-label="Undo" [disabled]="past().length === 0" (click)="undo()">↶</button>
-			<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.9rem] leading-none text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" title="Redo (Ctrl+Y)" aria-label="Redo" [disabled]="future().length === 0" (click)="redo()">↷</button>
-		</span>
-	</div>
+	@if (selecting() && bitmap(); as opened) {
+		<!-- Choosing the part of the picture to use. -->
+		<app-image-selector [image]="opened" (selected)="useSelection($event)" (cancelled)="stopSelecting()" />
+	} @else {
+		<div class="flex flex-wrap items-center gap-2" role="group" aria-label="Tools">
+			<input type="color" class="h-8 w-12 cursor-pointer rounded-lg border border-slate-400/25 bg-transparent" aria-label="Color to paint" [value]="color()" (input)="color.set($any($event.target).value); erasing.set(false)" />
+			<button
+				type="button"
+				class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.7rem] font-semibold uppercase transition duration-150"
+				[class]="!erasing() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
+				[attr.aria-pressed]="!erasing()"
+				(click)="erasing.set(false)"
+			>Paint</button>
+			<button
+				type="button"
+				class="cursor-pointer rounded-full border px-3 py-1.5 text-[0.7rem] font-semibold uppercase transition duration-150"
+				[class]="erasing() ? 'border-slate-300/40 bg-slate-400/20 text-slate-50' : 'border-slate-400/25 text-slate-300 hover:bg-slate-400/10'"
+				[attr.aria-pressed]="erasing()"
+				(click)="erasing.set(true)"
+			>Erase</button>
+			<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="clear()">Clear</button>
+			<label class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase focus-within:outline-2 focus-within:outline-slate-300 hover:bg-slate-400/10" [title]="imageLimit">
+				From image
+				<input type="file" accept="image/*" class="sr-only" (change)="choose($event)" />
+			</label>
+			<span class="ml-auto flex gap-1" role="group" aria-label="History">
+				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.9rem] leading-none text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" title="Undo (Ctrl+Z)" aria-label="Undo" [disabled]="past().length === 0" (click)="undo()">↶</button>
+				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.9rem] leading-none text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent" title="Redo (Ctrl+Y)" aria-label="Redo" [disabled]="future().length === 0" (click)="redo()">↷</button>
+			</span>
+		</div>
 
-	<!-- The canvas: a grid of pixels. The highlighted one in the middle is the object itself. -->
-	<div
-		class="grid touch-none gap-px rounded-xl border border-slate-400/25 bg-slate-400/20 p-px select-none"
-		[style.grid-template-columns]="'repeat(' + grid + ', minmax(0, 1fr))'"
-		role="group"
-		aria-label="Pixels of the object. The highlighted one in the middle is the object itself."
-		(pointerup)="end()"
-		(pointerleave)="end()"
-		(pointercancel)="end()"
-	>
-		@for (cell of cells; track cell) {
-			<div
-				class="aspect-square bg-slate-900"
-				[class]="cell === center ? 'outline-2 -outline-offset-2 outline-amber-300' : ''"
-				[style.background-color]="paint(cell)"
-				[attr.data-cell]="cell"
-				(pointerdown)="begin(cell, $event)"
-				(pointerenter)="over(cell)"
-			></div>
+		@if (pictureCells(); as cells) {
+			<!-- The picture is in the grid; its size can still be changed. -->
+			<div class="flex flex-col gap-2 rounded-xl border border-slate-400/25 bg-slate-400/10 p-3" role="group" aria-label="Size of the picture">
+				<label class="flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
+					<span class="w-14 shrink-0">Size</span>
+					<input type="range" min="1" [max]="maxSize" step="1" class="min-w-0 flex-1 accent-pink-300" [value]="size()" (input)="resize(+$any($event.target).value)" />
+					<span class="w-20 shrink-0 text-right font-mono font-normal text-slate-100 normal-case">{{ cells.width }} × {{ cells.height }}</span>
+				</label>
+				<p class="text-[0.7rem] text-slate-400">The longest side of the picture, in pixels (at most {{ maxSize }}, the whole grid). Parts of the picture that are see-through stay empty.</p>
+				<label class="flex items-center gap-2 text-[0.7rem] text-slate-300">
+					<input type="checkbox" class="size-4 accent-pink-300" [checked]="crisp()" (change)="setCrisp($any($event.target).checked)" />
+					Sharp edges <span class="text-slate-400">(for pixel art; leave it off for photos)</span>
+				</label>
+				<div class="flex flex-wrap gap-2">
+					<button type="button" class="cursor-pointer rounded-full border border-slate-300/40 bg-slate-400/20 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-50 uppercase" (click)="acceptPicture()">Keep</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="chooseAgain()">Change part</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="cancelPicture()">Discard picture</button>
+				</div>
+			</div>
 		}
-	</div>
-	<p class="text-[0.7rem] text-slate-400">The highlighted pixel is the object itself: blocks move it, and the pixels around it follow. Paint around it to give it a shape.</p>
+
+		@if (pictureProblem(); as text) {
+			<p class="text-[0.7rem] text-rose-200" role="alert">{{ text }}</p>
+		}
+
+		<!-- The canvas: a grid of pixels. The highlighted one in the middle is the object itself. -->
+		<div
+			class="grid touch-none gap-px rounded-xl border border-slate-400/25 bg-slate-400/20 p-px select-none"
+			[style.grid-template-columns]="'repeat(' + grid + ', minmax(0, 1fr))'"
+			role="group"
+			aria-label="Pixels of the object. The highlighted one in the middle is the object itself."
+			(pointerup)="end()"
+			(pointerleave)="end()"
+			(pointercancel)="end()"
+		>
+			@for (cell of cells; track cell) {
+				<div
+					class="aspect-square bg-slate-900"
+					[class]="cell === center ? 'outline-2 -outline-offset-2 outline-amber-300' : ''"
+					[style.background-color]="paint(cell)"
+					[attr.data-cell]="cell"
+					(pointerdown)="begin(cell, $event)"
+					(pointerenter)="over(cell)"
+				></div>
+			}
+		</div>
+		<p class="text-[0.7rem] text-slate-400">The highlighted pixel is the object itself: blocks move it, and the pixels around it follow. Paint around it to give it a shape.</p>
+
+	}
 
 	@if (problem(); as text) {
 		<p class="text-[0.7rem] text-rose-200" role="alert">{{ text }}</p>
