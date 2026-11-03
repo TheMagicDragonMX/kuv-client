@@ -6,6 +6,7 @@ import {
 	CubeComponent,
 	Environment,
 	Face,
+	ObjectMove,
 	RecordProgress,
 	recordCubeVideo,
 } from '../../cube';
@@ -74,9 +75,32 @@ export class EditorPage implements OnInit {
 	protected readonly hiddenObjects = signal<string[]>([]);
 
 	/**
+	 * The object being handled: the one the cube drags, picked in the Objects tab or on the cube.
+	 */
+	protected readonly selectedObject = signal<string | null>(null);
+
+	/**
 	 * The stage of the cube, edited by the background panel.
 	 */
 	protected readonly environment = signal<Environment>({});
+
+	/**
+	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
+	 * face being edited does not turn away. The Spin button brings the rotation back.
+	 */
+	protected holdCube (cube: CubeComponent): void {
+		if ('blocks' === this.tab() || 'objects' === this.tab())
+			cube.holdStill();
+	}
+
+	/**
+	 * The user dragged an object on the cube: its starting place is now the cell it was dropped on.
+	 */
+	protected moveObject (move: ObjectMove): void {
+		this.objects.update((objects) => objects.map((object) => object.name === move.name
+			? { ...object, face: move.face, x: move.x, y: move.y }
+			: object));
+	}
 
 	/**
 	 * Faces the camera can turn to.

@@ -71,7 +71,7 @@ Requests can overlap (e.g. a `status` while `wifi.connect` is running). Answer e
 | `auth` | `{ pin }` | `null` |
 | `status` | none | `{ wifi: { state, ssid, ip, signal, saved }, system: { uptime, temperature } }` |
 | `wifi.scan` | none | `{ networks: [ { ssid, signal, secure } ] }`, one entry per SSID, signal 0–100 |
-| `wifi.connect` | `{ ssid, password?, hidden? }` | the new `wifi` status, once connected (can take up to 45 s) |
+| `wifi.connect` | `{ ssid, password?, hidden? }` | the new `wifi` status, once connected (can take up to 45 s; the page waits up to 2 minutes) |
 | `wifi.forget` | `{ ssid }` | `null` |
 | `system.reboot` | none | `null`, sent **before** rebooting |
 

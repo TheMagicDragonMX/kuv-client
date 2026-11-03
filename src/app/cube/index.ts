@@ -6,6 +6,7 @@
  */
 
 export { CubeComponent } from './component/cube.component';
+export type { ObjectMove } from './component/cube.component';
 export { CubeEngine } from './engine/cube-engine';
 export type { CubeEngineOptions } from './engine/cube-engine';
 export { CubePlayer } from './engine/cube-player';

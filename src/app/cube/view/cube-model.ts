@@ -25,6 +25,25 @@ import { CubeState, FACE_RESOLUTION, Face } from '../state/cube-state';
 import { EDGE_PADDING, FACE_OFFSET, FACE_SIZE, FRAME_DEPTH, LED_DEPTH, PANEL_DEPTH } from './view-settings';
 
 /**
+ * One side of a cell on a face, part of the outline of a rectangle.
+ */
+export interface SelectionEdge {
+	face: Face;
+	x: number;
+	y: number;
+	side: 'left' | 'right' | 'top' | 'bottom';
+}
+
+/**
+ * A rectangle over the cube: the part of it on each face, and the sides of cells that draw
+ * its outline.
+ */
+export interface SelectionFrame {
+	boxes: readonly { face: Face; x0: number; y0: number; x1: number; y1: number }[];
+	edges: readonly SelectionEdge[];
+}
+
+/**
  * Where each face sits and how it is turned, in `Face` order.
  */
 const FACE_PLACEMENTS = [
@@ -76,6 +95,16 @@ export class CubeModel {
 	private renderedVersion = -1;
 
 	/**
+	 * The dark panel of each face, indexed by `Face`. It is what pointer picking hits.
+	 */
+	private readonly panels: THREE.Mesh[] = [];
+
+	/**
+	 * Where the selection rectangles of each face go, indexed by `Face`.
+	 */
+	private readonly outlines: THREE.Group[] = [];
+
+	/**
 	 * Builds the faces of the cube.
 	 */
 	constructor (
@@ -94,6 +123,118 @@ export class CubeModel {
 	 */
 	syncIfChanged (): boolean {
 		return this.renderedVersion !== this.state.version && this.syncLeds();
+	}
+
+	/**
+	 * The LED under a ray, as a face and a pixel of the state (x to the right, y down from the
+	 * top-left, as seen from outside), or null if the ray misses the cube. The ray is cut with
+	 * the plane of each face in the frame of that face, and the nearest cut inside a face wins.
+	 */
+	pick (origin: THREE.Vector3, direction: THREE.Vector3): { face: Face; x: number; y: number } | null {
+		this.group.updateMatrixWorld(true);
+
+		let best: { face: Face; x: number; y: number } | null = null;
+		let bestDistance = Infinity;
+		const inverse = new THREE.Matrix4();
+		const start = new THREE.Vector3();
+		const way = new THREE.Vector3();
+		const half = FACE_SIZE / 2;
+		const clamp = (value: number) => Math.min(FACE_RESOLUTION - 1, Math.max(0, Math.floor(value)));
+
+		this.panels.forEach((panel, face: Face) => {
+			inverse.copy(panel.matrixWorld).invert();
+			start.copy(origin).applyMatrix4(inverse);
+			way.copy(direction).transformDirection(inverse);
+
+			// Only from outside (in front of the face, going toward it).
+			if (0 >= start.z || 0 <= way.z)
+				return;
+
+			const distance = -start.z / way.z;
+			const x = start.x + way.x * distance;
+			const y = start.y + way.y * distance;
+
+			if (distance < bestDistance && Math.abs(x) <= half && Math.abs(y) <= half) {
+				bestDistance = distance;
+				best = { face, x: clamp((x + half) / FACE_SIZE * FACE_RESOLUTION), y: clamp((half - y) / FACE_SIZE * FACE_RESOLUTION) };
+			}
+		});
+
+		return best;
+	}
+
+	/**
+	 * Shows one rectangle over the cube (and removes the one shown before): a light fill on each
+	 * face it covers, and an outline made only of the sides of the rectangle, so where it goes
+	 * over an edge of the cube it is not cut in two. The color is 0xRRGGBB.
+	 */
+	setOutlines (frame: SelectionFrame, color: number): void {
+		for (const group of this.outlines)
+			for (const child of [ ...group.children ]) {
+				group.remove(child);
+
+				if (child instanceof THREE.Mesh) {
+					child.geometry.dispose();
+					(child.material as THREE.Material).dispose();
+				}
+			}
+
+		const cell = FACE_SIZE / FACE_RESOLUTION;
+		const thickness = cell / 3;
+		const z = LED_DEPTH + 0.01;
+		const fill = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.18, depthWrite: false });
+		const border = new THREE.MeshBasicMaterial({ color, depthWrite: false });
+		const piece = (face: Face, width: number, height: number, centerX: number, centerY: number, paint: THREE.Material) => {
+			const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), paint);
+
+			mesh.position.set(centerX, centerY, z);
+			this.outlines[face].add(mesh);
+		};
+		// Position on a face of the left and top side of a pixel.
+		const leftOf = (x: number) => -FACE_SIZE / 2 + x * cell;
+		const topOf = (y: number) => FACE_SIZE / 2 - y * cell;
+
+		for (const box of frame.boxes) {
+			const width = (box.x1 + 1 - box.x0) * cell;
+			const height = (box.y1 + 1 - box.y0) * cell;
+
+			piece(box.face, width, height, leftOf(box.x0) + width / 2, topOf(box.y0) - height / 2, fill);
+		}
+
+		// Neighbouring sides on the same line are joined into one strip.
+		const lines = new Map<string, { face: Face; side: SelectionEdge['side']; line: number; cells: number[] }>();
+
+		for (const edge of frame.edges) {
+			const horizontal = 'top' === edge.side || 'bottom' === edge.side;
+			const line = horizontal ? edge.y : edge.x;
+			const key = `${edge.face}/${edge.side}/${line}`;
+			const found = lines.get(key) ?? { face: edge.face, side: edge.side, line, cells: [] };
+
+			found.cells.push(horizontal ? edge.x : edge.y);
+			lines.set(key, found);
+		}
+
+		for (const { face, side, line, cells } of lines.values()) {
+			cells.sort((first, second) => first - second);
+
+			let start = 0;
+
+			for (let index = 1; index <= cells.length; index += 1) {
+				if (index < cells.length && cells[index] === cells[index - 1] + 1)
+					continue;
+
+				const first = cells[start];
+				const length = (cells[index - 1] - first + 1) * cell;
+
+				if ('top' === side || 'bottom' === side)
+					piece(face, length, thickness, leftOf(first) + length / 2, topOf('top' === side ? line : line + 1), border);
+
+				else
+					piece(face, thickness, length, leftOf('left' === side ? line : line + 1), topOf(first) - length / 2, border);
+
+				start = index;
+			}
+		}
 	}
 
 	/**
@@ -163,6 +304,7 @@ export class CubeModel {
 			panel.castShadow = true;
 			panel.receiveShadow = true;
 			faceGroup.add(panel);
+			this.panels.push(panel);
 
 			/**
 			 * Unlit material so each LED shows exactly its own color.
@@ -199,6 +341,10 @@ export class CubeModel {
 			this.ledColors.push(ledColors);
 			this.shownPixels.push(new Uint32Array(FACE_RESOLUTION * FACE_RESOLUTION));
 			faceGroup.add(ledMatrix);
+
+			const outline = new THREE.Group();
+			faceGroup.add(outline);
+			this.outlines.push(outline);
 
 			this.group.add(faceGroup);
 		}

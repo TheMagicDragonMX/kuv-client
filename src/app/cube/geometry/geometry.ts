@@ -306,6 +306,21 @@ export class CubeGeometry {
 	}
 
 	/**
+	 * The placement that puts an object on a pixel of the cube state, or null if objects cannot
+	 * be placed there (below the floor of the sides). It is the inverse of `place` for the
+	 * position; the top face is addressed through the top anchor.
+	 */
+	placementOf (pixel: FacePixel): Placement | null {
+		if (pixel.face === Face.TOP) {
+			const [ x, y ] = rotateCell(pixel.x, pixel.y, -this.anchorTurns);
+
+			return { face: Face.TOP, x, y };
+		}
+
+		return SIDES.includes(pixel.face) && pixel.y <= this.floor ? { face: pixel.face, x: pixel.x, y: pixel.y } : null;
+	}
+
+	/**
 	 * Moves a pose a number of cells in a direction relative to its heading, one cell at a
 	 * time. Crossing an edge keeps the object facing the way it was going, so the heading
 	 * changes with respect to the screen. The move stops early at the floor.
@@ -360,6 +375,23 @@ export class CubeGeometry {
 		const sideways = this.walk(pose, 0 < dx ? 'right' : 'left', Math.abs(dx));
 
 		return sideways && this.walk(sideways, 0 < dy ? 'down' : 'up', Math.abs(dy));
+	}
+
+	/**
+	 * Like `pixelAt`, and also says which way the object's right and down point on the face at
+	 * that cell, as steps of the pixel (x, y). They differ from (1, 0) and (0, 1) after the
+	 * object has turned around an edge, so they tell how a shape that wraps over an edge is
+	 * laid out on each face.
+	 */
+	cellAt (pose: Pose, dx: number, dy: number): { pixel: FacePixel; right: readonly [ number, number ]; down: readonly [ number, number ] } | null {
+		const cell = this.offset(pose, dx, dy);
+		const pixel = cell && this.toPixel(cell);
+
+		return cell && pixel && {
+			pixel,
+			right: OFFSETS[turn(cell.heading, STEP_TURNS.right)],
+			down: OFFSETS[turn(cell.heading, STEP_TURNS.down)],
+		};
 	}
 
 	/**

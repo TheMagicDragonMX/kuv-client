@@ -22,6 +22,17 @@ export const FACE_BY_NAME: Record<FaceName, Face> = {
 };
 
 /**
+ * Name of each face, indexed by Face.
+ */
+export const FACE_NAME: Record<Face, FaceName> = {
+	[Face.FRONT]: 'FRONT',
+	[Face.RIGHT]: 'RIGHT',
+	[Face.LEFT]: 'LEFT',
+	[Face.BACK]: 'BACK',
+	[Face.TOP]: 'TOP',
+};
+
+/**
  * Heading for each heading name.
  */
 export const HEADING_BY_NAME: Record<HeadingName, Heading> = {

@@ -26,13 +26,52 @@
 import { Environment, paintEnvironment } from '../environment/environment';
 import { applyCommand } from '../commands/apply-command';
 import { GeometryConfig } from '../geometry/geometry';
-import { Program, ProgramConfig } from '../program/program';
-import { FACE_BY_NAME } from '../program/names';
+import { FaceName, HeadingName, Program, ProgramConfig } from '../program/program';
+import { FACE_BY_NAME, FACE_NAME, HEADING_BY_NAME } from '../program/names';
 import { validateProgram } from '../program/validate-program';
 import { Renderer } from '../renderer/renderer';
 import { Scheduler, ScriptError } from '../runtime/scheduler';
-import { CubeState } from '../state/cube-state';
+import { CubeState, FACE_RESOLUTION, Face } from '../state/cube-state';
+import { CubeObject } from '../world/cube-object';
 import { World } from '../world/world';
+
+/**
+ * A rectangle of cells on one face, corners included.
+ */
+export interface Outline {
+	face: Face;
+	x0: number;
+	y0: number;
+	x1: number;
+	y1: number;
+}
+
+/**
+ * One side of a cell on a face.
+ */
+export interface Edge {
+	face: Face;
+	x: number;
+	y: number;
+	side: 'left' | 'right' | 'top' | 'bottom';
+}
+
+/**
+ * The rectangle of an object on the cube: its part on each face, and the sides of cells that
+ * draw its outline.
+ */
+export interface Frame {
+	boxes: Outline[];
+	edges: Edge[];
+}
+
+/**
+ * What a press on the cube grabs: an object, and the pixel of its center.
+ */
+export interface Grab {
+	name: string;
+	center: { face: Face; x: number; y: number } | null;
+}
 
 /**
  * Settings of the engine.
@@ -136,6 +175,19 @@ export class CubeEngine {
 	}
 
 	/**
+	 * Puts an object on a cell right away, without loading the program again. It is the cheap
+	 * way to follow a pointer that drags an object, which changes cell many times a second.
+	 * Throws an EngineError if there is no such object, and a RangeError if the cell is outside
+	 * the cube.
+	 */
+	moveObject (name: string, face: FaceName, x: number, y: number, heading?: HeadingName): void {
+		this.world.update(name, {
+			pose: this.world.geometry.place({ face: FACE_BY_NAME[face], x, y, heading: heading && HEADING_BY_NAME[heading] }),
+		});
+		this.renderer.render();
+	}
+
+	/**
 	 * Chooses the objects that are kept out of sight, like a hidden layer: they still exist and
 	 * move, they are just not drawn. It applies at once, and again on every start and reset.
 	 * Names with no object are ignored.
@@ -174,6 +226,103 @@ export class CubeEngine {
 			 * No object with that name (yet): nothing to change.
 			 */
 		}
+	}
+
+	/**
+	 * The frame of an object: its rectangle (the cells of its shape grown by `padding` cells on
+	 * every side) as it lies on the cube. The rectangle is one thing in the frame of the object,
+	 * so where it goes over an edge it continues on the next face: `boxes` are the parts on each
+	 * face, and `edges` are the sides of cells that make up its outline, which does not run along
+	 * the edges of the cube. Empty if the object is hidden or does not exist.
+	 */
+	frameOf (name: string, padding = 0): Frame {
+		const frame: Frame = { boxes: [], edges: [] };
+		let object: CubeObject;
+
+		try {
+			object = this.world.get(name);
+		}
+
+		catch {
+			return frame;
+		}
+
+		if (!object.visible)
+			return frame;
+
+		const columns = object.shape.map((part) => part.dx);
+		const rows = object.shape.map((part) => part.dy);
+		const left = Math.min(...columns) - padding;
+		const right = Math.max(...columns) + padding;
+		const top = Math.min(...rows) - padding;
+		const bottom = Math.max(...rows) + padding;
+		const boxes = new Map<Face, Outline>();
+
+		for (let dy = top; dy <= bottom; dy += 1)
+			for (let dx = left; dx <= right; dx += 1) {
+				const cell = this.world.geometry.cellAt(object.pose, dx, dy);
+
+				if (!cell)
+					continue;
+
+				const { pixel } = cell;
+				const box = boxes.get(pixel.face);
+
+				if (box) {
+					box.x0 = Math.min(box.x0, pixel.x);
+					box.y0 = Math.min(box.y0, pixel.y);
+					box.x1 = Math.max(box.x1, pixel.x);
+					box.y1 = Math.max(box.y1, pixel.y);
+				}
+
+				else
+					boxes.set(pixel.face, { face: pixel.face, x0: pixel.x, y0: pixel.y, x1: pixel.x, y1: pixel.y });
+
+				// Each side of the rectangle, in the direction it points on this face.
+				const sides: [ boolean, number, number ][] = [
+					[ dx === left, -cell.right[0], -cell.right[1] ],
+					[ dx === right, cell.right[0], cell.right[1] ],
+					[ dy === top, -cell.down[0], -cell.down[1] ],
+					[ dy === bottom, cell.down[0], cell.down[1] ],
+				];
+
+				for (const [ onSide, sideX, sideY ] of sides)
+					if (onSide)
+						frame.edges.push({ face: pixel.face, x: pixel.x, y: pixel.y, side: 0 > sideX ? 'left' : 0 < sideX ? 'right' : 0 > sideY ? 'top' : 'bottom' });
+			}
+
+		frame.boxes = [ ...boxes.values() ];
+
+		return frame;
+	}
+
+	/**
+	 * The object a press on a pixel of the cube grabs. The target of an object is its rectangle
+	 * grown by `padding` cells, so small objects are easy to hit. Among the objects whose target
+	 * contains the pixel, the frontmost layer wins; if `preferred` is one of them it wins
+	 * instead, which is how an object covered by others can still be reached. Also gives the
+	 * pixel of the center of the object (null if it is not on a visible cell).
+	 */
+	grabAt (face: Face, x: number, y: number, padding: number, preferred?: string | null): Grab | null {
+		const contains = (name: string) => this.frameOf(name, padding).boxes
+			.some((box) => box.face === face && box.x0 <= x && x <= box.x1 && box.y0 <= y && y <= box.y1);
+		let found: CubeObject | null = null;
+
+		for (const object of this.world.all())
+			if (!(found && found.name === preferred) && contains(object.name))
+				found = object;
+
+		return found && { name: found.name, center: this.world.geometry.toPixel(found.pose) };
+	}
+
+	/**
+	 * The placement (face, x, y as in a `create` block) for a pixel of the cube, or null when
+	 * objects cannot be placed there.
+	 */
+	placementAt (face: Face, x: number, y: number): { face: FaceName; x: number; y: number } | null {
+		const placement = this.world.geometry.placementOf({ face, x, y });
+
+		return placement && { face: FACE_NAME[placement.face], x: placement.x, y: placement.y };
 	}
 
 	/**

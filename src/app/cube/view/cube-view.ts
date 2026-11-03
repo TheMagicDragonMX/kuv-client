@@ -20,7 +20,7 @@
 import * as THREE from 'three';
 import { CubeState, Face } from '../state/cube-state';
 import { CameraRig } from './camera-rig';
-import { CubeModel } from './cube-model';
+import { CubeModel, SelectionFrame } from './cube-model';
 import { Stage } from './stage';
 import { BACKGROUND } from './view-settings';
 
@@ -94,10 +94,63 @@ export class CubeView {
 	}
 
 	/**
-	 * Smoothly orbits the camera until the given face is shown head-on, and stops the auto-rotation.
+	 * The pixel of the cube under a point of the screen, or null if the point is not on the cube.
+	 * @param clientX Horizontal position in the page, as in a pointer event.
+	 * @param clientY Vertical position in the page.
 	 */
-	lookAtFace (face: Face): void {
-		this.rig.lookAtFace(face);
+	pixelAt (clientX: number, clientY: number): { face: Face; x: number; y: number } | null {
+		const box = this.renderer.domElement.getBoundingClientRect();
+
+		if (!box.width || !box.height)
+			return null;
+
+		const point = new THREE.Vector2(
+			(clientX - box.left) / box.width * 2 - 1,
+			-((clientY - box.top) / box.height * 2 - 1),
+		);
+		const origin = this.rig.camera.position.clone();
+		const direction = new THREE.Vector3(point.x, point.y, 0.5).unproject(this.rig.camera).sub(origin).normalize();
+
+		return this.model.pick(origin, direction);
+	}
+
+	/**
+	 * Shows a rectangle over the cube, replacing the one shown before, in a color (0xRRGGBB).
+	 * Where it goes over an edge it is still one rectangle. An empty frame removes it.
+	 */
+	setOutlines (frame: SelectionFrame, color: number): void {
+		this.model.setOutlines(frame, color);
+		this.needsDraw = true;
+	}
+
+	/**
+	 * Smoothly orbits the camera	/**
+	 * Smoothly orbits the camera until the given face is shown head-on, and stops the auto-rotation.
+	 * @param duration Milliseconds the turn takes; a longer one is gentler.
+	 */
+	lookAtFace (face: Face, duration?: number): void {
+		this.rig.lookAtFace(face, duration);
+	}
+
+	/**
+	 * How far the camera has to turn to look at a face head-on, in radians.
+	 */
+	angleTo (face: Face): number {
+		return this.rig.angleTo(face);
+	}
+
+	/**
+	 * Keeps the camera where it is: stops the automatic rotation and any turn in progress.
+	 */
+	hold (): void {
+		this.rig.hold();
+	}
+
+	/**
+	 * How much a face looks at the camera: 1 head-on, 0 edge-on, negative when turned away.
+	 */
+	facing (face: Face): number {
+		return this.rig.facing(face);
 	}
 
 	/**
