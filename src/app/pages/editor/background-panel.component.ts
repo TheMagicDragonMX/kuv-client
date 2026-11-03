@@ -21,6 +21,7 @@ const FACES = FACE_OPTIONS;
  */
 const LEVELS: { id: keyof Brightness; label: string }[] = [
 	{ id: 'background', label: 'Background' },
+	{ id: 'behindObjects', label: 'Behind objects' },
 	{ id: 'objects', label: 'Objects' },
 ];
 
@@ -135,7 +136,8 @@ export class BackgroundPanelComponent implements OnDestroy {
 	}
 
 	/**
-	 * Goes back to the usual intensities: objects at full, background softer.
+	 * Goes back to the usual intensities: everything at full, but the background softer (40%) on a
+	 * face that has objects.
 	 */
 	protected resetLevels (): void {
 		this.environment.update((environment) => ({ ...environment, brightness: { ...DEFAULT_BRIGHTNESS } }));

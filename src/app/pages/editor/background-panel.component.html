@@ -1,12 +1,12 @@
 <section class="flex flex-col gap-3" aria-label="Background">
 	<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Background</h2>
 
-	<!-- How intensely the LEDs shine. Dimming the background makes the objects stand out from it. -->
+	<!-- How intensely the LEDs shine. The background softens behind objects, so they stand out from it. -->
 	<fieldset class="flex flex-col gap-2 rounded-xl border border-slate-400/25 bg-slate-400/10 p-3">
 		<legend class="px-1 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Brightness</legend>
 		@for (level of levels; track level.id) {
 			<label class="flex items-center gap-3 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
-				<span class="w-20 shrink-0">{{ level.label }}</span>
+				<span class="w-28 shrink-0">{{ level.label }}</span>
 				<input type="range" min="0" max="100" step="5" class="min-w-0 flex-1 accent-pink-300" [value]="percent(level.id)" (input)="setLevel(level.id, +$any($event.target).value)" />
 				<span class="w-10 shrink-0 text-right font-mono font-normal text-slate-100 normal-case">{{ percent(level.id) }}%</span>
 			</label>

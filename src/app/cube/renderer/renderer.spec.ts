@@ -174,22 +174,39 @@ describe('Renderer', () => {
 	});
 
 	describe('brightness', () => {
-		it('dims the background and the objects separately', () => {
+		it('dims the background only on the faces that have objects, and the objects by their own level', () => {
 			const { world, output, renderer } = setup();
 			world.background.set(Face.FRONT, 0, 0, 0x0000ff);
+			world.background.set(Face.RIGHT, 0, 0, 0x0000ff);
 			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 1, y: 1, color: '#ff0000' });
 
-			renderer.setBrightness({ background: 0.5, objects: 1 });
+			renderer.setBrightness({ background: 1, behindObjects: 0.5, objects: 1 });
 			renderer.render();
 
 			expect(output.get(Face.FRONT, 0, 0)).toBe(0x000080);
 			expect(output.get(Face.FRONT, 1, 1)).toBe(0xff0000);
+			expect(output.get(Face.RIGHT, 0, 0)).toBe(0x0000ff);
 
-			renderer.setBrightness({ background: 1, objects: 0.5 });
+			renderer.setBrightness({ background: 0.5, behindObjects: 1, objects: 0.5 });
 			renderer.render();
 
 			expect(output.get(Face.FRONT, 0, 0)).toBe(0x0000ff);
 			expect(output.get(Face.FRONT, 1, 1)).toBe(0x800000);
+			expect(output.get(Face.RIGHT, 0, 0)).toBe(0x000080);
+		});
+
+		it('dims the faces an object crosses onto, and not once it is hidden', () => {
+			const { world, output, renderer } = setup();
+			world.background.set(Face.RIGHT, 0, 0, 0x0000ff);
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 63, y: 5, color: '#ff0000', pixels: [ { dx: 0, dy: 0 }, { dx: 1, dy: 0 } ] });
+			renderer.setBrightness({ background: 1, behindObjects: 0.5, objects: 1 });
+
+			renderer.render();
+			expect(output.get(Face.RIGHT, 0, 0)).toBe(0x000080);
+
+			world.update('a', { visible: false });
+			renderer.render();
+			expect(output.get(Face.RIGHT, 0, 0)).toBe(0x0000ff);
 		});
 
 		it('draws again as soon as the intensity changes, even if the world did not', () => {
@@ -207,7 +224,7 @@ describe('Renderer', () => {
 			world.background.set(Face.FRONT, 0, 0, 0x0000ff);
 			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 1, y: 1, color: '#ff0000' });
 
-			renderer.setBrightness({ background: 5, objects: -1 });
+			renderer.setBrightness({ behindObjects: 5, objects: -1 });
 			renderer.render();
 
 			expect(output.get(Face.FRONT, 0, 0)).toBe(0x0000ff);

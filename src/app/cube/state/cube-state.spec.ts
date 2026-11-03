@@ -51,14 +51,14 @@ describe('CubeState', () => {
 		expect(scaleColor(0xff8040, 0)).toBe(0);
 	});
 
-	it('dims every pixel of every face', () => {
+	it('dims every pixel of one face and leaves the others', () => {
 		const state = new CubeState();
 		state.set(Face.FRONT, 1, 1, 0xff0000);
 		state.set(Face.TOP, 2, 2, 0x00ff00);
 
-		state.dim(0.5);
+		state.dimFace(Face.FRONT, 0.5);
 
 		expect(state.get(Face.FRONT, 1, 1)).toBe(0x800000);
-		expect(state.get(Face.TOP, 2, 2)).toBe(0x008000);
+		expect(state.get(Face.TOP, 2, 2)).toBe(0x00ff00);
 	});
 });

@@ -8,12 +8,14 @@
  *
  * Each frame is built the same way:
  *
- *   1. start from the background layer (one bulk copy), dimmed to the intensity of the background
- *   2. draw every visible object on top, in the order they were created, pixel by pixel, at the
+ *   1. start from the background layer (one bulk copy)
+ *   2. find the faces that have an object on them, and dim the background of those faces
+ *   3. draw every visible object on top, in the order they were created, pixel by pixel, at the
  *      intensity of the objects
  *
- * The two intensities are separate so the objects can shine more than the background and be told
- * apart from it. Both start at full intensity (nothing is dimmed) until `setBrightness` is called.
+ * A face with objects shows its background softer than a face without, so the objects can be told
+ * apart from the picture behind them. Everything starts at full intensity (nothing is dimmed)
+ * until `setBrightness` is called.
  *
  * Nothing is erased pixel by pixel: because every frame starts from the background, an object
  * that moved simply is not drawn where it used to be.
@@ -22,7 +24,7 @@
  * changed, so a cube with nothing moving costs nothing per tick.
  */
 
-import { CubeState, scaleColor } from '../state/cube-state';
+import { CubeState, FACE_COUNT, Face, scaleColor } from '../state/cube-state';
 import { World } from '../world/world';
 
 /**
@@ -30,9 +32,14 @@ import { World } from '../world/world';
  */
 export type Brightness = {
 	/**
-	 * Intensity of the background layer.
+	 * Intensity of the background on a face that has no objects.
 	 */
 	background: number;
+
+	/**
+	 * Intensity of the background on a face that has objects on it.
+	 */
+	behindObjects: number;
 
 	/**
 	 * Intensity of the objects.
@@ -43,13 +50,13 @@ export type Brightness = {
 /**
  * Nothing dimmed: what the renderer uses until it is told otherwise.
  */
-export const FULL_BRIGHTNESS: Brightness = { background: 1, objects: 1 };
+export const FULL_BRIGHTNESS: Brightness = { background: 1, behindObjects: 1, objects: 1 };
 
 /**
- * What the editor starts with: the objects at full intensity and the background softer, so the
- * edge between them is easy to see.
+ * What the editor starts with: the background at full intensity until objects are on a face, then
+ * softer (40%), so the edge between them is easy to see.
  */
-export const DEFAULT_BRIGHTNESS: Brightness = { background: 0.4, objects: 1 };
+export const DEFAULT_BRIGHTNESS: Brightness = { background: 1, behindObjects: 0.4, objects: 1 };
 
 /**
  * Keeps an intensity between 0 and 1. A missing one is full.
@@ -82,11 +89,15 @@ export class Renderer {
 	) {}
 
 	/**
-	 * Changes the intensity of the background and of the objects (a missing one is full). The next
+	 * Changes the intensities (a missing one is full). The next
 	 * `render` draws everything again with it.
 	 */
 	setBrightness (brightness: Partial<Brightness> | undefined): void {
-		this.brightness = { background: level(brightness?.background), objects: level(brightness?.objects) };
+		this.brightness = {
+			background: level(brightness?.background),
+			behindObjects: level(brightness?.behindObjects),
+			objects: level(brightness?.objects),
+		};
 		this.renderedVersion = -1;
 	}
 
@@ -99,22 +110,34 @@ export class Renderer {
 			return false;
 
 		this.output.copyFrom(this.world.background);
-		this.output.dim(this.brightness.background);
+
+		/**
+		 * Where every pixel of the visible objects lands, in drawing order, and which faces they
+		 * land on. The geometry finds each pixel across edges too; pixels below the last visible
+		 * row have no cell, so they are simply not drawn.
+		 */
+		const drawn: { face: Face; x: number; y: number; color: number }[] = [];
+		const covered = new Set<Face>();
 
 		for (const object of this.world.all()) {
 			if (!object.visible)
 				continue;
 
 			for (const part of object.shape) {
-				/**
-				 * The geometry finds where each pixel of the shape lands, across edges too. Pixels
-				 * below the last visible row have no cell, so they are simply not drawn.
-				 */
 				const pixel = this.world.geometry.pixelAt(object.pose, part.dx, part.dy);
-				if (pixel)
-					this.output.set(pixel.face, pixel.x, pixel.y, scaleColor(part.color ?? object.color, this.brightness.objects));
+
+				if (pixel) {
+					drawn.push({ face: pixel.face, x: pixel.x, y: pixel.y, color: scaleColor(part.color ?? object.color, this.brightness.objects) });
+					covered.add(pixel.face);
+				}
 			}
 		}
+
+		for (let face = 0; face < FACE_COUNT; face += 1)
+			this.output.dimFace(face, covered.has(face) ? this.brightness.behindObjects : this.brightness.background);
+
+		for (const pixel of drawn)
+			this.output.set(pixel.face, pixel.x, pixel.y, pixel.color);
 
 		this.renderedVersion = this.world.version;
 		return true;

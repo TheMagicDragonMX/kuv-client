@@ -49,12 +49,12 @@ type PanelInternals = {
 	/**
 	 * The intensity of the background or the objects, as a percentage.
 	 */
-	percent(id: 'background' | 'objects'): number;
+	percent(id: 'background' | 'behindObjects' | 'objects'): number;
 
 	/**
 	 * Sets the intensity of the background or the objects, from a percentage.
 	 */
-	setLevel(id: 'background' | 'objects', percent: number): void;
+	setLevel(id: 'background' | 'behindObjects' | 'objects', percent: number): void;
 
 	/**
 	 * Goes back to the usual intensities.
@@ -170,13 +170,13 @@ describe('BackgroundPanelComponent', () => {
 			expect(internals.percent('background')).toBe(30);
 		});
 
-		it('goes back to the usual: objects at full and the background softer', () => {
+		it('goes back to the usual: the background softer only behind objects', () => {
 			const { panel, internals } = createPanel();
-			internals.setLevel('background', 100);
+			internals.setLevel('behindObjects', 100);
 
 			internals.resetLevels();
 
-			expect(panel.environment().brightness).toEqual({ background: 0.4, objects: 1 });
+			expect(panel.environment().brightness).toEqual({ background: 1, behindObjects: 0.4, objects: 1 });
 		});
 	});
 });

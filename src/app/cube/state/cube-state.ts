@@ -139,10 +139,15 @@ export class CubeState {
 	}
 
 	/**
-	 * Dims every pixel of every face to a share of its intensity (see `scaleColor`).
+	 * Dims every pixel of one face to a share of its intensity (see `scaleColor`).
 	 */
-	dim (level: number): void {
-		for (let index = 0; index < this.pixels.length; index += 1)
+	dimFace (face: Face, level: number): void {
+		if (1 <= level)
+			return;
+
+		const size = FACE_RESOLUTION * FACE_RESOLUTION;
+
+		for (let index = face * size; index < (face + 1) * size; index += 1)
 			this.pixels[index] = scaleColor(this.pixels[index], level);
 
 		this.version += 1;

@@ -236,20 +236,22 @@ describe('CubeEngine', () => {
 			expect(engine.state.get(Face.FRONT, 10, 10)).toBe(0);
 		});
 
-		it('dims the background and the objects by the brightness, through runs and resets', () => {
+		it('dims the background behind the objects by the brightness, through runs and resets', () => {
 			const engine = new CubeEngine();
-			engine.setEnvironment({ background: { FRONT: solid(0x00ff00) }, brightness: { background: 0.5, objects: 0.5 } });
+			engine.setEnvironment({ background: { FRONT: solid(0x00ff00) }, brightness: { behindObjects: 0.5, objects: 0.5 } });
 			engine.load(script({ op: 'create', name: 'a', face: 'FRONT', x: 5, y: 5, color: '#ff0000' }));
+
+			expect(engine.state.get(Face.FRONT, 6, 5)).toBe(0x00ff00);
 
 			engine.start(0);
 			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0x800000);
 			expect(engine.state.get(Face.FRONT, 6, 5)).toBe(0x008000);
 
-			engine.setEnvironment({ background: { FRONT: solid(0x00ff00) }, brightness: { background: 0.5, objects: 1 } });
+			engine.setEnvironment({ background: { FRONT: solid(0x00ff00) }, brightness: { behindObjects: 0.5, objects: 1 } });
 			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0xff0000);
 
 			engine.reset();
-			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0x008000);
+			expect(engine.state.get(Face.FRONT, 5, 5)).toBe(0x00ff00);
 		});
 
 		it('stays under the objects of a program, and through runs and resets', () => {
