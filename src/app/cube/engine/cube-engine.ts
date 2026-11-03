@@ -171,6 +171,7 @@ export class CubeEngine {
 	setEnvironment (environment: Environment | undefined): void {
 		paintEnvironment(this.world, environment, this.environment);
 		this.environment = environment;
+		this.renderer.setBrightness(environment?.brightness);
 		this.renderer.render();
 	}
 
@@ -377,6 +378,7 @@ export class CubeEngine {
 		this.renderer = new Renderer(this.world, this.state);
 		this.scheduler = new Scheduler(this.world, this.program.scripts, (error) => this.options.onError?.(error));
 
+		this.renderer.setBrightness(this.environment?.brightness);
 		paintEnvironment(this.world, this.environment);
 
 		for (const object of this.program.objects ?? [])

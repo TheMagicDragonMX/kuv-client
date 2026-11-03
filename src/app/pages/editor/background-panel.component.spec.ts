@@ -45,6 +45,21 @@ type PanelInternals = {
 	 * True when the face has a picture.
 	 */
 	hasImage(name: string): boolean;
+
+	/**
+	 * The intensity of the background or the objects, as a percentage.
+	 */
+	percent(id: 'background' | 'objects'): number;
+
+	/**
+	 * Sets the intensity of the background or the objects, from a percentage.
+	 */
+	setLevel(id: 'background' | 'objects', percent: number): void;
+
+	/**
+	 * Goes back to the usual intensities.
+	 */
+	resetLevels(): void;
 };
 
 /**
@@ -135,5 +150,33 @@ describe('BackgroundPanelComponent', () => {
 
 		expect(panel.environment()).not.toBe(before);
 		expect(before.background).toBeUndefined();
+	});
+
+	describe('brightness', () => {
+		it('shows full intensity when the environment sets none', () => {
+			const { internals } = createPanel();
+
+			expect(internals.percent('background')).toBe(100);
+			expect(internals.percent('objects')).toBe(100);
+		});
+
+		it('sets each intensity in the environment, between 0 and 100', () => {
+			const { panel, internals } = createPanel();
+
+			internals.setLevel('background', 30);
+			internals.setLevel('objects', 250);
+
+			expect(panel.environment().brightness).toEqual({ background: 0.3, objects: 1 });
+			expect(internals.percent('background')).toBe(30);
+		});
+
+		it('goes back to the usual: objects at full and the background softer', () => {
+			const { panel, internals } = createPanel();
+			internals.setLevel('background', 100);
+
+			internals.resetLevels();
+
+			expect(panel.environment().brightness).toEqual({ background: 0.4, objects: 1 });
+		});
 	});
 });

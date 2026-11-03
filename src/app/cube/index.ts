@@ -13,6 +13,8 @@ export { CubePlayer } from './engine/cube-player';
 export type { CubePlayerOptions } from './engine/cube-player';
 export { EngineError, ProgramError } from './errors';
 export type { BackgroundImages, Environment } from './environment/environment';
+export { DEFAULT_BRIGHTNESS } from './renderer/renderer';
+export type { Brightness } from './renderer/renderer';
 export { pixelate } from './environment/pixelate';
 export type { RawImage } from './environment/pixelate';
 export { EXAMPLE_PROGRAMS } from './examples/example-programs';

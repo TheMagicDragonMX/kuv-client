@@ -4,6 +4,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
 	CreateCommand,
 	CubeComponent,
+	DEFAULT_BRIGHTNESS,
 	Environment,
 	Face,
 	ObjectMove,
@@ -80,9 +81,10 @@ export class EditorPage implements OnInit {
 	protected readonly selectedObject = signal<string | null>(null);
 
 	/**
-	 * The stage of the cube, edited by the background panel.
+	 * The stage of the cube, edited by the background panel. It starts with the objects brighter than
+	 * the background.
 	 */
-	protected readonly environment = signal<Environment>({});
+	protected readonly environment = signal<Environment>({ brightness: { ...DEFAULT_BRIGHTNESS } });
 
 	/**
 	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the

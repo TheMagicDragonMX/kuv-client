@@ -21,6 +21,7 @@ import { EngineError } from '../errors';
 import { FACE_BY_NAME } from '../program/names';
 import { FaceName } from '../program/program';
 import { Color, FACE_RESOLUTION } from '../state/cube-state';
+import { Brightness } from '../renderer/renderer';
 import { World } from '../world/world';
 
 /**
@@ -37,6 +38,11 @@ export type Environment = {
 	 * Pictures behind the objects, by face.
 	 */
 	background?: BackgroundImages;
+
+	/**
+	 * How intensely the background and the objects shine. What is missing is full intensity.
+	 */
+	brightness?: Partial<Brightness>;
 };
 
 /**

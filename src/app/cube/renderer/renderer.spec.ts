@@ -172,4 +172,51 @@ describe('Renderer', () => {
 		expect(renderer.render()).toBe(false);
 		expect(output.version).toBe(version);
 	});
+
+	describe('brightness', () => {
+		it('dims the background and the objects separately', () => {
+			const { world, output, renderer } = setup();
+			world.background.set(Face.FRONT, 0, 0, 0x0000ff);
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 1, y: 1, color: '#ff0000' });
+
+			renderer.setBrightness({ background: 0.5, objects: 1 });
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 0, 0)).toBe(0x000080);
+			expect(output.get(Face.FRONT, 1, 1)).toBe(0xff0000);
+
+			renderer.setBrightness({ background: 1, objects: 0.5 });
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 0, 0)).toBe(0x0000ff);
+			expect(output.get(Face.FRONT, 1, 1)).toBe(0x800000);
+		});
+
+		it('draws again as soon as the intensity changes, even if the world did not', () => {
+			const { world, renderer } = setup();
+			world.background.set(Face.FRONT, 0, 0, 0x0000ff);
+			renderer.render();
+
+			renderer.setBrightness({ background: 0.5 });
+
+			expect(renderer.render()).toBe(true);
+		});
+
+		it('keeps the intensity between 0 and 1, and a missing one is full', () => {
+			const { world, output, renderer } = setup();
+			world.background.set(Face.FRONT, 0, 0, 0x0000ff);
+			applyCommand(world, { op: 'create', name: 'a', face: 'FRONT', x: 1, y: 1, color: '#ff0000' });
+
+			renderer.setBrightness({ background: 5, objects: -1 });
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 0, 0)).toBe(0x0000ff);
+			expect(output.get(Face.FRONT, 1, 1)).toBe(0);
+
+			renderer.setBrightness({});
+			renderer.render();
+
+			expect(output.get(Face.FRONT, 1, 1)).toBe(0xff0000);
+		});
+	});
 });

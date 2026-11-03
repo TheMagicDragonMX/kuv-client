@@ -6,7 +6,7 @@ import {
 	model,
 	signal,
 } from '@angular/core';
-import { BackgroundImages, Environment, FaceName, RawImage, pixelate } from '../../cube';
+import { BackgroundImages, Brightness, DEFAULT_BRIGHTNESS, Environment, FaceName, RawImage, pixelate } from '../../cube';
 import { FACE_OPTIONS } from './faces';
 import { ImageCropperComponent } from './image-cropper.component';
 import { PixelPreviewComponent } from './pixel-preview.component';
@@ -17,13 +17,22 @@ import { PixelPreviewComponent } from './pixel-preview.component';
 const FACES = FACE_OPTIONS;
 
 /**
+ * The two intensities the user can set, with their labels.
+ */
+const LEVELS: { id: keyof Brightness; label: string }[] = [
+	{ id: 'background', label: 'Background' },
+	{ id: 'objects', label: 'Objects' },
+];
+
+/**
  * Where the user handles the background of the cube. The way to do it for now is an image:
  *
  *   1. pick a picture   2. crop it to a square   3. choose the faces it goes on
  *
  * The picture is shrunk to the 64x64 of a face the way the Raspberry Pi does (see `pixelate`),
  * and the preview shows exactly that. The panel does not touch the cube: it edits the
- * environment, which the page gives to the cube.
+ * environment, which the page gives to the cube. The same panel sets how intensely the background
+ * and the objects shine, so the objects can stand out from the picture behind them.
  */
 @Component({
 	selector: 'app-background-panel',
@@ -37,6 +46,11 @@ export class BackgroundPanelComponent implements OnDestroy {
 	 * The environment being edited. Two-way: the page keeps it and shows it on the cube.
 	 */
 	readonly environment = model<Environment>({});
+
+	/**
+	 * The intensities that can be set.
+	 */
+	protected readonly levels = LEVELS;
 
 	/**
 	 * Ways to handle the background. More can be added here.
@@ -101,6 +115,30 @@ export class BackgroundPanelComponent implements OnDestroy {
 	 */
 	protected hasImage (name: FaceName): boolean {
 		return !!this.environment().background?.[name];
+	}
+
+	/**
+	 * The intensity of the background or of the objects, as a percentage.
+	 */
+	protected percent (id: keyof Brightness): number {
+		return Math.round((this.environment().brightness?.[id] ?? 1) * 100);
+	}
+
+	/**
+	 * Sets the intensity of the background or of the objects, from a percentage.
+	 */
+	protected setLevel (id: keyof Brightness, percent: number): void {
+		this.environment.update((environment) => ({
+			...environment,
+			brightness: { ...environment.brightness, [id]: Math.min(100, Math.max(0, percent)) / 100 },
+		}));
+	}
+
+	/**
+	 * Goes back to the usual intensities: objects at full, background softer.
+	 */
+	protected resetLevels (): void {
+		this.environment.update((environment) => ({ ...environment, brightness: { ...DEFAULT_BRIGHTNESS } }));
 	}
 
 	/**

@@ -1,4 +1,4 @@
-import { CubeState, FACE_RESOLUTION, Face } from './cube-state';
+import { CubeState, FACE_RESOLUTION, Face, scaleColor } from './cube-state';
 
 describe('CubeState', () => {
 	it('starts blank', () => {
@@ -43,5 +43,22 @@ describe('CubeState', () => {
 
 		expect(target.get(Face.BACK, 10, 11)).toBe(0x00ff00);
 		expect(target.get(Face.FRONT, 1, 1)).toBe(0);
+	});
+
+	it('dims a color keeping its hue, and leaves it alone at full intensity', () => {
+		expect(scaleColor(0xff8040, 0.5)).toBe(0x804020);
+		expect(scaleColor(0xff8040, 1)).toBe(0xff8040);
+		expect(scaleColor(0xff8040, 0)).toBe(0);
+	});
+
+	it('dims every pixel of every face', () => {
+		const state = new CubeState();
+		state.set(Face.FRONT, 1, 1, 0xff0000);
+		state.set(Face.TOP, 2, 2, 0x00ff00);
+
+		state.dim(0.5);
+
+		expect(state.get(Face.FRONT, 1, 1)).toBe(0x800000);
+		expect(state.get(Face.TOP, 2, 2)).toBe(0x008000);
 	});
 });

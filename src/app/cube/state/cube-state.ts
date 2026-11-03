@@ -56,6 +56,21 @@ export const FACE_RESOLUTION = 64;
 export type Color = number;
 
 /**
+ * The color dimmed to a share of its intensity: 1 leaves it as it is, 0 turns it off. Each of the
+ * three channels is scaled, so the hue stays.
+ */
+export function scaleColor (color: Color, level: number): Color {
+	if (1 <= level)
+		return color;
+
+	const red = Math.round((color >> 16 & 0xff) * level);
+	const green = Math.round((color >> 8 & 0xff) * level);
+	const blue = Math.round((color & 0xff) * level);
+
+	return red << 16 | green << 8 | blue;
+}
+
+/**
  * Hardware-independent pixel buffer of the cube: one 64x64 surface per face.
  * Commands write into it and renderers (browser, Raspberry Pi) read from it.
  * It knows nothing about three.js, panels or GPIO.
@@ -120,6 +135,16 @@ export class CubeState {
 	 */
 	copyFrom (other: CubeState): void {
 		this.pixels.set(other.pixels);
+		this.version += 1;
+	}
+
+	/**
+	 * Dims every pixel of every face to a share of its intensity (see `scaleColor`).
+	 */
+	dim (level: number): void {
+		for (let index = 0; index < this.pixels.length; index += 1)
+			this.pixels[index] = scaleColor(this.pixels[index], level);
+
 		this.version += 1;
 	}
 
