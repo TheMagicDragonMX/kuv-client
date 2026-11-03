@@ -29,8 +29,8 @@ export class SetupError extends Error {
  * How long to wait for each answer before giving up. Joining a network is slow.
  */
 const TIMEOUTS: Partial<Record<OperationName, number>> = {
-	'wifi.scan': 20_000,
-	'wifi.connect': 45_000,
+	'wifi.scan': 30_000,
+	'wifi.connect': 120_000,
 };
 
 /**

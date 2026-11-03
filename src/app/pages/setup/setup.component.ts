@@ -318,7 +318,7 @@ export class SetupPage implements OnInit, OnDestroy {
 			await this.client?.connectWifi(ssid, password || undefined, hidden);
 			this.selected.set(null);
 			this.wifiForm.reset();
-			this.notice.set(`El cubo se conectó a ${ssid}.`);
+			this.notice.set(`El cubo se conectó a ${ssid}. Pulsa Desconectar para que termine de configurarse.`);
 		});
 	}
 
