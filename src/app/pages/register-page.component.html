@@ -1,5 +1,13 @@
 <div class="block h-screen w-screen bg-(--page) text-slate-100">
 	<main class="relative grid h-full place-items-center bg-(image:--page-gradient) p-8">
+		<nav class="absolute top-[1.1rem] left-[1.1rem] z-10 flex gap-2 rounded-full border border-slate-400/20 bg-(--surface) p-[0.4rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]" aria-label="Navegación principal">
+			<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Login</a>
+			<a routerLink="/register" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 bg-slate-400/15 opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Register</a>
+			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
+			<a routerLink="/editor" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Editor</a>
+			<a routerLink="/setup" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Setup</a>
+			<a routerLink="/gallery" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Galería</a>
+		</nav>
 		<section class="w-full max-w-[420px] rounded-3xl border border-slate-400/20 bg-slate-900/80 px-8 py-9 shadow-[0_22px_50px_var(--shadow)]" aria-labelledby="page-title">
 			<p class="mb-4 text-[0.82rem] font-bold tracking-[0.24em] text-blue-300 uppercase">Kuv</p>
 			<h1 id="page-title" class="mb-2 text-[clamp(2rem,4vw,2.6rem)] font-bold">Crear cuenta</h1>
@@ -24,11 +32,12 @@
 				@if (errorMessage()) {
 					<p class="rounded-xl bg-red-500/10 px-[0.9rem] py-3 text-[0.92rem] text-red-200" role="alert">{{ errorMessage() }}</p>
 				}
-				@if (successMessage()) {
-					<p class="rounded-xl bg-green-500/10 px-[0.9rem] py-3 text-[0.92rem] text-green-200" role="status">{{ successMessage() }}</p>
-				}
 				<button class="mt-[0.4rem] cursor-pointer rounded-full bg-[linear-gradient(135deg,#60a5fa,#a78bfa)] px-[1.2rem] py-[0.9rem] text-[0.95rem] font-bold text-[#08111b] transition duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_12px_25px_rgba(96,165,250,0.32)] disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
-					{{ isSubmitting() ? 'Registrando...' : 'Registrarme' }}
+					@if (isSubmitting()) {
+						Creando cuenta...
+					} @else {
+						Crear cuenta
+					}
 				</button>
 			</form>
 			<p class="mt-[1.2rem] text-slate-300">¿Ya tienes cuenta? <a class="text-blue-300 no-underline" routerLink="/login">Iniciar sesión</a></p>

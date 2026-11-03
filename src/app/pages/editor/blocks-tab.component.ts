@@ -282,17 +282,9 @@ export class BlocksTabComponent implements OnDestroy {
 	/**
 	 * Replaces everything with the blocks of an example.
 	 */
-	protected load (id: string): void {
-		const example = this.examples.find((candidate) => candidate.id === id);
+	loadProgram (program: Program): void { const { workspace, objects } = blocksFromProgram(program, () => this.nextId++); this.workspace.set(workspace); this.objects.set(objects); }
 
-		if (!example)
-			return;
-
-		const { workspace, objects } = blocksFromProgram(example.program, () => this.nextId++);
-
-		this.workspace.set(workspace);
-		this.objects.set(objects);
-	}
+	protected load (id: string): void { const example = this.examples.find((candidate) => candidate.id === id); if (!example) return; this.loadProgram(example.program); }
 
 	/**
 	 * True when the face is chosen in a faces field.

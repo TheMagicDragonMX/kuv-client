@@ -6,6 +6,7 @@
 			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
 			<a routerLink="/editor" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Editor</a>
 			<a routerLink="/setup" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Setup</a>
+			<a routerLink="/gallery" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Galería</a>
 		</nav>
 		<section class="w-full max-w-[420px] rounded-3xl border border-slate-400/20 bg-slate-900/80 px-8 py-9 shadow-[0_22px_50px_var(--shadow)]" aria-labelledby="page-title">
 			<p class="mb-4 text-[0.82rem] font-bold tracking-[0.24em] text-blue-300 uppercase">Kuv</p>
@@ -23,11 +24,12 @@
 				@if (errorMessage()) {
 					<p class="rounded-xl bg-red-500/10 px-[0.9rem] py-3 text-[0.92rem] text-red-200" role="alert">{{ errorMessage() }}</p>
 				}
-				@if (successMessage()) {
-					<p class="rounded-xl bg-green-500/10 px-[0.9rem] py-3 text-[0.92rem] text-green-200" role="status">{{ successMessage() }}</p>
-				}
 				<button class="mt-[0.4rem] cursor-pointer rounded-full bg-[linear-gradient(135deg,#60a5fa,#a78bfa)] px-[1.2rem] py-[0.9rem] text-[0.95rem] font-bold text-[#08111b] transition duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_12px_25px_rgba(96,165,250,0.32)] disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
-					{{ isSubmitting() ? 'Ingresando...' : 'Iniciar sesión' }}
+					@if (isSubmitting()) {
+						Entrando...
+					} @else {
+						Iniciar sesión
+					}
 				</button>
 			</form>
 			<p class="mt-[1.2rem] text-slate-300">¿Aún no tienes cuenta? <a class="text-blue-300 no-underline" routerLink="/register">Crear cuenta</a></p>

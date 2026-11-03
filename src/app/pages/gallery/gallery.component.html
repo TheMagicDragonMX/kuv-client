@@ -1,0 +1,344 @@
+<div class="min-h-screen w-full bg-(image:--cube-gradient) font-[Inter,'Segoe_UI',sans-serif] text-slate-100 pb-20">
+	<!-- Navegación superior -->
+	<header class="p-6">
+		<nav class="mx-auto flex w-fit max-w-full flex-wrap gap-2 rounded-full border border-slate-400/20 bg-(--surface) p-[0.4rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]" aria-label="Navegación principal">
+			<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100">Login</a>
+			<a routerLink="/register" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100">Register</a>
+			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100">Cube</a>
+			<a routerLink="/editor" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100">Editor</a>
+			<a routerLink="/setup" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100">Setup</a>
+			<a routerLink="/gallery" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.76rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 bg-slate-400/15 opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Galería</a>
+		</nav>
+	</header>
+
+	<main class="mx-auto max-w-7xl px-6 space-y-14">
+		<!-- Título & Call to action -->
+		<section class="text-center pt-2">
+			<h1 class="text-3xl font-extrabold tracking-tight sm:text-4xl text-slate-100">
+				Galería de Animaciones & Miniaturas
+			</h1>
+			<p class="mx-auto mt-2 max-w-2xl text-sm text-slate-400">
+				Tus creaciones generadas en el editor con videos en bucle continuo de 360°, más los ejemplos predefinidos del cubo virtual.
+			</p>
+
+			<div class="mt-6 flex justify-center gap-3">
+				<a
+					routerLink="/editor"
+					class="inline-flex items-center gap-2 rounded-full bg-blue-600 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white shadow-lg shadow-blue-500/25 hover:bg-blue-500 transition active:scale-95"
+				>
+					<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+					</svg>
+					Crear nueva en el Editor
+				</a>
+			</div>
+		</section>
+
+		<!-- SECCIÓN 1: MIS CREACIONES (Guardadas desde el Editor) -->
+		<section>
+			<div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-800">
+				<div class="flex items-center gap-2.5">
+					<h2 class="text-xl font-bold text-slate-100">Mis Creaciones</h2>
+					<span class="rounded-full bg-blue-600/30 border border-blue-500/40 px-2.5 py-0.5 text-xs font-semibold text-blue-300">
+						{{ customProjects().length }}
+					</span>
+				</div>
+				<span class="text-xs text-slate-400 hidden sm:inline">Guardadas localmente con IndexedDB</span>
+			</div>
+
+			@if (customProjects().length > 0) {
+				<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+					@for (project of customProjects(); track project.id) {
+						<div class="flex flex-col justify-between overflow-hidden rounded-2xl border border-blue-500/30 bg-slate-900/60 p-5 shadow-xl backdrop-blur-sm transition duration-200 hover:border-blue-400/50">
+							<!-- Cabecera -->
+							<div>
+								<div class="flex items-start justify-between gap-2">
+									<h3 class="text-base font-bold text-slate-100">{{ project.title }}</h3>
+									<button
+										type="button"
+										class="cursor-pointer text-slate-500 hover:text-red-400 p-1 transition"
+										title="Eliminar creación"
+										(click)="deleteProject(project, $event)"
+									>
+										<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+										</svg>
+									</button>
+								</div>
+								<p class="mt-1 line-clamp-2 text-xs text-slate-400 min-h-[2rem]">
+									{{ project.description || 'Sin descripción' }}
+								</p>
+							</div>
+
+							<!-- Video miniatura -->
+							<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative shadow-inner">
+								@if (customVideoUrls()[project.id]; as url) {
+									<video
+										[src]="url"
+										autoplay
+										loop
+										muted
+										playsinline
+										class="h-full w-full object-contain"
+									></video>
+
+									<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/85 px-2 py-1 text-[0.68rem] font-mono text-emerald-400 backdrop-blur-sm border border-emerald-500/20">
+										<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+										{{ project.durationSeconds }}s • {{ formatBytes(project.videoBlob?.size) }}
+									</div>
+								} @else {
+									<div class="text-center p-4 text-xs text-slate-500">
+										Sin video de miniatura
+									</div>
+								}
+							</div>
+
+							<!-- Metadatos & Acciones -->
+							<div class="flex flex-col gap-2 pt-2 border-t border-slate-800/80">
+								<div class="flex items-center justify-between text-[0.7rem] text-slate-500 mb-1">
+									<span>Creado: {{ formatDate(project.createdAt) }}</span>
+								</div>
+
+								<div class="flex gap-2">
+									<button
+										type="button"
+										class="flex-1 cursor-pointer rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-500 transition shadow-md"
+										(click)="openInEditor(project)"
+									>
+										Abrir en Editor
+									</button>
+									@if (customVideoUrls()[project.id]; as url) {
+										<a
+											[href]="url"
+											[download]="project.title + '-thumbnail.webm'"
+											class="flex-1 text-center cursor-pointer rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 transition"
+										>
+											Descargar
+										</a>
+									}
+								</div>
+
+								<button
+									type="button"
+									class="w-full cursor-pointer rounded-xl border border-transparent px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition"
+									(click)="livePreviewProgram.set({ name: project.title, description: project.description, program: project.program }); showLiveDrawer.set(true)"
+								>
+									Ver en 3D interactivo &rarr;
+								</button>
+							</div>
+						</div>
+					}
+				</div>
+			} @else {
+				<!-- Estado vacío de creaciones -->
+				<div class="rounded-3xl border border-dashed border-slate-800 bg-slate-900/30 p-10 text-center">
+					<div class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 mb-3">
+						<svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+						</svg>
+					</div>
+					<h3 class="text-base font-bold text-slate-200">Aún no tienes creaciones guardadas</h3>
+					<p class="mt-1 text-xs text-slate-400 max-w-md mx-auto">
+						Ve al editor, crea o combina bloques para tu cubo virtual y presiona el botón <strong class="text-blue-300">"Exportar a Galería"</strong> para grabarle su miniatura y verla aquí.
+					</p>
+					<div class="mt-5">
+						<a
+							routerLink="/editor"
+							class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-slate-800 border border-slate-700 px-4 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 transition"
+						>
+							Ir al Editor &rarr;
+						</a>
+					</div>
+				</div>
+			}
+		</section>
+
+		<!-- SECCIÓN 2: EJEMPLOS PREDETERMINADOS DEL SISTEMA -->
+		<section>
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-3 border-b border-slate-800">
+				<div>
+					<h2 class="text-xl font-bold text-slate-100">Ejemplos del Sistema</h2>
+					<p class="text-xs text-slate-400 mt-0.5">Programas prediseñados para probar la grabación de miniaturas</p>
+				</div>
+
+				<!-- Selector de duración para los ejemplos -->
+				<div class="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/60 p-1.5 text-xs">
+					<span class="text-[0.7rem] font-semibold text-slate-400 px-2 uppercase">Duración:</span>
+					@for (sec of [5, 10, 15]; track sec) {
+						<button
+							type="button"
+							class="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition duration-150"
+							[class]="duration() === sec ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+							(click)="duration.set(sec)"
+							[disabled]="recordingId() !== null"
+						>
+							{{ sec }}s
+						</button>
+					}
+				</div>
+			</div>
+
+			<!-- Grid de Ejemplos -->
+			<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+				@for (example of examples; track example.id) {
+					<div class="flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/80 bg-slate-900/40 p-5 shadow-lg backdrop-blur-sm transition duration-200 hover:border-slate-700 hover:bg-slate-900/60">
+						<div>
+							<div class="flex items-start justify-between gap-2">
+								<h3 class="text-base font-bold text-slate-100">{{ example.name }}</h3>
+								<span class="rounded-full bg-slate-800 px-2 py-0.5 text-[0.68rem] font-mono text-slate-400 uppercase tracking-wider">
+									{{ example.id }}
+								</span>
+							</div>
+							<p class="mt-1 line-clamp-2 text-xs text-slate-400 min-h-[2rem]">{{ example.description }}</p>
+						</div>
+
+						<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative">
+							@if (thumbnails()[example.id]; as thumb) {
+								<video
+									[src]="thumb.url"
+									autoplay
+									loop
+									muted
+									playsinline
+									class="h-full w-full object-contain"
+								></video>
+
+								<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/80 px-2 py-1 text-[0.68rem] font-mono text-emerald-400 backdrop-blur-sm border border-emerald-500/20">
+									<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+									Miniatura activa ({{ formatBytes(thumb.sizeBytes) }})
+								</div>
+							} @else {
+								<div class="flex flex-col items-center justify-center p-6 text-center">
+									<div class="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-700/50 bg-slate-800/60 text-slate-400 mb-3 shadow-inner">
+										<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+										</svg>
+									</div>
+									<p class="text-xs text-slate-400 font-medium">Sin miniatura generada</p>
+									<p class="text-[0.7rem] text-slate-500 mt-0.5">Genera un clip de {{ duration() }}s</p>
+								</div>
+							}
+						</div>
+
+						<div class="flex flex-col gap-2 pt-2 border-t border-slate-800/80">
+							@if (thumbnails()[example.id]; as thumb) {
+								<div class="flex gap-2">
+									<a
+										[href]="thumb.url"
+										[download]="example.id + '-thumbnail.webm'"
+										class="flex-1 text-center cursor-pointer rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-slate-700 transition"
+									>
+										Descargar
+									</a>
+									<button
+										type="button"
+										class="flex-1 cursor-pointer rounded-xl border border-slate-700 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition"
+										(click)="recordThumbnail(example)"
+										[disabled]="recordingId() !== null"
+									>
+										Regrabar
+									</button>
+								</div>
+							} @else {
+								<button
+									type="button"
+									class="w-full cursor-pointer rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-blue-500 active:scale-[0.98] transition disabled:opacity-50"
+									(click)="recordThumbnail(example)"
+									[disabled]="recordingId() !== null"
+								>
+									Generar miniatura ({{ duration() }}s)
+								</button>
+							}
+
+							<button
+								type="button"
+								class="w-full cursor-pointer rounded-xl border border-transparent px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40 transition"
+								(click)="livePreviewProgram.set({ name: example.name, description: example.description, program: example.program }); showLiveDrawer.set(true)"
+							>
+								Ver en 3D interactivo &rarr;
+							</button>
+						</div>
+					</div>
+				}
+			</div>
+		</section>
+
+		<!-- Modal / Overlay de Grabación en vivo -->
+		@if (recordingId(); as activeId) {
+			<div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-fade-in">
+				<div class="w-full max-w-md overflow-hidden rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+					<h2 class="text-center text-lg font-bold text-slate-100">
+						Renderizando miniatura...
+					</h2>
+					<p class="mt-1 text-center text-xs text-slate-400">
+						Generando cuadro a cuadro con giro de 360° en la GPU
+					</p>
+
+					<div class="mt-4 flex aspect-square w-full items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-950">
+						<div #previewHost class="h-full w-full"></div>
+					</div>
+
+					@if (progress(); as prog) {
+						<div class="mt-5">
+							<div class="flex justify-between text-xs font-semibold text-slate-300">
+								<span>Segundo {{ prog.currentSecond }} de {{ prog.totalSeconds }}s</span>
+								<span>{{ prog.percent }}%</span>
+							</div>
+							<div class="mt-2 h-2.5 w-full overflow-hidden rounded-full bg-slate-800">
+								<div
+									class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-150 ease-out"
+									[style.width.%]="prog.percent"
+								></div>
+							</div>
+						</div>
+					}
+				</div>
+			</div>
+		}
+	</main>
+
+	<!-- Drawer lateral para Cubo 3D interactivo en vivo -->
+	@if (showLiveDrawer()) {
+		<div class="fixed inset-0 z-40 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in" (click)="showLiveDrawer.set(false)">
+			<div class="h-full w-full max-w-lg border-l border-slate-800 bg-slate-900 p-6 shadow-2xl flex flex-col justify-between" (click)="$event.stopPropagation()">
+				<div>
+					<div class="flex items-center justify-between">
+						<div>
+							<h3 class="text-lg font-bold text-slate-100">{{ livePreviewProgram().name }}</h3>
+							<p class="text-xs text-slate-400">Simulación Three.js en tiempo real</p>
+						</div>
+						<button
+							type="button"
+							class="cursor-pointer rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+							(click)="showLiveDrawer.set(false)"
+						>
+							✕
+						</button>
+					</div>
+
+					<div class="mt-6 aspect-square w-full overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-inner">
+						<app-cube
+							class="h-full w-full"
+							[program]="livePreviewProgram().program"
+							[autoplay]="true"
+						/>
+					</div>
+
+					<p class="mt-4 text-xs text-slate-400 leading-relaxed">
+						{{ livePreviewProgram().description }}
+					</p>
+				</div>
+
+				<div class="pt-4 border-t border-slate-800 flex gap-2">
+					<button
+						type="button"
+						class="cursor-pointer rounded-xl border border-slate-700 px-4 py-2.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 transition w-full"
+						(click)="showLiveDrawer.set(false)"
+					>
+						Cerrar
+					</button>
+				</div>
+			</div>
+		</div>
+	}
+</div>

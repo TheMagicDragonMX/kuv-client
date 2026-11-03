@@ -12,6 +12,7 @@ export const routes: Routes = [
 	{ path: 'register', component: RegisterPage },
 	{ path: 'test-cube', component: TestCubePage },
 	{ path: 'editor', component: EditorPage },
+	{ path: 'gallery', loadComponent: () => import('./pages/gallery/gallery.component').then((page) => page.GalleryPage) },
 
 	/**
 	 * Lazy: it is only needed next to a cube, and keeps the initial bundle under budget.
