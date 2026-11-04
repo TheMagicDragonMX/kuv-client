@@ -1,0 +1,85 @@
+<div class="min-h-dvh bg-(--page) font-body text-slate-100">
+	<app-site-header />
+
+	<main class="mx-auto flex max-w-340 flex-col gap-10 px-4 pt-8 pb-28 sm:px-10 sm:pt-10 md:pb-16">
+		@if (profile(); as me) {
+			<section class="flex flex-wrap items-center gap-6 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-5 sm:gap-7 sm:p-7" aria-label="Datos de la cuenta">
+				<div class="flex flex-col items-center gap-2.5">
+					<div class="rounded-full bg-accent-pink p-1">
+						<app-avatar class="size-28 text-[3.25rem] sm:size-32" [name]="me.username" [photo]="me.photo" />
+					</div>
+					<div class="flex flex-wrap justify-center gap-1.5">
+						<label class="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-slate-400/30 px-3.5 text-sm font-bold text-slate-300 hover:bg-slate-400/15 focus-within:outline-2 focus-within:outline-accent">
+							{{ me.photo ? 'Cambiar foto' : 'Poner foto' }}
+							<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="sr-only" [disabled]="saving()" (change)="changePhoto($event)" />
+						</label>
+						@if (me.photo) {
+							<button type="button" class="min-h-11 cursor-pointer rounded-xl px-3 text-sm font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200 disabled:opacity-60" [disabled]="saving()" (click)="removePhoto()">Quitar</button>
+						}
+					</div>
+				</div>
+
+				<div class="flex min-w-0 flex-[1_1_20rem] flex-col gap-2">
+					<h1 class="font-display text-[clamp(2rem,6vw,2.75rem)] leading-[1.05] font-bold break-words">&#64;{{ me.username }}</h1>
+					@if (me.email) {
+						<p class="flex items-center gap-2 text-base text-slate-400 sm:text-[1.05rem]">
+							<svg viewBox="0 0 24 24" class="size-4.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
+							<span class="truncate">{{ me.email }}</span>
+						</p>
+					}
+
+					@if (editing()) {
+						<form class="mt-1 flex flex-col gap-2" (submit)="$event.preventDefault(); saveDescription()">
+							<label class="flex flex-col gap-1.5 text-sm font-bold text-slate-300">
+								Descripción
+								<textarea
+									class="min-h-24 rounded-xl border border-slate-400/25 bg-(--page) px-3.5 py-2.5 text-base font-normal text-slate-100 focus:outline-2 focus:outline-accent"
+									[attr.maxlength]="maxDescription"
+									[value]="draft()"
+									(input)="draft.set($any($event.target).value)"
+								></textarea>
+							</label>
+							<div class="flex flex-wrap items-center gap-2">
+								<button type="submit" class="min-h-11 cursor-pointer rounded-xl bg-accent-pink px-5 text-[0.95rem] font-extrabold text-on-accent-pink disabled:opacity-60" [disabled]="saving()">Guardar</button>
+								<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 px-4 text-[0.95rem] font-bold text-slate-200 hover:bg-slate-400/15" (click)="cancelEdit()">Cancelar</button>
+								<span class="ml-auto text-xs text-slate-400" aria-live="polite">{{ draft().length }} / {{ maxDescription }}</span>
+							</div>
+						</form>
+					} @else if (me.description) {
+						<p class="mt-1 max-w-160 text-base whitespace-pre-line text-slate-200">{{ me.description }}</p>
+					} @else {
+						<p class="mt-1 text-base text-slate-400">Aún no escribiste nada sobre ti.</p>
+					}
+
+					<div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-base text-slate-400">
+						<button type="button" class="-mx-2 min-h-11 cursor-pointer rounded-lg px-2 hover:bg-slate-400/15" (click)="showList('followers')"><strong class="text-slate-100">{{ me.followers }}</strong> {{ 1 === me.followers ? 'seguidor' : 'seguidores' }}</button>
+						<button type="button" class="-mx-2 min-h-11 cursor-pointer rounded-lg px-2 hover:bg-slate-400/15" (click)="showList('following')"><strong class="text-slate-100">{{ me.following }}</strong> {{ 1 === me.following ? 'seguido' : 'seguidos' }}</button>
+					</div>
+
+					@if (saveProblem(); as text) {
+						<p class="rounded-xl bg-red-500/10 px-3.5 py-2.5 text-sm text-red-200" role="alert">{{ text }}</p>
+					}
+				</div>
+
+				<div class="flex w-full flex-col gap-2 sm:w-auto">
+					@if (!editing()) {
+						<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 bg-slate-400/15 px-5.5 text-[0.95rem] font-extrabold text-slate-100 hover:bg-slate-400/25" (click)="edit()">Editar perfil</button>
+					}
+					<button type="button" class="min-h-11 cursor-pointer rounded-xl px-5.5 text-[0.95rem] font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200" (click)="signOut()">Cerrar sesión</button>
+				</div>
+			</section>
+
+			<section #follows class="flex scroll-mt-24 flex-col gap-5" aria-labelledby="follows-title">
+				<h2 id="follows-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">Seguidores y seguidos</h2>
+				<app-follow-section [me]="me" [(list)]="list" (changed)="refresh()" />
+			</section>
+		} @else if (loadProblem(); as text) {
+			<div class="flex flex-col items-start gap-3 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-7" role="alert">
+				<p class="text-base text-red-200">{{ text }}</p>
+				<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 px-5 font-bold text-slate-100 hover:bg-slate-400/15" (click)="load()">Reintentar</button>
+			</div>
+		} @else {
+			<p class="text-slate-400" role="status">Cargando tu perfil…</p>
+		}
+	</main>
+</div>

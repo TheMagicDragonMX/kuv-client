@@ -1,6 +1,7 @@
 <div class="block h-screen w-screen bg-(--page) text-slate-100">
 	<main class="relative grid h-full place-items-center bg-(image:--page-gradient) p-8">
 		<nav class="absolute top-[1.1rem] left-[1.1rem] z-10 flex gap-2 rounded-full border border-slate-400/20 bg-(--surface) p-[0.4rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]" aria-label="Navegación principal">
+			<a routerLink="/inicio" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Inicio</a>
 			<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 bg-slate-400/15 opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Login</a>
 			<a routerLink="/register" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Register</a>
 			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
@@ -13,6 +14,9 @@
 			<p class="mb-4 text-[0.82rem] font-bold tracking-[0.24em] text-blue-300 uppercase">Kuv</p>
 			<h1 id="page-title" class="mb-2 text-[clamp(2rem,4vw,2.6rem)] font-bold">Iniciar sesión</h1>
 			<p class="mb-[1.4rem] text-slate-300">Accede con tu nombre de usuario y contraseña.</p>
+			@if (returnUrl) {
+				<p class="mb-[1.2rem] rounded-xl border border-slate-400/20 bg-slate-400/10 px-[0.9rem] py-3 text-[0.92rem] text-slate-200" role="status">Inicia sesión o crea una cuenta para continuar.</p>
+			}
 			<form class="grid gap-4" [formGroup]="form" (ngSubmit)="submit()">
 				<label class="grid gap-[0.45rem] text-[0.9rem] text-(--nav-text)">
 					Nombre de usuario
@@ -33,7 +37,7 @@
 					}
 				</button>
 			</form>
-			<p class="mt-[1.2rem] text-slate-300">¿Aún no tienes cuenta? <a class="text-blue-300 no-underline" routerLink="/register">Crear cuenta</a></p>
+			<p class="mt-[1.2rem] text-slate-300">¿Aún no tienes cuenta? <a class="text-blue-300 no-underline" routerLink="/register" queryParamsHandling="preserve">Crear cuenta</a></p>
 		</section>
 	</main>
 </div>

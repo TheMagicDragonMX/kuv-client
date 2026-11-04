@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
+import { API_URL } from './api-url';
 
 /**
  * What the API answers after a login.
@@ -60,7 +61,7 @@ export class SessionApi {
 	/**
 	 * Address of the session endpoints.
 	 */
-	private readonly endpoint = 'http://localhost:5038/session';
+	private readonly endpoint = `${API_URL}/session`;
 
 	/**
 	 * Logs in with a username and a password.
@@ -74,5 +75,12 @@ export class SessionApi {
 	 */
 	register (user: RegisterPayload): Observable<unknown> {
 		return this.http.post(`${this.endpoint}/register`, user);
+	}
+
+	/**
+	 * Exchanges a refresh token for a new pair of tokens.
+	 */
+	refresh (refreshToken: string): Observable<TokenResponse> {
+		return this.http.post<TokenResponse>(`${this.endpoint}/refresh`, { refreshToken });
 	}
 }

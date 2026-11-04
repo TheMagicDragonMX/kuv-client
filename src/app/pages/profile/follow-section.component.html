@@ -1,0 +1,125 @@
+<div class="flex flex-wrap items-start gap-6 lg:gap-8">
+	<div class="flex w-full flex-col gap-4 rounded-[1.4rem] border border-slate-400/20 bg-slate-900/80 p-4 sm:p-5 lg:max-w-100 lg:flex-[1_1_21rem]">
+		<div class="grid grid-cols-2 gap-1.5 rounded-2xl bg-(--page) p-1.5" role="group" aria-label="Lista">
+			<button
+				type="button"
+				class="min-h-11 cursor-pointer rounded-xl text-[0.95rem] font-extrabold transition duration-150"
+				[class]="'following' === list() ? 'bg-slate-400/15 text-accent' : 'text-slate-400 hover:text-slate-200'"
+				[attr.aria-pressed]="'following' === list()"
+				(click)="show('following')"
+			>Seguidos · {{ me().following }}</button>
+			<button
+				type="button"
+				class="min-h-11 cursor-pointer rounded-xl text-[0.95rem] font-extrabold transition duration-150"
+				[class]="'followers' === list() ? 'bg-slate-400/15 text-accent' : 'text-slate-400 hover:text-slate-200'"
+				[attr.aria-pressed]="'followers' === list()"
+				(click)="show('followers')"
+			>Seguidores · {{ me().followers }}</button>
+		</div>
+
+		<label class="flex flex-col gap-1.5 text-sm font-bold text-slate-300">
+			Buscar
+			<input
+				type="search"
+				class="min-h-11 rounded-xl border border-slate-400/25 bg-(--page) px-3.5 text-[0.95rem] font-normal text-slate-100 placeholder:text-slate-400 focus:outline-2 focus:outline-accent"
+				placeholder="Nombre de usuario"
+				autocomplete="off"
+				[value]="query()"
+				(input)="search($any($event.target).value)"
+			/>
+		</label>
+
+		@if (null === users()) {
+			<p class="px-1 text-sm text-slate-400" role="status">Cargando…</p>
+		} @else {
+			<ul class="flex flex-col gap-1" role="list" [attr.aria-label]="'following' === list() ? 'Seguidos' : 'Seguidores'">
+				@for (user of shown(); track user.id) {
+					<li>
+						<ng-container *ngTemplateOutlet="row; context: { $implicit: user }" />
+					</li>
+				} @empty {
+					<li class="px-1 py-2 text-sm text-slate-400">
+						@if (query().trim()) {
+							Nadie en esta lista se llama así.
+						} @else if ('following' === list()) {
+							Aún no sigues a nadie. Busca a alguien por su nombre de usuario.
+						} @else {
+							Aún nadie te sigue.
+						}
+					</li>
+				}
+			</ul>
+
+			@if (others().length) {
+				<h3 class="px-1 pt-2 text-xs font-extrabold tracking-[0.08em] text-slate-400 uppercase">Otras personas</h3>
+				<ul class="flex flex-col gap-1" role="list" aria-label="Otras personas">
+					@for (user of others(); track user.id) {
+						<li>
+							<ng-container *ngTemplateOutlet="row; context: { $implicit: user }" />
+						</li>
+					}
+				</ul>
+			}
+		}
+	</div>
+
+	<section #details class="flex min-w-0 flex-[999_1_35rem] scroll-mt-24 flex-col gap-4" aria-label="Persona elegida">
+		@if (problem(); as text) {
+			<p class="rounded-xl bg-red-500/10 px-4 py-3 text-sm text-red-200" role="alert">{{ text }}</p>
+		}
+
+		@if (picked(); as user) {
+			<div class="flex flex-wrap items-center gap-5 rounded-[1.4rem] border border-slate-400/20 bg-slate-900/80 p-5 sm:p-6">
+				<app-avatar class="size-22 text-[2.5rem]" [name]="user.username" [photo]="user.photo" />
+				<div class="flex min-w-0 flex-[1_1_15rem] flex-col gap-1.5">
+					<h3 class="font-display text-[clamp(1.6rem,5vw,2.1rem)] leading-tight font-bold break-words">&#64;{{ user.username }}</h3>
+					<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-[0.95rem] text-slate-400">
+						<span><strong class="text-slate-100">{{ user.followers }}</strong> {{ 1 === user.followers ? 'seguidor' : 'seguidores' }}</span>
+						@if (relationOf(user); as relation) {
+							<span class="rounded-full bg-slate-400/15 px-2.5 py-1 text-xs font-extrabold text-slate-200">{{ relation }}</span>
+						}
+					</div>
+				</div>
+				<button
+					type="button"
+					class="min-h-11 w-full cursor-pointer rounded-xl border px-5.5 text-[0.95rem] font-extrabold transition duration-150 disabled:cursor-default disabled:opacity-60 sm:w-auto"
+					[class]="user.youFollow ? 'border-slate-400/30 text-slate-100 hover:bg-slate-400/15' : 'border-transparent bg-accent-pink text-on-accent-pink hover:brightness-110'"
+					[disabled]="busy()"
+					(click)="toggleFollow(user)"
+				>{{ followLabel(user) }}</button>
+			</div>
+
+			<div class="rounded-[1.4rem] border border-slate-400/20 bg-slate-900/80 p-5 sm:p-6">
+				<h4 class="mb-2 text-xs font-extrabold tracking-[0.08em] text-slate-400 uppercase">Sobre &#64;{{ user.username }}</h4>
+				@if (user.description) {
+					<p class="text-base whitespace-pre-line text-slate-200">{{ user.description }}</p>
+				} @else {
+					<p class="text-base text-slate-400">Todavía no escribió una descripción.</p>
+				}
+			</div>
+		} @else if (null !== users()) {
+			<div class="rounded-[1.4rem] border border-dashed border-slate-400/30 p-8 text-center text-slate-400">
+				Elige a alguien de la lista para ver su perfil.
+			</div>
+		}
+	</section>
+</div>
+
+<ng-template #row let-user>
+	<button
+		type="button"
+		class="flex w-full cursor-pointer items-center gap-3 rounded-2xl border p-2.5 text-left text-slate-100 transition duration-150"
+		[class]="picked()?.id === user.id ? 'border-accent bg-slate-400/10' : 'border-transparent hover:bg-slate-400/10'"
+		[attr.aria-pressed]="picked()?.id === user.id"
+		(click)="pick(user)"
+	>
+		<app-avatar class="size-11 text-xl" [name]="user.username" [photo]="user.photo" />
+		<span class="flex min-w-0 flex-1 flex-col gap-0.5">
+			<span class="truncate text-[0.95rem] font-extrabold">&#64;{{ user.username }}</span>
+			<span class="text-[0.8rem] text-slate-400">{{ user.followers }} {{ 1 === user.followers ? 'seguidor' : 'seguidores' }}</span>
+		</span>
+		@if (relationOf(user); as relation) {
+			<span class="shrink-0 rounded-full px-2.5 py-1.5 text-xs font-extrabold" [class]="user.followsYou && user.youFollow ? 'bg-accent-pink text-on-accent-pink' : 'bg-slate-400/15 text-slate-300'">{{ relation }}</span>
+		}
+	</button>
+</ng-template>

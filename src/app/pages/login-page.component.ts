@@ -1,11 +1,14 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { returnPath } from '../services/auth.guard';
+import { AuthSession } from '../services/auth-session.service';
 import { SessionApi } from '../services/session-api.service';
 
 /**
- * The login page: asks for a username and a password and keeps the tokens the API answers with.
+ * The login page: asks for a username and a password, keeps the session the API answers with and
+ * goes back to the page that asked for it (the profile, when none did).
  */
 @Component({
 	selector: 'app-login-page',
@@ -25,6 +28,21 @@ export class LoginPage {
 	private readonly sessionApi = inject(SessionApi);
 
 	/**
+	 * Keeps the tokens of the session.
+	 */
+	private readonly session = inject(AuthSession);
+
+	/**
+	 * Goes to the page after signing in.
+	 */
+	private readonly router = inject(Router);
+
+	/**
+	 * The page to go back to, from the address (`?returnUrl=`), or null.
+	 */
+	protected readonly returnUrl = inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl');
+
+	/**
 	 * True while the request is in flight, so the button cannot be pressed twice.
 	 */
 	protected readonly isSubmitting = signal(false);
@@ -33,11 +51,6 @@ export class LoginPage {
 	 * Why the last attempt failed, or an empty string.
 	 */
 	protected readonly errorMessage = signal('');
-
-	/**
-	 * Confirmation shown after a successful login, or an empty string.
-	 */
-	protected readonly successMessage = signal('');
 
 	/**
 	 * The login form: username and password, both required.
@@ -57,16 +70,13 @@ export class LoginPage {
 		}
 
 		this.errorMessage.set('');
-		this.successMessage.set('');
 		this.isSubmitting.set(true);
 		const { username, password } = this.form.getRawValue();
 
 		this.sessionApi.login(username, password).subscribe({
 			next: (tokens) => {
-				localStorage.setItem('accessToken', tokens.accessToken);
-				localStorage.setItem('refreshToken', tokens.refreshToken);
-				this.successMessage.set('Sesión iniciada correctamente.');
-				this.isSubmitting.set(false);
+				this.session.save(tokens);
+				void this.router.navigateByUrl(returnPath(this.returnUrl));
 			},
 			error: (error: HttpErrorResponse) => {
 				this.errorMessage.set(401 === error.status

@@ -1,4 +1,33 @@
 @import "tailwindcss";
+@import "@fontsource-variable/nunito/wght.css";
+@import "@fontsource/pixelify-sans/latin-600.css";
+@import "@fontsource/pixelify-sans/latin-700.css";
+
+/* Fonts of the home page. They come with the app (no request to Google), so they also work offline. */
+@theme inline {
+	--font-display: 'Pixelify Sans', ui-monospace, monospace;
+	--font-body: 'Nunito Variable', 'Segoe UI', system-ui, sans-serif;
+
+	--color-accent: var(--accent);
+	--color-accent-pink: var(--accent-pink);
+	--color-on-accent-pink: var(--on-accent-pink);
+	--color-like: var(--like);
+}
+
+/* The colors an LED shows. They are the same in both themes, because the panel of the cube is dark
+   whatever the page is. `static` keeps them as variables even when no utility uses them. */
+@theme static {
+	--color-led-red: #ff5c6c;
+	--color-led-orange: #ff9f45;
+	--color-led-yellow: #ffd84d;
+	--color-led-green: #6ef29a;
+	--color-led-cyan: #5be3f5;
+	--color-led-blue: #4d8dff;
+	--color-led-violet: #a98bff;
+	--color-led-pink: #ff7ac6;
+	--color-led-panel: #0a0e13;
+	--color-led-off: #1a2330;
+}
 
 /* Dark is the default. Light mode flips the slate scale and a few accent shades, so the
    existing slate-* utilities work in both themes. */
@@ -12,6 +41,10 @@
 	--nav-text: #dfeaf6;
 	--shadow: rgba(0, 0, 0, 0.35);
 	--fog: #090d12;
+	--accent: #5be3f5;
+	--accent-pink: #ff7ac6;
+	--on-accent-pink: #2a0f1f;
+	--like: #ff9fd4;
 	color-scheme: dark;
 }
 
@@ -25,6 +58,10 @@
 	--nav-text: #1e293b;
 	--shadow: rgba(30, 41, 59, 0.18);
 	--fog: #eef2f7;
+	--accent: #0e7490;
+	--accent-pink: #be185d;
+	--on-accent-pink: #ffffff;
+	--like: #be185d;
 	color-scheme: light;
 
 	--color-slate-50: #0f172a;
@@ -36,6 +73,7 @@
 	--color-blue-300: #1d4ed8;
 	--color-red-200: #991b1b;
 	--color-green-200: #166534;
+	--color-amber-200: #92400e;
 	--color-rose-200: #9f1239;
 	--color-rose-950: #ffe4e6;
 }

@@ -1,0 +1,20 @@
+<div class="min-h-dvh bg-(--page) font-body text-slate-100">
+	<app-site-header />
+
+	<main class="mx-auto flex max-w-340 flex-col gap-6 px-4 pt-8 pb-28 sm:px-10 sm:pt-12 md:pb-16">
+		<div class="flex flex-wrap items-end justify-between gap-5">
+			<div class="flex max-w-160 flex-col gap-2.5">
+				<h1 class="font-display text-[clamp(2.1rem,7vw,3.25rem)] leading-none font-bold">Animaciones de la comunidad</h1>
+				<p class="text-base text-slate-300 sm:text-lg">Lo que otras personas programaron para el cubo. Dale corazón a las que te gusten.</p>
+			</div>
+			<a routerLink="/editor" class="inline-flex min-h-12 w-full items-center justify-center gap-2.5 rounded-2xl bg-accent-pink px-5.5 py-3.5 text-base font-extrabold text-on-accent-pink no-underline transition duration-150 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent sm:w-auto">
+				<svg viewBox="0 0 24 24" class="size-4.5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+				Crear animación
+			</a>
+		</div>
+
+		@for (section of sections; track section.id) {
+			<app-animation-row [id]="section.id" [title]="section.title" [animations]="section.animations" [liked]="liked()" (toggled)="toggle($event)" />
+		}
+	</main>
+</div>
