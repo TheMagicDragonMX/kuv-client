@@ -14,6 +14,62 @@
 		<button type="button" class="cursor-pointer self-start text-[0.76rem] font-semibold text-slate-400 underline hover:text-slate-200" (click)="resetLevels()">Back to the usual</button>
 	</fieldset>
 
+	<!-- The backgrounds a program switches between. The selected one is on the cube, and the program starts with it. -->
+	<div class="flex flex-col gap-2 rounded-xl border border-slate-400/25 bg-slate-400/10 p-3">
+		<div class="flex items-center justify-between gap-2">
+			<h3 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Backgrounds</h3>
+			<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="add()">+ New</button>
+		</div>
+		<ul class="grid grid-cols-3 gap-2" role="list" aria-label="Backgrounds">
+			@for (background of backgrounds(); track background.name) {
+				<li>
+					<button
+						type="button"
+						class="flex w-full cursor-pointer flex-col gap-1 rounded-lg border p-1.5 text-left transition duration-150"
+						[class]="current().name === background.name ? 'border-pink-300 bg-slate-400/20' : 'border-slate-400/20 hover:bg-slate-400/10'"
+						[attr.aria-pressed]="current().name === background.name"
+						(click)="select(background.name)"
+					>
+						@if (coverOf(background); as cover) {
+							<app-pixel-preview class="block aspect-square w-full rounded-md" [pixels]="cover" />
+						} @else {
+							<span class="grid aspect-square w-full place-items-center rounded-md bg-slate-900 text-[0.65rem] text-slate-400">No pictures</span>
+						}
+						<span class="truncate text-[0.72rem] font-semibold text-slate-100" [title]="background.name">{{ background.name }}</span>
+					</button>
+				</li>
+			}
+		</ul>
+
+		@if (null !== newName()) {
+			<form class="flex flex-col gap-1.5" (submit)="$event.preventDefault(); saveName()">
+				<label class="flex items-center gap-2 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
+					Name
+					<input
+						type="text"
+						class="min-w-0 flex-1 rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case"
+						[value]="newName()"
+						(input)="newName.set($any($event.target).value)"
+					/>
+				</label>
+				@if (nameProblem(); as text) {
+					<p class="text-[0.7rem] text-rose-200" role="alert">{{ text }}</p>
+				}
+				<div class="flex gap-2">
+					<button type="submit" class="cursor-pointer rounded-full border border-slate-300/40 bg-slate-400/20 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-50 uppercase disabled:cursor-default disabled:opacity-40" [disabled]="nameProblem() !== null">Save</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="newName.set(null)">Cancel</button>
+				</div>
+			</form>
+		} @else {
+			<div class="flex flex-wrap items-center gap-2">
+				<span class="min-w-0 flex-1 truncate text-[0.76rem] text-slate-300">Editing <strong class="text-slate-50">{{ current().name }}</strong>. The program starts with it.</span>
+				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="startRename()">Rename</button>
+				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="backgrounds().length <= 1" (click)="removeSelected()">Remove</button>
+			</div>
+		}
+		<p class="text-[0.7rem] text-slate-400">Switch between them while the program runs with the blocks "Change background to" and "Next background".</p>
+	</div>
+
 	<div class="flex gap-2" role="group" aria-label="How to handle the background">
 		@for (option of modes; track option.id) {
 			<button
@@ -41,6 +97,7 @@
 
 				<fieldset class="flex flex-col gap-2">
 					<legend class="mb-2 text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Put it on</legend>
+					<p class="text-[0.7rem] text-slate-400">It replaces the picture of {{ current().name }}. For another picture on other faces, add a new background.</p>
 					<div class="flex flex-wrap gap-2">
 						<button
 							type="button"
@@ -89,7 +146,7 @@
 			</label>
 
 			<div class="flex flex-col gap-2">
-				<h3 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">On the cube now</h3>
+				<h3 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">In {{ current().name }}</h3>
 				<ul class="flex flex-wrap gap-2 text-[0.76rem]">
 					@for (face of faces; track face.name) {
 						<li class="rounded-full border px-3 py-1" [class]="hasImage(face.name) ? 'border-emerald-300/40 text-emerald-200' : 'border-slate-400/20 text-slate-500'">{{ face.label }}: {{ hasImage(face.name) ? 'picture' : 'plain' }}</li>

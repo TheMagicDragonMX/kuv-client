@@ -75,6 +75,28 @@ export type ShapePixelDefinition = {
 };
 
 /**
+ * One look of an object: a name the blocks use, a color and a shape, like the ones of a `create`
+ * block. An object with several costumes can switch between them while the program runs, which
+ * makes animations out of a single object.
+ */
+export type CostumeDefinition = {
+	/**
+	 * What the blocks call the costume. Not repeated within the object.
+	 */
+	name: string;
+
+	/**
+	 * The object's color with this costume.
+	 */
+	color: ColorValue;
+
+	/**
+	 * The cells of the shape around its center. Defaults to a single pixel.
+	 */
+	pixels?: ShapePixelDefinition[];
+};
+
+/**
  * --------------------------------------------------------------------------------------- Scripts
  * and programs
  * ---------------------------------------------------------------------------------------

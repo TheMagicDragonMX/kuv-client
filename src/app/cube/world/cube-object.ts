@@ -39,6 +39,26 @@ export type ShapePixel = {
 export const SINGLE_PIXEL: readonly ShapePixel[] = [ { dx: 0, dy: 0 } ];
 
 /**
+ * One look an object can switch to: its color and its shape.
+ */
+export type Costume = {
+	/**
+	 * What the blocks call it.
+	 */
+	readonly name: string;
+
+	/**
+	 * Color of the pixels that do not have their own.
+	 */
+	readonly color: Color;
+
+	/**
+	 * Pixels of the look, around the center.
+	 */
+	readonly shape: readonly ShapePixel[];
+};
+
+/**
  * Something that lives on the cube and can be moved around by a program.
  *
  * An object is a set of pixels around a center. The pose is the pose of the center; the
@@ -71,4 +91,15 @@ export type CubeObject = {
 	 * Hidden objects still exist and keep moving, but are not drawn.
 	 */
 	readonly visible: boolean;
+
+	/**
+	 * The looks the object can switch between, in order. Absent when it has only the one it was
+	 * created with.
+	 */
+	readonly costumes?: readonly Costume[];
+
+	/**
+	 * Name of the costume it wears, when it has costumes.
+	 */
+	readonly costume?: string;
 };

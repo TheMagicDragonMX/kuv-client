@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -13,6 +13,7 @@ import {
 } from '../../cube';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
+import { backgroundsOf, normalizeBackgrounds } from './backgrounds';
 import { BlocksTabComponent } from './blocks-tab.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
@@ -84,7 +85,12 @@ export class EditorPage implements OnInit {
 	 * The stage of the cube, edited by the background panel. It starts with the objects brighter than
 	 * the background.
 	 */
-	protected readonly environment = signal<Environment>({ brightness: { ...DEFAULT_BRIGHTNESS } });
+	protected readonly environment = signal<Environment>(normalizeBackgrounds({ brightness: { ...DEFAULT_BRIGHTNESS } }));
+
+	/**
+	 * Names of the backgrounds of the Background tab, which the background blocks switch to.
+	 */
+	protected readonly backgroundNames = computed(() => backgroundsOf(this.environment()).map((background) => background.name));
 
 	/**
 	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
@@ -134,7 +140,7 @@ export class EditorPage implements OnInit {
 					this.exportTitle.set(project.title);
 					this.exportDescription.set(project.description);
 					if (project.environment) 
-						this.environment.set(project.environment);
+						this.environment.set(normalizeBackgrounds(project.environment));
 					
 
 					setTimeout(() => {

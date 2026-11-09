@@ -13,7 +13,7 @@ blocks/
 │   ├── show.ts  hide.ts  delete.ts  point-up.ts
 │   └── index.ts
 ├── background/           change what is behind the objects
-│   ├── set-background-image.ts  set-background-color.ts
+│   ├── set-background-image.ts  set-background-color.ts  set-background.ts  next-background.ts
 │   └── index.ts
 └── control/              decide when other blocks run
     ├── wait.ts  repeat.ts  forever.ts
@@ -24,7 +24,7 @@ blocks/
 
 | Category | Block (`op`) | Fields | What it does |
 | --- | --- | --- | --- |
-| object | `create` | `name, face, x, y, color, heading?, pixels?` | Creates a visible object (one pixel unless `pixels` gives a shape) |
+| object | `create` | `name, face, x, y, color, heading?, pixels?, costumes?` | Creates a visible object (one pixel unless `pixels` gives a shape). `costumes` are the looks it can switch to; `color` and `pixels` are those of the first |
 | | `move` | `target, step, count?` | Moves an object relative to its heading (one cell by default) |
 | | `moveTo` | `target, face, x, y, heading?` | Puts an object on a cell of a face |
 | | `setColor` | `target, color` | Changes the color of an object |
@@ -32,8 +32,12 @@ blocks/
 | | `hide` | `target` | Hides an object without removing it |
 | | `delete` | `target` | Removes an object |
 | | `pointUp` | `target` | Resets the heading so "up" is the up of the screen |
+| | `setCostume` | `target, name` | Changes the look of an object to one of its costumes (shape and color), by name |
+| | `nextCostume` | `target` | Changes the look of an object to its next costume, back to the first after the last |
 | background | `setBackgroundImage` | `faces, pixels` | Puts a picture on some faces. `pixels` is the picture already shrunk to 64 × 64 colors |
 | | `setBackgroundColor` | `faces, color` | Paints some faces one color, replacing any picture |
+| | `setBackground` | `name` | Switches to one of the backgrounds of the environment, by name; faces it has no picture for keep what they show |
+| | `nextBackground` | | Switches to the next background of the environment, in order, back to the first after the last |
 | control | `wait` | `seconds` | Pauses the script |
 | | `repeat` | `times, body` | Runs `body` a fixed number of times |
 | | `forever` | `body` | Runs `body` until the program stops |

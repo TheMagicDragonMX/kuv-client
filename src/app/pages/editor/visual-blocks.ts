@@ -48,10 +48,12 @@ type FieldBase = {
  *   text    free text
  *   choice  one of a few options
  *   object  one of the objects made in the Objects tab
+ *   background  one of the backgrounds made in the Background tab
+ *   costume one of the costumes of the object chosen in the block's `target` field
  *   image   a picture the user picks and crops (becomes the pixels of a face)
  */
 export type FieldSpec = FieldBase & (
-	| { kind: 'faces' | 'face' | 'color' | 'text' | 'object' | 'image' }
+	| { kind: 'faces' | 'face' | 'color' | 'text' | 'object' | 'background' | 'costume' | 'image' }
 	| { kind: 'number'; min?: number; integer?: boolean; step?: number }
 	| { kind: 'choice'; options: { value: string; label: string }[] }
 );
@@ -69,6 +71,16 @@ export type Context = {
 	 * Names of the objects the user made in the Objects tab: what the blocks can act on.
 	 */
 	objects: string[];
+
+	/**
+	 * Names of the backgrounds the user made in the Background tab: what the blocks can switch to.
+	 */
+	backgrounds: string[];
+
+	/**
+	 * Names of the costumes of each object, by object name. An object without costumes has none.
+	 */
+	costumes: Record<string, string[]>;
 };
 
 /**
@@ -112,9 +124,10 @@ export type VisualBlockSpec = {
 	container?: boolean;
 
 	/**
-	 * The values a new block starts with. It gets the names of the objects that exist.
+	 * The values a new block starts with. It gets the names of the objects and of the backgrounds
+	 * that exist, and the costumes of each object.
 	 */
-	defaults(objects: string[]): Values;
+	defaults(objects: string[], backgrounds: string[], costumes: Record<string, string[]>): Values;
 
 	/**
 	 * What is missing or wrong, besides what the kinds of the fields already check.
@@ -281,6 +294,32 @@ export const VISUAL_BLOCKS: VisualBlockSpec[] = [
 		read: (block) => ({ faces: block.faces, image: Uint32Array.from(block.pixels, parseColor) }),
 	}),
 	define({
+		type: 'setBackground',
+		op: 'setBackground',
+		label: 'Change background to',
+		category: 'Background',
+		description: 'Switches to one of the backgrounds of the Background tab.',
+		fields: [ { key: 'name', label: 'Background', kind: 'background' } ],
+		defaults: (_objects, backgrounds) => ({ name: backgrounds[0] ?? '' }),
+		problem: (values, context) => context.backgrounds.includes(values['name'] as string)
+			? null
+			: 'Choose a background. Add one in the Background tab first.',
+		compile: (values) => ({ op: 'setBackground', name: values['name'] as string }),
+		read: (block) => ({ name: block.name }),
+	}),
+	define({
+		type: 'nextBackground',
+		op: 'nextBackground',
+		label: 'Next background',
+		category: 'Background',
+		description: 'Switches to the next background of the Background tab, then back to the first.',
+		fields: [],
+		defaults: () => ({}),
+		problem: (_values, context) => 0 < context.backgrounds.length ? null : 'Add a background in the Background tab first.',
+		compile: () => ({ op: 'nextBackground' }),
+		read: () => ({}),
+	}),
+	define({
 		type: 'setBackgroundColor',
 		op: 'setBackgroundColor',
 		label: 'Change background color',
@@ -342,6 +381,33 @@ export const VISUAL_BLOCKS: VisualBlockSpec[] = [
 		problem: targetProblem,
 		compile: (values) => ({ op: 'setColor', target: values['target'] as string, color: values['color'] as string }),
 		read: (block) => ({ target: block.target, color: block.color }),
+	}),
+	define({
+		type: 'setCostume',
+		op: 'setCostume',
+		label: 'Change costume to',
+		category: 'Objects',
+		description: 'Changes the look of an object to one of its costumes. Switch them with waits to animate it.',
+		fields: [ TARGET_FIELD, { key: 'name', label: 'Costume', kind: 'costume' } ],
+		defaults: (objects, _backgrounds, costumes) => ({ target: lastObject(objects), name: costumes[lastObject(objects)]?.[0] ?? '' }),
+		problem: (values, context) => targetProblem(values, context)
+			?? ((context.costumes[values['target'] as string] ?? []).includes(values['name'] as string)
+				? null
+				: 'Choose a costume. Add costumes to the object in the Objects tab.'),
+		compile: (values) => ({ op: 'setCostume', target: values['target'] as string, name: values['name'] as string }),
+		read: (block) => ({ target: block.target, name: block.name }),
+	}),
+	define({
+		type: 'nextCostume',
+		op: 'nextCostume',
+		label: 'Next costume',
+		category: 'Objects',
+		description: 'Changes the look of an object to its next costume, then back to the first. In a loop it animates.',
+		fields: [ TARGET_FIELD ],
+		defaults: (objects) => ({ target: lastObject(objects) }),
+		problem: targetProblem,
+		compile: (values) => ({ op: 'nextCostume', target: values['target'] as string }),
+		read: (block) => ({ target: block.target }),
 	}),
 	onlyTarget('showObject', 'show', 'Show object', 'Makes an object visible.'),
 	onlyTarget('hideObject', 'hide', 'Hide object', 'Hides an object without removing it.'),

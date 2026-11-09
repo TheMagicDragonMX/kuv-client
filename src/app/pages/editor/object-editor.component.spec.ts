@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { CreateCommand } from '../../cube';
 import { MAX_PICTURE_BYTES } from './image-object';
 import { ObjectEditorComponent } from './object-editor.component';
 import { CENTER, GRID } from './stage-object';
@@ -332,5 +333,82 @@ describe('ObjectEditorComponent history', () => {
 			expect(editor.selecting()).toBe(false);
 			expect(input.value).toBe('');
 		});
+	});
+});
+
+describe('ObjectEditorComponent costumes', () => {
+	/**
+	 * The protected members that handle the costumes.
+	 */
+	type CostumeInternals = EditorInternals & {
+		costumes(): { name: string }[];
+		current(): number;
+		addCostume(): void;
+		showCostume(index: number): void;
+		removeCostume(): void;
+		moveCurrentCostume(direction: 1 | -1): void;
+		save(): void;
+	};
+
+	let editor: CostumeInternals;
+	let saved: CreateCommand[];
+
+	beforeEach(() => {
+		const fixture = TestBed.createComponent(ObjectEditorComponent);
+		saved = [];
+		fixture.componentInstance.saved.subscribe((object) => saved.push(object));
+		fixture.detectChanges();
+		editor = fixture.componentInstance as unknown as CostumeInternals;
+	});
+
+	it('starts with one costume, and a new one is a copy of the one being edited', () => {
+		stroke(editor, CENTER_CELL + 1);
+
+		editor.addCostume();
+
+		expect(editor.costumes().map((costume) => costume.name)).toEqual([ 'Costume 1', 'Costume 2' ]);
+		expect(editor.current()).toBe(1);
+		expect(painted(editor)).toEqual([ CENTER_CELL, CENTER_CELL + 1 ]);
+	});
+
+	it('keeps the drawing of each costume when going from one to another', () => {
+		editor.addCostume();
+		stroke(editor, CENTER_CELL + GRID);
+
+		editor.showCostume(0);
+		expect(painted(editor)).toEqual([ CENTER_CELL ]);
+
+		editor.showCostume(1);
+		expect(painted(editor)).toEqual([ CENTER_CELL, CENTER_CELL + GRID ]);
+	});
+
+	it('has a history of its own for each costume', () => {
+		stroke(editor, CENTER_CELL + 1);
+		editor.addCostume();
+
+		editor.undo();
+
+		expect(painted(editor)).toEqual([ CENTER_CELL, CENTER_CELL + 1 ]);
+	});
+
+	it('saves the object with every costume, starting with the first', () => {
+		editor.addCostume();
+		stroke(editor, CENTER_CELL + GRID);
+		editor.moveCurrentCostume(-1);
+
+		editor.save();
+
+		expect(saved[0].costumes?.map((costume) => costume.name)).toEqual([ 'Costume 2', 'Costume 1' ]);
+		expect(saved[0].pixels).toHaveLength(2);
+	});
+
+	it('removes a costume, but never the last one', () => {
+		editor.addCostume();
+
+		editor.removeCostume();
+		editor.removeCostume();
+
+		expect(editor.costumes()).toHaveLength(1);
+		expect(editor.current()).toBe(0);
 	});
 });

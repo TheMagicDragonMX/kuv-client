@@ -1,7 +1,9 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, computed, input, linkedSignal, output, signal } from '@angular/core';
 import { CreateCommand, RawImage, formatColor, parseColor } from '../../cube';
 import { MAX_PICTURE_BYTES, MAX_PICTURE_PIXELS, drawingFromImage, fileProblem, pixelsProblem, sizeOfImage, workingSize } from './image-object';
+import { CostumeDraft, costumeNameProblem, costumesOfObject, freeCostumeName, moveCostume, objectFromCostumes } from './costumes';
 import { ImageSelectorComponent } from './image-selector.component';
+import { ObjectPreviewComponent } from './object-preview.component';
 import { CENTER, Drawing, GRID, drawingFromObject, freeObjectName, nameProblem, newDrawing, objectFromDrawing } from './stage-object';
 
 /**
@@ -22,12 +24,17 @@ const HISTORY_LIMIT = 100;
  * use, then the size (up to the whole grid), and its transparent parts stay empty. While the
  * picture is being placed, changing the size redoes the drawing from it; painting by hand ends
  * that.
+ *
+ * An object can have several costumes, drawings of the same object that the blocks switch
+ * between to animate it (see `costumes.ts`). The grid shows the costume being edited; a new
+ * costume starts as a copy of it, so the next frame of an animation only needs the changes. The
+ * object starts with the first costume. The history is of the costume being edited.
  */
 @Component({
 	selector: 'app-object-editor',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ ImageSelectorComponent ],
+	imports: [ ImageSelectorComponent, ObjectPreviewComponent ],
 	templateUrl: './object-editor.component.html',
 	host: { '(document:keydown)': 'onKey($event)' },
 })
@@ -80,6 +87,44 @@ export class ObjectEditorComponent implements OnDestroy {
 
 		return (object && drawingFromObject(object)) ?? newDrawing(parseColor('#f9a8d4'));
 	});
+
+	/**
+	 * The costumes of the object. The one being edited has its drawing in `drawing` while it is
+	 * edited, and goes back to the list when another one is chosen or the object is saved.
+	 */
+	protected readonly costumes = linkedSignal<CostumeDraft[]>(() => {
+		const object = this.object();
+
+		return costumesOfObject(object, (object && drawingFromObject(object)) ?? newDrawing(parseColor('#f9a8d4')));
+	});
+
+	/**
+	 * Index of the costume being edited.
+	 */
+	protected readonly current = linkedSignal(() => {
+		this.object();
+
+		return 0;
+	});
+
+	/**
+	 * The name being typed for the costume being edited, or null when it is not being renamed.
+	 */
+	protected readonly costumeName = signal<string | null>(null);
+
+	/**
+	 * Why the name being typed cannot be used, or null.
+	 */
+	protected readonly costumeNameProblem = computed(() => {
+		const name = this.costumeName();
+
+		return null === name ? null : costumeNameProblem(this.costumes(), this.current(), name);
+	});
+
+	/**
+	 * What each costume looks like, for the list (the one being edited as it is drawn now).
+	 */
+	protected readonly costumeLooks = computed(() => this.withDrawing().map((costume) => objectFromDrawing(costume.name, costume.drawing)));
 
 	/**
 	 * The drawings before the current one, oldest first, to undo to. Starts empty for each object.
@@ -475,10 +520,104 @@ export class ObjectEditorComponent implements OnDestroy {
 	}
 
 	/**
+	 * Edits another costume.
+	 */
+	protected showCostume (index: number): void {
+		this.acceptPicture();
+
+		if (index === this.current())
+			return;
+
+		this.costumes.set(this.withDrawing());
+		this.edit(index);
+	}
+
+	/**
+	 * Adds a costume that starts as a copy of the one being edited, and edits it.
+	 */
+	protected addCostume (): void {
+		this.acceptPicture();
+
+		const costumes = this.withDrawing();
+
+		this.costumes.set([ ...costumes, { name: freeCostumeName(costumes.map((costume) => costume.name)), drawing: this.drawing() } ]);
+		this.edit(costumes.length);
+	}
+
+	/**
+	 * Removes the costume being edited and edits the one before it. The last one stays.
+	 */
+	protected removeCostume (): void {
+		const costumes = this.costumes();
+		const index = this.current();
+
+		if (2 > costumes.length)
+			return;
+
+		this.cancelPicture();
+		this.costumes.set(costumes.filter((_costume, at) => at !== index));
+		this.edit(Math.max(0, index - 1));
+	}
+
+	/**
+	 * Moves the costume being edited one place to the left (-1) or right (1). The first one is
+	 * the one the object starts with.
+	 */
+	protected moveCurrentCostume (direction: 1 | -1): void {
+		const index = this.current();
+		const costumes = this.withDrawing();
+		const to = index + direction;
+
+		if (0 > to || to >= costumes.length)
+			return;
+
+		this.costumes.set(moveCostume(costumes, index, direction));
+		this.current.set(to);
+	}
+
+	/**
+	 * Starts renaming the costume being edited.
+	 */
+	protected startCostumeRename (): void {
+		this.costumeName.set(this.costumes()[this.current()].name);
+	}
+
+	/**
+	 * Gives the costume being edited the name typed, if it can have it.
+	 */
+	protected saveCostumeName (): void {
+		const name = this.costumeName();
+
+		if (null === name || this.costumeNameProblem())
+			return;
+
+		this.costumes.update((costumes) => costumes.map((costume, at) => at === this.current() ? { ...costume, name: name.trim() } : costume));
+		this.costumeName.set(null);
+	}
+
+	/**
+	 * The costumes, with the drawing of the one being edited as it is now.
+	 */
+	private withDrawing (): CostumeDraft[] {
+		return this.costumes().map((costume, at) => at === this.current() ? { ...costume, drawing: this.drawing() } : costume);
+	}
+
+	/**
+	 * Starts editing a costume of the list: its drawing goes on the grid, with a history of its own.
+	 */
+	private edit (index: number): void {
+		this.current.set(index);
+		this.drawing.set(this.costumes()[index].drawing);
+		this.past.set([]);
+		this.future.set([]);
+		this.costumeName.set(null);
+	}
+
+	/**
 	 * Hands back the object when it has no problem.
 	 */
 	protected save (): void {
 		if (!this.problem())
-			this.saved.emit(objectFromDrawing(this.name(), this.drawing()));
+			this.saved.emit(objectFromCostumes(this.name(), this.withDrawing()));
 	}
 }

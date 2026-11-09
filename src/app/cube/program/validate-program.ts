@@ -231,6 +231,9 @@ function validateField (kind: FieldKind, value: unknown, path: string): void {
 		case 'shape':
 			validateShape(value, path);
 			return;
+		case 'costumes':
+			validateCostumes(value, path);
+			return;
 		case 'image':
 			if (!Array.isArray(value) || value.length !== FACE_RESOLUTION * FACE_RESOLUTION || !value.every(isColorValue)) 
 				fail(path, `must be ${FACE_RESOLUTION * FACE_RESOLUTION} colors written as #rrggbb, row after row`);
@@ -259,6 +262,31 @@ function validateShape (value: unknown, path: string): void {
 
 		if (undefined !== pixel['color'] && !isColorValue(pixel['color']))
 			fail(`${path}[${index}].color`, 'must be a color written as #rrggbb');
+	});
+}
+
+/**
+ * Checks the costumes of an object: a non-empty list of looks with names that are not repeated.
+ */
+function validateCostumes (value: unknown, path: string): void {
+	if (!Array.isArray(value) || 0 === value.length)
+		fail(path, 'must be a non-empty list of costumes');
+
+	const names = new Set<unknown>();
+
+	value.forEach((item, index) => {
+		const costume = expectObject(item, `${path}[${index}]`);
+		expectOnlyKeys(costume, [ 'name', 'color', 'pixels' ], `${path}[${index}]`);
+		validateField('text', costume['name'], `${path}[${index}].name`);
+		validateField('color', costume['color'], `${path}[${index}].color`);
+
+		if (undefined !== costume['pixels'])
+			validateShape(costume['pixels'], `${path}[${index}].pixels`);
+
+		if (names.has(costume['name']))
+			fail(`${path}[${index}].name`, `there is already a costume called ${JSON.stringify(costume['name'])}`);
+
+		names.add(costume['name']);
 	});
 }
 

@@ -22,6 +22,7 @@
  *   count     whole number, zero or more
  *   seconds   number, zero or more
  *   shape     non-empty list of { dx, dy, color? }: the pixels of an object
+ *   costumes  non-empty list of { name, color, pixels? }, names not repeated: the looks of an object
  *   image     the pixels of one face: FACE_RESOLUTION * FACE_RESOLUTION '#RRGGBB', row after row
  *   blocks    nested list of blocks
  */
@@ -36,6 +37,7 @@ export type FieldKind =
 	| 'count'
 	| 'seconds'
 	| 'shape'
+	| 'costumes'
 	| 'image'
 	| 'blocks';
 
@@ -73,6 +75,7 @@ export const FIELD = {
 	count: { kind: 'count' },
 	seconds: { kind: 'seconds' },
 	shape: { kind: 'shape' },
+	costumes: { kind: 'costumes' },
 	image: { kind: 'image' },
 	blocks: { kind: 'blocks' },
 } satisfies Record<FieldKind, FieldSchema>;

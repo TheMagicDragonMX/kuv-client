@@ -87,6 +87,21 @@ describe('BackgroundPanelComponent', () => {
 		expect(panel.environment().background?.FRONT).toBe(picture);
 	});
 
+	it('replaces the picture of the background: faces left out of a new one are cleared', () => {
+		const { panel, internals } = createPanel();
+		const other = new Uint32Array(64 * 64).fill(0x112233);
+		internals.pixels.set(picture);
+		internals.toggle('FRONT');
+		internals.apply();
+
+		internals.pixels.set(other);
+		internals.toggle('FRONT');
+		internals.toggle('RIGHT');
+		internals.apply();
+
+		expect(panel.environment().background).toEqual({ RIGHT: other });
+	});
+
 	it('puts it on every face with "all", and "all" again unselects them', () => {
 		const { panel, internals } = createPanel();
 		internals.pixels.set(picture);
@@ -107,22 +122,6 @@ describe('BackgroundPanelComponent', () => {
 		internals.apply();
 
 		expect(panel.environment().background).toBeUndefined();
-	});
-
-	it('keeps the pictures of the other faces when another picture is applied', () => {
-		const { panel, internals } = createPanel();
-		const other = new Uint32Array(64 * 64).fill(0xff0000);
-		internals.pixels.set(picture);
-		internals.toggle('FRONT');
-		internals.apply();
-
-		internals.pixels.set(other);
-		internals.toggle('FRONT');
-		internals.toggle('TOP');
-		internals.apply();
-
-		expect(panel.environment().background?.FRONT).toBe(picture);
-		expect(panel.environment().background?.TOP).toBe(other);
 	});
 
 	it('removes the picture from the selected faces only', () => {
@@ -177,6 +176,72 @@ describe('BackgroundPanelComponent', () => {
 			internals.resetLevels();
 
 			expect(panel.environment().brightness).toEqual({ background: 1, behindObjects: 0.4, objects: 1 });
+		});
+	});
+
+	describe('several backgrounds', () => {
+		/**
+		 * The protected members that handle the list of backgrounds.
+		 */
+		type ListInternals = PanelInternals & {
+			add(): void;
+			select(name: string): void;
+			removeSelected(): void;
+			startRename(): void;
+			newName: { set(value: string): void };
+			nameProblem(): string | null;
+			saveName(): void;
+		};
+
+		/**
+		 * The names of the backgrounds in the environment.
+		 */
+		function names (panel: BackgroundPanelComponent): string[] {
+			return (panel.environment().backgrounds ?? []).map((background) => background.name);
+		}
+
+		it('adds a background, selects it, and puts the pictures on the selected one', () => {
+			const { panel, internals } = createPanel();
+			const list = internals as ListInternals;
+
+			list.add();
+			list.select('Background 1');
+			internals.pixels.set(picture);
+			internals.toggle('TOP');
+			internals.apply();
+
+			expect(names(panel)).toEqual([ 'Background 1', 'Background 2' ]);
+			expect(panel.environment().startBackground).toBe('Background 1');
+			expect(Object.keys(panel.environment().backgrounds?.[0].images ?? {})).toEqual([ 'TOP' ]);
+			expect(panel.environment().backgrounds?.[1].images).toEqual({});
+			expect(panel.environment().background?.TOP).toBe(picture);
+		});
+
+		it('renames the selected background, refusing a name that is taken', () => {
+			const { panel, internals } = createPanel();
+			const list = internals as ListInternals;
+			list.add();
+
+			list.startRename();
+			list.newName.set('Background 1');
+			expect(list.nameProblem()).toContain('already');
+			list.saveName();
+			expect(names(panel)).toEqual([ 'Background 1', 'Background 2' ]);
+
+			list.newName.set('Night');
+			list.saveName();
+			expect(names(panel)).toEqual([ 'Background 1', 'Night' ]);
+			expect(panel.environment().startBackground).toBe('Night');
+		});
+
+		it('removes the selected background', () => {
+			const { panel, internals } = createPanel();
+			const list = internals as ListInternals;
+			list.add();
+
+			list.removeSelected();
+
+			expect(names(panel)).toEqual([ 'Background 1' ]);
 		});
 	});
 });

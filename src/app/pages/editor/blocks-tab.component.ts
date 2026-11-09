@@ -127,9 +127,26 @@ export class BlocksTabComponent implements OnDestroy {
 	protected readonly names = computed(() => this.objects().map((object) => object.name));
 
 	/**
+	 * Names of the costumes of each object, by object name.
+	 */
+	protected readonly costumes = computed(() => Object.fromEntries(this.objects().map((object) => [ object.name, object.costumes?.map((costume) => costume.name) ?? [] ])));
+
+	/**
+	 * The names of the costumes of an object, or none when it does not exist or has no costumes.
+	 */
+	protected costumesOf (target: unknown): string[] {
+		return Object.hasOwn(this.costumes(), target as string) ? this.costumes()[target as string] : [];
+	}
+
+	/**
+	 * Names of the backgrounds made in the Background tab: what the background blocks switch to.
+	 */
+	readonly backgrounds = input<string[]>([]);
+
+	/**
 	 * What is missing in each block or script, by id.
 	 */
-	protected readonly problems = computed(() => problemsOf(this.workspace(), this.names()));
+	protected readonly problems = computed(() => problemsOf(this.workspace(), this.names(), this.backgrounds(), this.costumes()));
 
 	/**
 	 * True when there are blocks and none has a problem, so the program can run.
@@ -219,7 +236,7 @@ export class BlocksTabComponent implements OnDestroy {
 	 * Adds a block at the end of the place the picker was opened from, and closes the picker.
 	 */
 	protected add (type: string): void {
-		this.workspace.update((workspace) => addBlock(workspace, this.pickerTarget, newBlock(type, this.nextId++, this.names())));
+		this.workspace.update((workspace) => addBlock(workspace, this.pickerTarget, newBlock(type, this.nextId++, this.names(), this.backgrounds(), this.costumes())));
 		this.picker().nativeElement.close();
 	}
 
