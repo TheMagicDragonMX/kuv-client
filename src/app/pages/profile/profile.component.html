@@ -69,6 +69,131 @@
 				</div>
 			</section>
 
+			<!-- SECCIÓN: MIS CREACIONES -->
+			<section class="flex flex-col gap-6" aria-labelledby="creations-title">
+				<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 pb-4">
+					<div class="flex items-center gap-3">
+						<h2 id="creations-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">Mis Creaciones</h2>
+						<span class="rounded-full bg-accent-pink/20 border border-accent-pink/40 px-3 py-0.5 text-xs font-bold text-accent-pink">
+							{{ creations().length }}
+						</span>
+					</div>
+					<a
+						routerLink="/editor"
+						class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-4 text-sm font-bold text-on-accent-pink shadow-md hover:opacity-90 transition active:scale-95"
+					>
+						<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+						</svg>
+						Nueva creación
+					</a>
+				</div>
+
+				@if (loadingCreations()) {
+					<div class="flex items-center justify-center py-12 text-slate-400">
+						<p class="text-sm">Cargando tus creaciones…</p>
+					</div>
+				} @else if (creationsProblem(); as problem) {
+					<div class="flex flex-col items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
+						<p class="text-sm text-red-200">{{ problem }}</p>
+						<button
+							type="button"
+							class="min-h-10 cursor-pointer rounded-xl border border-slate-400/30 px-4 text-xs font-bold text-slate-100 hover:bg-slate-400/15"
+							(click)="loadCreations()"
+						>
+							Reintentar
+						</button>
+					</div>
+				} @else if (creations().length > 0) {
+					<div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+						@for (item of creations(); track item.id) {
+							<div class="group flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-700/60 bg-slate-900/80 p-5 shadow-xl backdrop-blur-sm transition duration-200 hover:border-accent-pink/40">
+								<!-- Cabecera de la tarjeta -->
+								<div>
+									<div class="flex items-start justify-between gap-2">
+										<h3 class="text-base font-bold text-slate-100 break-words">{{ item.title }}</h3>
+										<button
+											type="button"
+											class="cursor-pointer text-slate-400 hover:text-red-400 p-1 transition disabled:opacity-50"
+											title="Eliminar creación"
+											[disabled]="deletingId() === item.id"
+											(click)="deleteCreation(item, $event)"
+										>
+											<svg class="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+											</svg>
+										</button>
+									</div>
+									<p class="mt-1 line-clamp-2 text-xs text-slate-400 min-h-[2rem]">
+										{{ item.description || 'Sin descripción' }}
+									</p>
+								</div>
+
+								<!-- Video miniatura en bucle -->
+								<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative shadow-inner">
+									@if (videoUrls()[item.id]; as url) {
+										<video
+											[src]="url"
+											autoplay
+											loop
+											muted
+											playsinline
+											class="h-full w-full object-contain"
+										></video>
+
+										<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/85 px-2 py-1 text-[0.68rem] font-mono text-emerald-400 backdrop-blur-sm border border-emerald-500/20">
+											<span class="inline-block size-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+											{{ item.durationSeconds }}s
+										</div>
+									} @else {
+										<div class="text-center p-4 text-xs text-slate-500">
+											Sin video de vista previa
+										</div>
+									}
+								</div>
+
+								<!-- Metadatos y botón de acción -->
+								<div class="flex flex-col gap-3 pt-2 border-t border-slate-800/80">
+									<div class="flex items-center justify-between text-[0.72rem] text-slate-400">
+										<span>{{ formatDate(item.createdAt) }}</span>
+										<span class="text-slate-500">{{ item.isPublic ? 'Pública' : 'Solo tú' }}</span>
+									</div>
+
+									<button
+										type="button"
+										class="inline-flex min-h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-800 px-4 text-xs font-bold text-slate-200 transition hover:bg-slate-700 hover:text-white"
+										(click)="openInEditor(item)"
+									>
+										<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+										</svg>
+										Editar en el Editor
+									</button>
+								</div>
+							</div>
+						}
+					</div>
+				} @else {
+					<div class="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-700/80 bg-slate-900/40 py-12 px-6 text-center">
+						<div class="flex size-14 items-center justify-center rounded-2xl bg-slate-800/80 text-slate-400 mb-3">
+							<svg class="size-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+							</svg>
+						</div>
+						<h3 class="text-base font-bold text-slate-200">Aún no tienes creaciones</h3>
+						<p class="mt-1 text-xs text-slate-400 max-w-sm">
+							Diseña animaciones tridimensionales en el editor interactivo y guárdalas directamente en tu perfil.
+						</p>
+						<a
+							routerLink="/editor"
+							class="mt-5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-5 text-sm font-bold text-on-accent-pink hover:opacity-90 transition active:scale-95"
+						>
+							Ir al Editor
+						</a>
+					</div>
+				}
+			</section>
+
 			<section #follows class="flex scroll-mt-24 flex-col gap-5" aria-labelledby="follows-title">
 				<h2 id="follows-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">Seguidores y seguidos</h2>
 				<app-follow-section [me]="me" [(list)]="list" (changed)="refresh()" />

@@ -1,26 +1,26 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { Router } from '@angular/router';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
+import { Router, RouterLink } from '@angular/router';
 import { AvatarComponent } from '../../components/avatar.component';
 import { SiteHeaderComponent } from '../../components/site-header.component';
 import { AuthSession } from '../../services/auth-session.service';
+import { CreationsApi, UserCreation } from '../../services/creations-api.service';
 import { MAX_DESCRIPTION, Profile, ProfileChanges, UsersApi } from '../../services/users-api.service';
 import { FollowList, FollowSectionComponent } from './follow-section.component';
 import { photoFileProblem, photoFromFile } from './profile-photo';
 
 /**
  * The profile of the signed-in user: their photo, name, email and description, which they can
- * change, and below it the sections of the profile. For now the one section is followers and
- * followed. The route only opens for a signed-in user (see `signedInGuard`).
+ * change, their personal cube creations, and below it the followers and followed section.
  */
 @Component({
 	selector: 'app-profile',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ SiteHeaderComponent, AvatarComponent, FollowSectionComponent ],
+	imports: [ SiteHeaderComponent, AvatarComponent, FollowSectionComponent, RouterLink ],
 	templateUrl: './profile.component.html',
 })
-export class ProfilePage {
+export class ProfilePage implements OnInit {
 	/**
 	 * Longest description there can be.
 	 */
@@ -62,9 +62,39 @@ export class ProfilePage {
 	protected readonly list = signal<FollowList>('following');
 
 	/**
-	 * Talks to the API.
+	 * Creations owned by the user.
+	 */
+	protected readonly creations = signal<UserCreation[]>([]);
+
+	/**
+	 * True while user creations are being loaded.
+	 */
+	protected readonly loadingCreations = signal<boolean>(false);
+
+	/**
+	 * Error message if creations could not be loaded.
+	 */
+	protected readonly creationsProblem = signal<string | null>(null);
+
+	/**
+	 * Map of creation ID to streamable video URL.
+	 */
+	protected readonly videoUrls = signal<Record<number, string>>({});
+
+	/**
+	 * ID of the creation currently being deleted.
+	 */
+	protected readonly deletingId = signal<number | null>(null);
+
+	/**
+	 * Talks to the user API.
 	 */
 	private readonly usersApi = inject(UsersApi);
+
+	/**
+	 * Talks to the creations API.
+	 */
+	private readonly creationsApi = inject(CreationsApi);
 
 	/**
 	 * The session, to sign out.
@@ -81,11 +111,9 @@ export class ProfilePage {
 	 */
 	private readonly followSection = viewChild<ElementRef<HTMLElement>>('follows');
 
-	/**
-	 * Loads the profile of the signed-in user.
-	 */
-	constructor () {
+	ngOnInit (): void {
 		this.load();
+		this.loadCreations();
 	}
 
 	/**
@@ -99,6 +127,83 @@ export class ProfilePage {
 				? 'No se pudo conectar con el servidor.'
 				: 'No se pudo cargar tu perfil.'),
 		});
+	}
+
+	/**
+	 * Loads the user's creations from the API.
+	 */
+	protected loadCreations (): void {
+		this.loadingCreations.set(true);
+		this.creationsProblem.set(null);
+
+		this.creationsApi.getMyCreations().subscribe({
+			next: (items) => {
+				this.creations.set(items);
+				const token = this.session.accessToken();
+				const urls: Record<number, string> = {};
+				for (const item of items) {
+					if (item.hasVideo) {
+						urls[item.id] = this.creationsApi.getVideoUrl(item.id, token);
+					}
+				}
+				this.videoUrls.set(urls);
+				this.loadingCreations.set(false);
+			},
+			error: (error: HttpErrorResponse) => {
+				this.loadingCreations.set(false);
+				this.creationsProblem.set(
+					0 === error.status
+						? 'No se pudo conectar para cargar tus creaciones.'
+						: 'No se pudieron cargar tus creaciones.',
+				);
+			},
+		});
+	}
+
+	/**
+	 * Opens a creation in the cube editor.
+	 */
+	protected openInEditor (creation: UserCreation): void {
+		void this.router.navigate(['/editor'], { queryParams: { project: creation.id } });
+	}
+
+	/**
+	 * Deletes a creation after confirmation.
+	 */
+	protected deleteCreation (creation: UserCreation, event: MouseEvent): void {
+		event.stopPropagation();
+		if (!confirm(`¿Estás seguro de eliminar "${creation.title}"? Esta acción no se puede deshacer.`)) {
+			return;
+		}
+
+		this.deletingId.set(creation.id);
+		this.creationsApi.deleteCreation(creation.id).subscribe({
+			next: () => {
+				this.deletingId.set(null);
+				this.creations.update((list) => list.filter((c) => c.id !== creation.id));
+			},
+			error: (error: HttpErrorResponse) => {
+				this.deletingId.set(null);
+				alert(error.error?.message ?? 'No se pudo eliminar la creación.');
+			},
+		});
+	}
+
+	/**
+	 * Formats a creation date nicely.
+	 */
+	protected formatDate (dateString: string): string {
+		try {
+			const date = new Date(dateString);
+			return date.toLocaleDateString(undefined, {
+				month: 'short',
+				day: 'numeric',
+				hour: '2-digit',
+				minute: '2-digit',
+			});
+		} catch {
+			return dateString;
+		}
 	}
 
 	/**

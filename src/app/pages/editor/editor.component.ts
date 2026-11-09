@@ -1,6 +1,7 @@
 import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom } from 'rxjs';
 import {
 	CreateCommand,
 	CubeComponent,
@@ -11,6 +12,8 @@ import {
 	RecordProgress,
 	recordCubeVideo,
 } from '../../cube';
+import { AuthSession } from '../../services/auth-session.service';
+import { CreationsApi } from '../../services/creations-api.service';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { BlocksTabComponent } from './blocks-tab.component';
@@ -47,8 +50,20 @@ export class EditorPage implements OnInit {
 	private exportPreviewHostRef?: ElementRef<HTMLDivElement>;
 
 	private readonly projectStorage = inject(ProjectStorageService);
+	private readonly creationsApi = inject(CreationsApi);
+	private readonly authSession = inject(AuthSession);
 	private readonly route = inject(ActivatedRoute);
 	private readonly router = inject(Router);
+
+	/**
+	 * Whether someone is signed in.
+	 */
+	protected readonly signedIn = this.authSession.signedIn;
+
+	/**
+	 * Identifier of the creation currently loaded from the API, or null if new.
+	 */
+	protected readonly currentCreationId = signal<number | null>(null);
 
 	/**
 	 * The tabs of the side panel.
@@ -87,12 +102,83 @@ export class EditorPage implements OnInit {
 	protected readonly environment = signal<Environment>({ brightness: { ...DEFAULT_BRIGHTNESS } });
 
 	/**
-	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
-	 * face being edited does not turn away. The Spin button brings the rotation back.
+	 * Faces the camera can turn to.
+	 */
+	protected readonly faces = [
+		{ value: Face.FRONT, label: 'Front' },
+		{ value: Face.RIGHT, label: 'Right' },
+		{ value: Face.LEFT, label: 'Left' },
+		{ value: Face.BACK, label: 'Back' },
+		{ value: Face.TOP, label: 'Top' },
+	];
+
+	// --- Export & Save Modal ---
+	protected readonly showExportModal = signal(false);
+	protected readonly exportTitle = signal('Mi Creación');
+	protected readonly exportDescription = signal('');
+	protected readonly exportDuration = signal<number>(15);
+	protected readonly exportCameraMode = signal<'orbit' | 'front'>('orbit');
+	protected readonly isExporting = signal(false);
+	protected readonly exportProgress = signal<RecordProgress | null>(null);
+	protected readonly exportSuccess = signal(false);
+	protected readonly saveError = signal<string | null>(null);
+
+	async ngOnInit (): Promise<void> {
+		const projectId = this.route.snapshot.queryParamMap.get('project');
+		if (projectId) {
+			const numericId = parseInt(projectId, 10);
+			if (!isNaN(numericId) && 0 < numericId && this.signedIn()) {
+				this.creationsApi.getParsedCreation(numericId).subscribe({
+					next: (creation) => {
+						this.currentCreationId.set(creation.id);
+						this.exportTitle.set(creation.title);
+						this.exportDescription.set(creation.description ?? '');
+						if (creation.environment) {
+							this.environment.set(creation.environment);
+						}
+
+						setTimeout(() => {
+							this.blocksRef?.loadProgram(creation.program);
+							this.cubeRef?.run(creation.program);
+						}, 100);
+					},
+					error: async () => {
+						await this.loadLocalProject(projectId);
+					},
+				});
+			} else {
+				await this.loadLocalProject(projectId);
+			}
+		}
+	}
+
+	private async loadLocalProject (projectId: string): Promise<void> {
+		try {
+			const project = await this.projectStorage.get(projectId);
+			if (project) {
+				this.exportTitle.set(project.title);
+				this.exportDescription.set(project.description);
+				if (project.environment) {
+					this.environment.set(project.environment);
+				}
+
+				setTimeout(() => {
+					this.blocksRef?.loadProgram(project.program);
+					this.cubeRef?.run(project.program);
+				}, 100);
+			}
+		} catch (err) {
+			console.error('Error loading project into editor:', err);
+		}
+	}
+
+	/**
+	 * The cube stops its slow rotation while the user works on the blocks or the objects.
 	 */
 	protected holdCube (cube: CubeComponent): void {
-		if ('blocks' === this.tab() || 'objects' === this.tab())
+		if ('blocks' === this.tab() || 'objects' === this.tab()) {
 			cube.holdStill();
+		}
 	}
 
 	/**
@@ -104,72 +190,29 @@ export class EditorPage implements OnInit {
 			: object));
 	}
 
-	/**
-	 * Faces the camera can turn to.
-	 */
-	protected readonly faces = [
-		{ value: Face.FRONT, label: 'Front' },
-		{ value: Face.RIGHT, label: 'Right' },
-		{ value: Face.LEFT, label: 'Left' },
-		{ value: Face.BACK, label: 'Back' },
-		{ value: Face.TOP, label: 'Top' },
-	];
-
-	// --- Export & Thumbnail Modal ---
-	protected readonly showExportModal = signal(false);
-	protected readonly exportTitle = signal('My Animation');
-	protected readonly exportDescription = signal('');
-	protected readonly exportDuration = signal<number>(15);
-	protected readonly exportCameraMode = signal<'orbit' | 'front'>('orbit');
-	protected readonly isExporting = signal(false);
-	protected readonly exportProgress = signal<RecordProgress | null>(null);
-	protected readonly exportSuccess = signal(false);
-
-	async ngOnInit (): Promise<void> {
-		const projectId = this.route.snapshot.queryParamMap.get('project');
-		if (projectId) {
-			try {
-				const project = await this.projectStorage.get(projectId);
-				if (project) {
-					this.exportTitle.set(project.title);
-					this.exportDescription.set(project.description);
-					if (project.environment) 
-						this.environment.set(project.environment);
-					
-
-					setTimeout(() => {
-						this.blocksRef?.loadProgram(project.program);
-						this.cubeRef?.run(project.program);
-					}, 100);
-				}
-			}
-			catch (err) {
-				console.error('Error loading project into editor:', err);
-			}
-		}
-	}
-
 	protected openExportModal (): void {
 		this.exportSuccess.set(false);
 		this.exportProgress.set(null);
+		this.saveError.set(null);
 		this.showExportModal.set(true);
 	}
 
 	protected closeExportModal (): void {
-		if (this.isExporting()) 
+		if (this.isExporting()) {
 			return;
-		
+		}
 		this.showExportModal.set(false);
 	}
 
 	protected async startExport (): Promise<void> {
 		const program = this.blocksRef?.program();
 		if (!program) {
-			alert('The program is not ready to export yet.');
+			alert('El programa aún no está listo para exportar.');
 			return;
 		}
 
 		this.isExporting.set(true);
+		this.saveError.set(null);
 		this.exportProgress.set({ currentSecond: 1, totalSeconds: this.exportDuration(), percent: 0 });
 
 		await new Promise((resolve) => setTimeout(resolve, 50));
@@ -193,32 +236,56 @@ export class EditorPage implements OnInit {
 				},
 			);
 
-			const id = 'proj_' + Date.now();
-			await this.projectStorage.save({
-				id,
-				title: this.exportTitle().trim() || 'Untitled',
-				description: this.exportDescription().trim(),
-				createdAt: Date.now(),
-				durationSeconds: this.exportDuration(),
-				program,
-				environment: this.environment(),
-				videoBlob: result.blob,
-				videoMimeType: result.mimeType,
-			});
+			if (this.signedIn()) {
+				const payload = {
+					title: this.exportTitle().trim() || 'Sin título',
+					description: this.exportDescription().trim(),
+					program,
+					environment: this.environment(),
+					durationSeconds: this.exportDuration(),
+					videoBlob: result.blob,
+				};
+
+				const currentId = this.currentCreationId();
+				if (null !== currentId) {
+					const updated = await firstValueFrom(this.creationsApi.updateCreation(currentId, payload));
+					this.currentCreationId.set(updated.id);
+				} else {
+					const created = await firstValueFrom(this.creationsApi.createCreation(payload));
+					this.currentCreationId.set(created.id);
+				}
+			} else {
+				// Local storage fallback for unauthenticated users
+				const id = 'proj_' + Date.now();
+				await this.projectStorage.save({
+					id,
+					title: this.exportTitle().trim() || 'Sin título',
+					description: this.exportDescription().trim(),
+					createdAt: Date.now(),
+					durationSeconds: this.exportDuration(),
+					program,
+					environment: this.environment(),
+					videoBlob: result.blob,
+					videoMimeType: result.mimeType,
+				});
+			}
 
 			this.exportSuccess.set(true);
-		}
-		catch (error) {
-			console.error('Error recording project thumbnail:', error);
-			alert('Error generating thumbnail: ' + (error as Error).message);
-		}
-		finally {
+		} catch (error) {
+			console.error('Error saving creation:', error);
+			this.saveError.set('Hubo un error al guardar tu creación: ' + (error as Error).message);
+		} finally {
 			this.isExporting.set(false);
 		}
 	}
 
+	protected goToProfile (): void {
+		this.showExportModal.set(false);
+		void this.router.navigate(['/profile']);
+	}
+
 	protected goToGallery (): void {
 		this.showExportModal.set(false);
-		this.router.navigate(['/gallery']);
+		void this.router.navigate(['/gallery']);
 	}
 }
