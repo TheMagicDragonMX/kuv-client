@@ -189,10 +189,19 @@ export class ObjectsPanelComponent {
 	}
 
 	/**
-	 * Keeps the object from the editor, renaming it in the hidden list when its name changed.
+	 * Keeps the object from the editor, renaming it in the hidden list when its name changed. An
+	 * object that was edited keeps its place on the cube.
 	 */
-	protected save (object: CreateCommand): void {
+	protected save (edited: CreateCommand): void {
 		const original = this.session()?.original;
+
+		/**
+		 * The editor only draws the object, and places a new one at the start. An object that was
+		 * edited stays where it was, facing where it faced.
+		 */
+		const object: CreateCommand = original
+			? { ...edited, face: original.face, x: original.x, y: original.y, ...original.heading ? { heading: original.heading } : {} }
+			: edited;
 
 		this.objects.update((objects) => original
 			? objects.map((candidate) => candidate.name === original.name ? object : candidate)
