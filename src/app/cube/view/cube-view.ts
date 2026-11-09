@@ -79,8 +79,6 @@ export class CubeView {
 		 * Transparent canvas so the cube blends with whatever is behind it.
 		 */
 		this.renderer.setClearColor(BACKGROUND, 0);
-		this.renderer.shadowMap.enabled = true;
-		this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 		host.appendChild(this.renderer.domElement);
 
 		this.model = new CubeModel(state);

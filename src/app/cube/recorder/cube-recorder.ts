@@ -137,8 +137,6 @@ export async function recordCubeVideo (
 	});
 	renderer.setSize(width, height, false);
 	renderer.setClearColor(BACKGROUND, 1);
-	renderer.shadowMap.enabled = true;
-	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 	const stage = new Stage();
 	const model = new CubeModel(engine.state);

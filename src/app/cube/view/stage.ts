@@ -76,8 +76,6 @@ export class Stage {
 			new THREE.MeshStandardMaterial({ color: 0x2b2f35, metalness: 0.36, roughness: 0.7 }),
 		);
 		base.position.y = -1.38;
-		base.castShadow = true;
-		base.receiveShadow = true;
 		this.scene.add(base);
 
 		const centerStem = new THREE.Mesh(
@@ -85,8 +83,6 @@ export class Stage {
 			new THREE.MeshStandardMaterial({ color: 0x3d4249, metalness: 0.45, roughness: 0.55 }),
 		);
 		centerStem.position.y = -0.82;
-		centerStem.castShadow = true;
-		centerStem.receiveShadow = true;
 		this.scene.add(centerStem);
 	}
 }

@@ -349,6 +349,66 @@ describe('CubeEngine frame of an object', () => {
 	});
 });
 
+describe('CubeEngine kept frames', () => {
+	/**
+	 * An engine with one object on the front face.
+	 */
+	function engineWithObject () {
+		const engine = new CubeEngine();
+		engine.load({ version: 1, objects: [ { op: 'create', name: 'a', face: 'FRONT', x: 10, y: 10, color: '#ff8800' } ], scripts: [] });
+
+		return engine;
+	}
+
+	it('hand out the same frame while the world does not change, and a new one once it does', () => {
+		const engine = engineWithObject();
+		const first = engine.frameOf('a', 3);
+
+		expect(engine.frameOf('a', 3)).toBe(first);
+		expect(engine.frameOf('a', 1)).not.toBe(first);
+
+		engine.moveObject('a', 'FRONT', 20, 20);
+
+		const moved = engine.frameOf('a', 3);
+
+		expect(moved).not.toBe(first);
+		expect(moved.boxes[0]).toMatchObject({ x0: 17, y0: 17, x1: 23, y1: 23 });
+	});
+
+	it('are of the objects the program has now, after loading another program', () => {
+		const engine = engineWithObject();
+		engine.frameOf('a', 0);
+
+		engine.load({ version: 1, objects: [ { op: 'create', name: 'a', face: 'RIGHT', x: 5, y: 5, color: '#ff8800' } ], scripts: [] });
+
+		expect(engine.frameOf('a', 0).boxes[0]).toMatchObject({ face: Face.RIGHT, x0: 5, y0: 5 });
+	});
+
+	it('leave out an object that is hidden, and bring it back when shown', () => {
+		const engine = engineWithObject();
+
+		expect(engine.frameOf('a', 0).boxes).toHaveLength(1);
+
+		engine.setHidden([ 'a' ]);
+		expect(engine.frameOf('a', 0).boxes).toHaveLength(0);
+
+		engine.setHidden([]);
+		expect(engine.frameOf('a', 0).boxes).toHaveLength(1);
+	});
+
+	it('find the object under a pixel, also after it moved', () => {
+		const engine = engineWithObject();
+
+		expect(engine.grabAt(Face.FRONT, 10, 10, 3)?.name).toBe('a');
+		expect(engine.grabAt(Face.FRONT, 30, 30, 3)).toBeNull();
+
+		engine.moveObject('a', 'FRONT', 30, 30);
+
+		expect(engine.grabAt(Face.FRONT, 30, 30, 3)?.name).toBe('a');
+		expect(engine.grabAt(Face.FRONT, 10, 10, 3)).toBeNull();
+	});
+});
+
 describe('CubeEngine moveObject', () => {
 	it('puts an object on another face at once, without loading the program again', () => {
 		const engine = new CubeEngine();

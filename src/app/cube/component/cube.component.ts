@@ -331,9 +331,9 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	}
 
 	/**
-	 * The object a press grabs, with the pixel under the pointer, or null.
+	 * The object a press grabs, with the pixel under a point of the page, or null.
 	 */
-	private grabAt (event: PointerEvent) {
+	private grabAt (event: { clientX: number; clientY: number }) {
 		if (this.player.running || !this.view)
 			return null;
 
@@ -343,9 +343,37 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 		return pixel && object ? { pixel, object } : null;
 	}
 
+	/**
+	 * Where the pointer was last seen over the cube, until the cursor has been updated for it.
+	 */
+	private hover: { clientX: number; clientY: number } | null = null;
+
+	/**
+	 * The frame the cursor will be updated on, or 0 when none is waiting.
+	 */
+	private hoverFrame = 0;
+
+	/**
+	 * Notes where the pointer is, so the cursor shows "grab" over an object. Finding the object
+	 * under the pointer is work, so it is done once per frame at most, with the last place seen,
+	 * and not at all while a button is held (the user is turning the cube or dragging an object)
+	 * or a program is running.
+	 */
 	private readonly onHover = (event: PointerEvent): void => {
-		if (!this.drag)
-			this.host().nativeElement.style.cursor = this.grabAt(event) ? 'grab' : '';
+		if (this.drag || 0 !== event.buttons || this.player.running)
+			return;
+
+		this.hover = { clientX: event.clientX, clientY: event.clientY };
+
+		if (!this.hoverFrame)
+			this.hoverFrame = requestAnimationFrame(() => {
+				this.hoverFrame = 0;
+
+				if (this.hover && !this.drag && !this.destroyed)
+					this.host().nativeElement.style.cursor = this.grabAt(this.hover) ? 'grab' : '';
+
+				this.hover = null;
+			});
 	};
 
 	private readonly onPointerDown = (event: PointerEvent): void => {
@@ -671,6 +699,7 @@ export class CubeComponent implements AfterViewInit, OnDestroy {
 	 */
 	ngOnDestroy (): void {
 		this.destroyed = true;
+		cancelAnimationFrame(this.hoverFrame);
 		this.onDrop();
 		this.host().nativeElement.removeEventListener('pointerdown', this.onPointerDown, true);
 		this.host().nativeElement.removeEventListener('pointermove', this.onHover);

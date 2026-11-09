@@ -7,7 +7,8 @@
  *   CubeState --copied by--> CubeModel --is part of--> the scene
  *
  * Each face's 4096 LEDs are one *instanced mesh*: the GPU draws them all in a single call,
- * and the only per-LED data is a color. The model only reads the state and never changes it.
+ * and the only per-LED data is a color. An LED is a single square facing out, not a box: only its
+ * front can be seen, so the sides would be vertices and triangles drawn for nothing. The model only reads the state and never changes it.
  * The order of the faces here is the order of the `Face` enum, so a face is also an index.
  *
  * Copying the colors is the hottest loop of the view (20480 LEDs, on every frame the state
@@ -273,7 +274,7 @@ export class CubeModel {
 		 * apart.
 		 */
 		const ledPitch = (ledSpan - ledSize) / (FACE_RESOLUTION - 1);
-		const ledGeometry = new THREE.BoxGeometry(ledSize, ledSize, LED_DEPTH);
+		const ledGeometry = new THREE.PlaneGeometry(ledSize, ledSize);
 
 		for (const placement of FACE_PLACEMENTS) {
 			const faceGroup = new THREE.Group();
@@ -285,8 +286,6 @@ export class CubeModel {
 				frameMaterial,
 			);
 			frame.position.z = -FRAME_DEPTH / 2;
-			frame.castShadow = true;
-			frame.receiveShadow = true;
 			faceGroup.add(frame);
 
 			const panel = new THREE.Mesh(
@@ -301,8 +300,6 @@ export class CubeModel {
 				}),
 			);
 			panel.position.z = -PANEL_DEPTH / 2 + 0.001;
-			panel.castShadow = true;
-			panel.receiveShadow = true;
 			faceGroup.add(panel);
 			this.panels.push(panel);
 
@@ -315,7 +312,7 @@ export class CubeModel {
 				FACE_RESOLUTION * FACE_RESOLUTION,
 			);
 			const dummy = new THREE.Object3D();
-			const ledZ = LED_DEPTH / 2 + 0.002;
+			const ledZ = LED_DEPTH + 0.002;
 			let ledIndex = 0;
 
 			for (let row = 0; row < FACE_RESOLUTION; row += 1)
