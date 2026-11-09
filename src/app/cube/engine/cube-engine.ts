@@ -31,7 +31,7 @@ import { FACE_BY_NAME, FACE_NAME, HEADING_BY_NAME } from '../program/names';
 import { validateProgram } from '../program/validate-program';
 import { Renderer } from '../renderer/renderer';
 import { Scheduler, ScriptError } from '../runtime/scheduler';
-import { CubeState, FACE_RESOLUTION, Face } from '../state/cube-state';
+import { CubeState, Face } from '../state/cube-state';
 import { CubeObject } from '../world/cube-object';
 import { World } from '../world/world';
 

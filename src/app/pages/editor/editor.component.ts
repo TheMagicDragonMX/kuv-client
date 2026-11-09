@@ -133,7 +133,7 @@ export class EditorPage implements OnInit {
 
 	async ngOnInit (): Promise<void> {
 		const projectId = this.route.snapshot.queryParamMap.get('project');
-		if (projectId) {
+		if (projectId) 
 			try {
 				const project = await this.projectStorage.get(projectId);
 				if (project) {
@@ -152,7 +152,7 @@ export class EditorPage implements OnInit {
 			catch (err) {
 				console.error('Error loading project into editor:', err);
 			}
-		}
+		
 	}
 
 	protected openExportModal (): void {
@@ -225,6 +225,6 @@ export class EditorPage implements OnInit {
 
 	protected goToGallery (): void {
 		this.showExportModal.set(false);
-		this.router.navigate(['/gallery']);
+		this.router.navigate([ '/gallery' ]);
 	}
 }

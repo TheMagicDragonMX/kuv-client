@@ -87,9 +87,9 @@ describe('Scheduler', () => {
 		/**
 		 * Ticks of 33 ms. The script moves at 0, 132, 231 and 330: every 100 ms on average.
 		 */
-		for (let now = 0; now <= 330; now += 33) {
+		for (let now = 0; 330 >= now; now += 33) 
 			scheduler.tick(now);
-		}
+		
 
 		expect(x()).toBe(4);
 	});

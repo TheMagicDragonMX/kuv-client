@@ -344,8 +344,8 @@ describe('CubeEngine frame of an object', () => {
 		expect(frame.boxes.map((box) => box.face).sort()).toEqual([ Face.FRONT, Face.RIGHT ]);
 		// 3x3 cells: 12 sides on the outline, none of them the side on the edge between the faces.
 		expect(frame.edges.length).toBe(12);
-		expect(frame.edges.some((edge) => edge.face === Face.FRONT && edge.x === 63 && 'right' === edge.side)).toBe(false);
-		expect(frame.edges.some((edge) => edge.face === Face.RIGHT && edge.x === 0 && 'left' === edge.side)).toBe(false);
+		expect(frame.edges.some((edge) => edge.face === Face.FRONT && 63 === edge.x && 'right' === edge.side)).toBe(false);
+		expect(frame.edges.some((edge) => edge.face === Face.RIGHT && 0 === edge.x && 'left' === edge.side)).toBe(false);
 	});
 });
 

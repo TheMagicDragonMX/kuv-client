@@ -15,7 +15,7 @@ import { CustomProject, ProjectStorageService } from '../../services/project-sto
 @Component({
 	selector: 'app-gallery',
 	standalone: true,
-	imports: [RouterLink, CubeComponent],
+	imports: [ RouterLink, CubeComponent ],
 	templateUrl: './gallery.component.html',
 })
 export class GalleryPage implements OnInit {
@@ -95,7 +95,7 @@ export class GalleryPage implements OnInit {
 	}
 
 	protected openInEditor (project: CustomProject): void {
-		this.router.navigate(['/editor'], { queryParams: { project: project.id } });
+		this.router.navigate([ '/editor' ], { queryParams: { project: project.id } });
 	}
 
 	protected async deleteProject (project: CustomProject, event: MouseEvent): Promise<void> {

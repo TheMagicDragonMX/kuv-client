@@ -32,7 +32,7 @@ export class ProjectStorageService {
 		
 
 		this.dbPromise = new Promise((resolve, reject) => {
-			if (typeof indexedDB === 'undefined') {
+			if ('undefined' === typeof indexedDB) {
 				reject(new Error('IndexedDB is not supported in this environment.'));
 				return;
 			}

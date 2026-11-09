@@ -128,9 +128,9 @@ describe('object commands', () => {
 			{ op: 'pointUp', target: 'x' },
 		];
 
-		for (const command of commands) {
+		for (const command of commands) 
 			expect(() => applyCommand(world, command), command.op).toThrow(EngineError);
-		}
+		
 	});
 });
 
