@@ -66,6 +66,56 @@
 			<p class="text-[0.7rem] text-rose-200" role="alert">{{ text }}</p>
 		}
 
+		<!-- The costumes: drawings of the same object that the blocks switch between to animate it. -->
+		<div class="flex flex-col gap-2 rounded-xl border border-slate-400/25 bg-slate-400/10 p-2.5" role="group" aria-label="Costumes">
+			<div class="flex items-center justify-between gap-2">
+				<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Costumes</span>
+				<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" title="A new costume starts as a copy of this one" (click)="addCostume()">+ Copy</button>
+			</div>
+			<ul class="flex gap-1.5 overflow-x-auto pb-1" role="list">
+				@for (look of costumeLooks(); track $index) {
+					<li class="shrink-0">
+						<button
+							type="button"
+							class="flex w-16 cursor-pointer flex-col items-center gap-1 rounded-lg border p-1 transition duration-150"
+							[class]="$index === current() ? 'border-pink-300 bg-slate-400/20' : 'border-slate-400/20 hover:bg-slate-400/10'"
+							[attr.aria-pressed]="$index === current()"
+							(click)="showCostume($index)"
+						>
+							<app-object-preview class="h-10 w-full rounded bg-slate-900" [object]="look" />
+							<span class="w-full truncate text-center text-[0.65rem] text-slate-200" [title]="look.name">{{ $index + 1 }}. {{ look.name }}</span>
+						</button>
+					</li>
+				}
+			</ul>
+
+			@if (null !== costumeName()) {
+				<div class="flex flex-wrap items-center gap-2">
+					<input
+						type="text"
+						class="min-w-0 flex-1 rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] text-slate-50"
+						aria-label="Name of the costume"
+						[value]="costumeName()"
+						(input)="costumeName.set($any($event.target).value)"
+						(keydown.enter)="$event.preventDefault(); saveCostumeName()"
+					/>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-300/40 bg-slate-400/20 px-3 py-1 text-[0.7rem] font-semibold text-slate-50 uppercase disabled:cursor-default disabled:opacity-40" [disabled]="costumeNameProblem() !== null" (click)="saveCostumeName()">Save</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="costumeName.set(null)">Cancel</button>
+				</div>
+				@if (costumeNameProblem(); as text) {
+					<p class="text-[0.7rem] text-rose-200" role="alert">{{ text }}</p>
+				}
+			} @else {
+				<div class="flex flex-wrap items-center gap-1.5">
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-2.5 py-1 text-[0.7rem] text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30" aria-label="Move the costume left" [disabled]="0 === current()" (click)="moveCurrentCostume(-1)">◀</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-2.5 py-1 text-[0.7rem] text-slate-300 hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30" aria-label="Move the costume right" [disabled]="current() === costumes().length - 1" (click)="moveCurrentCostume(1)">▶</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="startCostumeRename()">Rename</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1 text-[0.7rem] font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-30" [disabled]="costumes().length < 2" (click)="removeCostume()">Remove</button>
+				</div>
+			}
+			<p class="text-[0.7rem] text-slate-400">The object starts with the first costume. Switch them in a program with "Change costume to" and "Next costume" to animate it.</p>
+		</div>
+
 		<!-- The canvas: a grid of pixels. The highlighted one in the middle is the object itself. -->
 		<div
 			class="grid touch-none gap-px rounded-xl border border-slate-400/25 bg-slate-400/20 p-px select-none"

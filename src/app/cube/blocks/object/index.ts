@@ -14,8 +14,10 @@ import { DeleteCommand, deleteBlock } from './delete';
 import { HideCommand, hideBlock } from './hide';
 import { MoveCommand, moveBlock } from './move';
 import { MoveToCommand, moveToBlock } from './move-to';
+import { NextCostumeCommand, nextCostumeBlock } from './next-costume';
 import { PointUpCommand, pointUpBlock } from './point-up';
 import { SetColorCommand, setColorBlock } from './set-color';
+import { SetCostumeCommand, setCostumeBlock } from './set-costume';
 import { ShowCommand, showBlock } from './show';
 
 /**
@@ -29,7 +31,9 @@ export type ObjectCommand =
 	| ShowCommand
 	| HideCommand
 	| DeleteCommand
-	| PointUpCommand;
+	| PointUpCommand
+	| SetCostumeCommand
+	| NextCostumeCommand;
 
 /**
  * The definition of each object block, by `op`.
@@ -43,4 +47,6 @@ export const OBJECT_BLOCKS: { [K in ObjectCommand['op']]: CommandDefinition<Extr
 	hide: hideBlock,
 	delete: deleteBlock,
 	pointUp: pointUpBlock,
+	setCostume: setCostumeBlock,
+	nextCostume: nextCostumeBlock,
 };

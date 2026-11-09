@@ -9,6 +9,17 @@ import {
 import { BackgroundImages, Brightness, DEFAULT_BRIGHTNESS, Environment, FaceName, RawImage, pixelate } from '../../cube';
 import { FACE_OPTIONS } from './faces';
 import { ImageCropperComponent } from './image-cropper.component';
+import {
+	addBackground,
+	backgroundNameProblem,
+	backgroundsOf,
+	coverOf,
+	removeBackground,
+	renameBackground,
+	selectBackground,
+	selectedBackground,
+	setSelectedImages,
+} from './backgrounds';
 import { PixelPreviewComponent } from './pixel-preview.component';
 
 /**
@@ -26,7 +37,9 @@ const LEVELS: { id: keyof Brightness; label: string }[] = [
 ];
 
 /**
- * Where the user handles the background of the cube. The way to do it for now is an image:
+ * Where the user handles the background of the cube. There can be several backgrounds, and a
+ * program switches between them with the background blocks; the selected one is the one the cube
+ * shows and the program starts with. Its pictures are made from images:
  *
  *   1. pick a picture   2. crop it to a square   3. choose the faces it goes on
  *
@@ -47,6 +60,35 @@ export class BackgroundPanelComponent implements OnDestroy {
 	 * The environment being edited. Two-way: the page keeps it and shows it on the cube.
 	 */
 	readonly environment = model<Environment>({});
+
+	/**
+	 * The backgrounds, in order.
+	 */
+	protected readonly backgrounds = computed(() => backgroundsOf(this.environment()));
+
+	/**
+	 * The background being edited, which is the one the program starts with.
+	 */
+	protected readonly current = computed(() => selectedBackground(this.environment()));
+
+	/**
+	 * The picture that stands for a background in the list.
+	 */
+	protected readonly coverOf = coverOf;
+
+	/**
+	 * The name being typed for the selected background, or null when it is not being renamed.
+	 */
+	protected readonly newName = signal<string | null>(null);
+
+	/**
+	 * Why the name being typed cannot be used, or null.
+	 */
+	protected readonly nameProblem = computed(() => {
+		const name = this.newName();
+
+		return null === name ? null : backgroundNameProblem(this.environment(), this.current().name, name);
+	});
 
 	/**
 	 * The intensities that can be set.
@@ -112,10 +154,59 @@ export class BackgroundPanelComponent implements OnDestroy {
 	}
 
 	/**
-	 * True when the face already has a picture.
+	 * Selects a background: the cube shows it, and the program starts with it.
+	 */
+	protected select (name: string): void {
+		this.newName.set(null);
+		this.environment.update((environment) => selectBackground(environment, name));
+		this.message.set(null);
+	}
+
+	/**
+	 * Adds a background without pictures and selects it, ready to get some.
+	 */
+	protected add (): void {
+		this.newName.set(null);
+		this.environment.update((environment) => addBackground(environment));
+		this.message.set(null);
+	}
+
+	/**
+	 * Removes the selected background. There is always at least one.
+	 */
+	protected removeSelected (): void {
+		const name = this.current().name;
+
+		this.newName.set(null);
+		this.environment.update((environment) => removeBackground(environment, name));
+		this.message.set(`Removed "${name}".`);
+	}
+
+	/**
+	 * Starts renaming the selected background.
+	 */
+	protected startRename (): void {
+		this.newName.set(this.current().name);
+	}
+
+	/**
+	 * Gives the selected background the name typed, if it can have it.
+	 */
+	protected saveName (): void {
+		const name = this.newName();
+
+		if (null === name || this.nameProblem())
+			return;
+
+		this.environment.update((environment) => renameBackground(environment, this.current().name, name));
+		this.newName.set(null);
+	}
+
+	/**
+	 * True when the selected background has a picture on the face.
 	 */
 	protected hasImage (name: FaceName): boolean {
-		return !!this.environment().background?.[name];
+		return !!this.current().images[name];
 	}
 
 	/**
@@ -206,18 +297,20 @@ export class BackgroundPanelComponent implements OnDestroy {
 	}
 
 	/**
-	 * Puts the picture on the selected faces. Pictures on the other faces are kept.
+	 * Makes the picture the one of the selected background, on the selected faces only. It replaces
+	 * the picture the background had: the faces that showed it and are not selected now are cleared.
+	 * Different pictures on different faces are different backgrounds, which combine on the cube.
 	 */
 	protected apply (): void {
 		const pixels = this.pixels();
 		if (!pixels || 0 === this.selected().size)
 			return;
 
-		const background: BackgroundImages = { ...this.environment().background };
+		const background: BackgroundImages = {};
 		for (const name of this.selected())
 			background[name] = pixels;
 
-		this.environment.update((environment) => ({ ...environment, background }));
+		this.environment.update((environment) => setSelectedImages(environment, background));
 		this.message.set(`Put on ${this.describe(this.selected())}.`);
 	}
 
@@ -225,11 +318,11 @@ export class BackgroundPanelComponent implements OnDestroy {
 	 * Takes the picture off the selected faces.
 	 */
 	protected remove (): void {
-		const background: BackgroundImages = { ...this.environment().background };
+		const background: BackgroundImages = { ...this.current().images };
 		for (const name of this.selected())
 			delete background[name];
 
-		this.environment.update((environment) => ({ ...environment, background }));
+		this.environment.update((environment) => setSelectedImages(environment, background));
 		this.message.set(`Cleared ${this.describe(this.selected())}.`);
 	}
 

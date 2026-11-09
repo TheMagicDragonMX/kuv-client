@@ -11,6 +11,11 @@ import { Workspace, addBlock, addScript, emptyWorkspace, newBlock, newScript } f
 export const BALL: CreateCommand = { op: 'create', name: 'ball', face: 'FRONT', x: 32, y: 32, color: '#f9a8d4' };
 
 /**
+ * The name of a background of the Background tab, which the background blocks of the tests use.
+ */
+export const SKY = 'sky';
+
+/**
  * A workspace with one script that starts at once, built by adding the given types one after the
  * other, like the user does. The script has id 1, and the blocks 2, 3...
  */
@@ -19,7 +24,7 @@ export function workspaceOf (...types: string[]): Workspace {
 	let workspace = addScript(emptyWorkspace(), newScript(id++));
 
 	for (const type of types)
-		workspace = addBlock(workspace, 1, newBlock(type, id++, [ BALL.name ]));
+		workspace = addBlock(workspace, 1, newBlock(type, id++, [ BALL.name ], [ SKY ], { [BALL.name]: [ 'walk' ] }));
 
 	return workspace;
 }

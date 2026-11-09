@@ -21,9 +21,9 @@ function pauses (blocks: Block[], world = new World(), limit = 20): Pause[] {
 
 	for (let i = 0; i < limit; i += 1) {
 		const result = run.next();
-		if (result.done) {
+		if (result.done) 
 			break;
-		}
+		
 		collected.push(result.value);
 	}
 
@@ -78,7 +78,7 @@ describe('runBlocks', () => {
 		const result = pauses([ { op: 'forever', body: [] } ], new World(), 5);
 
 		expect(result).toHaveLength(5);
-		expect(result.every((pause) => pause.kind === 'tick')).toBe(true);
+		expect(result.every((pause) => 'tick' === pause.kind)).toBe(true);
 	});
 
 	it('runs a forever loop one iteration per pause', () => {

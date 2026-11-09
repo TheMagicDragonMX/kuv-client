@@ -106,7 +106,23 @@
 															}
 														</select>
 													}
-													@case ('object') {
+													@case ('background') {
+													<select class="rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" (change)="setValue(block.id, field.key, $any($event.target).value)">
+														<option value="" [selected]="!backgrounds().includes($any(block.values[field.key]))" disabled>Choose…</option>
+														@for (name of backgrounds(); track name) {
+															<option [value]="name" [selected]="block.values[field.key] === name">{{ name }}</option>
+														}
+													</select>
+												}
+												@case ('costume') {
+													<select class="rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" (change)="setValue(block.id, field.key, $any($event.target).value)">
+														<option value="" [selected]="!costumesOf(block.values['target']).includes($any(block.values[field.key]))" disabled>Choose…</option>
+														@for (name of costumesOf(block.values['target']); track name) {
+															<option [value]="name" [selected]="block.values[field.key] === name">{{ name }}</option>
+														}
+													</select>
+												}
+												@case ('object') {
 														<select class="rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1 text-[0.76rem] font-normal text-slate-50 normal-case" (change)="setValue(block.id, field.key, $any($event.target).value)">
 															<option value="" [selected]="!names().includes($any(block.values[field.key]))" disabled>Choose…</option>
 															@for (name of names(); track name) {

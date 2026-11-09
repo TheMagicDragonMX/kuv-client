@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, ViewChild, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
@@ -16,6 +16,7 @@ import { AuthSession } from '../../services/auth-session.service';
 import { CreationsApi } from '../../services/creations-api.service';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
+import { backgroundsOf, normalizeBackgrounds } from './backgrounds';
 import { BlocksTabComponent } from './blocks-tab.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
@@ -102,6 +103,24 @@ export class EditorPage implements OnInit {
 	protected readonly environment = signal<Environment>({ brightness: { ...DEFAULT_BRIGHTNESS } });
 
 	/**
+	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
+	 * face being edited does not turn away. The Spin button brings the rotation back.
+	 */
+	protected holdCube(cube: CubeComponent): void {
+		if ('blocks' === this.tab() || 'objects' === this.tab())
+			cube.holdStill();
+	}
+
+	/**
+	 * The user dragged an object on the cube: its starting place is now the cell it was dropped on.
+	 */
+	protected moveObject(move: ObjectMove): void {
+		this.objects.update((objects) => objects.map((object) => object.name === move.name
+			? { ...object, face: move.face, x: move.x, y: move.y }
+			: object));
+	}
+
+	/**
 	 * Faces the camera can turn to.
 	 */
 	protected readonly faces = [
@@ -123,88 +142,45 @@ export class EditorPage implements OnInit {
 	protected readonly exportSuccess = signal(false);
 	protected readonly saveError = signal<string | null>(null);
 
-	async ngOnInit (): Promise<void> {
+	async ngOnInit(): Promise<void> {
 		const projectId = this.route.snapshot.queryParamMap.get('project');
 		if (projectId) {
-			const numericId = parseInt(projectId, 10);
-			if (!isNaN(numericId) && 0 < numericId && this.signedIn()) {
-				this.creationsApi.getParsedCreation(numericId).subscribe({
-					next: (creation) => {
-						this.currentCreationId.set(creation.id);
-						this.exportTitle.set(creation.title);
-						this.exportDescription.set(creation.description ?? '');
-						if (creation.environment) {
-							this.environment.set(creation.environment);
-						}
+			try {
+				const project = await this.projectStorage.get(projectId);
+				if (project) {
+					this.exportTitle.set(project.title);
+					this.exportDescription.set(project.description);
+					if (project.environment)
+						this.environment.set(project.environment);
 
-						setTimeout(() => {
-							this.blocksRef?.loadProgram(creation.program);
-							this.cubeRef?.run(creation.program);
-						}, 100);
-					},
-					error: async () => {
-						await this.loadLocalProject(projectId);
-					},
-				});
-			} else {
-				await this.loadLocalProject(projectId);
-			}
-		}
-	}
 
-	private async loadLocalProject (projectId: string): Promise<void> {
-		try {
-			const project = await this.projectStorage.get(projectId);
-			if (project) {
-				this.exportTitle.set(project.title);
-				this.exportDescription.set(project.description);
-				if (project.environment) {
-					this.environment.set(project.environment);
+					setTimeout(() => {
+						this.blocksRef?.loadProgram(project.program);
+						this.cubeRef?.run(project.program);
+					}, 100);
 				}
-
-				setTimeout(() => {
-					this.blocksRef?.loadProgram(project.program);
-					this.cubeRef?.run(project.program);
-				}, 100);
 			}
-		} catch (err) {
-			console.error('Error loading project into editor:', err);
+			catch (err) {
+				console.error('Error loading project into editor:', err);
+			}
 		}
 	}
 
-	/**
-	 * The cube stops its slow rotation while the user works on the blocks or the objects.
-	 */
-	protected holdCube (cube: CubeComponent): void {
-		if ('blocks' === this.tab() || 'objects' === this.tab()) {
-			cube.holdStill();
-		}
-	}
-
-	/**
-	 * The user dragged an object on the cube: its starting place is now the cell it was dropped on.
-	 */
-	protected moveObject (move: ObjectMove): void {
-		this.objects.update((objects) => objects.map((object) => object.name === move.name
-			? { ...object, face: move.face, x: move.x, y: move.y }
-			: object));
-	}
-
-	protected openExportModal (): void {
+	protected openExportModal(): void {
 		this.exportSuccess.set(false);
 		this.exportProgress.set(null);
 		this.saveError.set(null);
 		this.showExportModal.set(true);
 	}
 
-	protected closeExportModal (): void {
+	protected closeExportModal(): void {
 		if (this.isExporting()) {
 			return;
 		}
 		this.showExportModal.set(false);
 	}
 
-	protected async startExport (): Promise<void> {
+	protected async startExport(): Promise<void> {
 		const program = this.blocksRef?.program();
 		if (!program) {
 			alert('El programa aún no está listo para exportar.');
@@ -279,13 +255,13 @@ export class EditorPage implements OnInit {
 		}
 	}
 
-	protected goToProfile (): void {
+	protected goToProfile(): void {
 		this.showExportModal.set(false);
 		void this.router.navigate(['/profile']);
 	}
 
-	protected goToGallery (): void {
+	protected goToGallery(): void {
 		this.showExportModal.set(false);
-		void this.router.navigate(['/gallery']);
+		this.router.navigate(['/gallery']);
 	}
 }

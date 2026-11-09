@@ -242,6 +242,23 @@ describe('ObjectsPanelComponent', () => {
 		expect(panel.objects().map((object) => object.color)).toEqual([ '#00ff00', '#ff0000' ]);
 	});
 
+	it('keeps an edited object where it was, while a new one starts at the start', () => {
+		const moved: CreateCommand = { ...ball, face: 'TOP', x: 5, y: 7, heading: 'EAST' };
+		const { fixture, panel } = createPanel([ moved ]);
+		panel.edit(moved);
+		fixture.detectChanges();
+
+		panel.save({ ...ball, color: '#00ff00' });
+
+		expect(panel.objects()[0]).toMatchObject({ color: '#00ff00', face: 'TOP', x: 5, y: 7, heading: 'EAST' });
+
+		panel.create();
+		fixture.detectChanges();
+		panel.save({ ...ball, name: 'new' });
+
+		expect(panel.objects()[1]).toMatchObject({ face: 'FRONT', x: 32, y: 32 });
+	});
+
 	it('deletes an object', () => {
 		const { panel } = createPanel([ ball, { ...ball, name: 'other' } ]);
 

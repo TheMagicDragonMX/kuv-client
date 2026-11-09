@@ -87,9 +87,9 @@ export function emptyWorkspace (): Workspace {
 /**
  * A block of the given type with the values it starts with.
  */
-export function newBlock (type: string, id: number, objects: string[]): VisualBlock {
+export function newBlock (type: string, id: number, objects: string[], backgrounds: string[] = [], costumes: Record<string, string[]> = {}): VisualBlock {
 	const spec = specOf(type);
-	const block: VisualBlock = { id, type, values: spec.defaults(objects) };
+	const block: VisualBlock = { id, type, values: spec.defaults(objects, backgrounds, costumes) };
 
 	if (spec.container)
 		block.body = [];
@@ -136,9 +136,10 @@ export function countBlocks (workspace: Workspace): number {
 
 /**
  * What is missing in each block or script that is not ready to run, by id, given the names of
- * the objects that exist. One that is fine is not in the map.
+ * the objects and the backgrounds that exist, and the costumes of each object. One that is fine
+ * is not in the map.
  */
-export function problemsOf (workspace: Workspace, objects: string[]): Map<number, string> {
+export function problemsOf (workspace: Workspace, objects: string[], backgrounds: string[] = [], costumes: Record<string, string[]> = {}): Map<number, string> {
 	const problems = new Map<number, string>();
 
 	for (const script of workspace.scripts) {
@@ -150,7 +151,7 @@ export function problemsOf (workspace: Workspace, objects: string[]): Map<number
 
 	eachBlock(workspace, (block) => {
 		const spec = specOf(block.type);
-		const context: Context = { objects };
+		const context: Context = { objects, backgrounds, costumes };
 		const message = fieldProblem(spec, block.values) ?? spec.problem?.(block.values, context) ?? null;
 
 		if (message)

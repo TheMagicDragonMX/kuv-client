@@ -36,7 +36,11 @@ When Blockly arrives it replaces the tab, `workspace.ts` and `visual-blocks.ts`,
 | --- | --- | --- |
 | Background | Change background image | `setBackgroundImage` |
 | | Change background color | `setBackgroundColor` |
+| | Change background to | `setBackground` |
+| | Next background | `nextBackground` |
 | Objects | Move object | `move` |
+| | Change costume to | `setCostume` |
+| | Next costume | `nextCostume` |
 | | Put object on a cell | `moveTo` |
 | | Change object color | `setColor` |
 | | Show / Hide / Delete object | `show` / `hide` / `delete` |

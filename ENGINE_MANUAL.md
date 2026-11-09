@@ -344,7 +344,8 @@ Read it as a recipe: "when the program starts, create a red ball in front, then 
 | Kind | Blocks | What they are |
 | --- | --- | --- |
 | Object commands | `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete`, `pointUp` | Change the objects |
-| Background blocks | `setBackgroundImage`, `setBackgroundColor` | Change what is behind the objects, on the faces they name |
+| Costume blocks | `setCostume`, `nextCostume` | Change the look (shape and color) of an object to one of the `costumes` of its `create` block, by name or the next one |
+| Background blocks | `setBackgroundImage`, `setBackgroundColor`, `setBackground`, `nextBackground` | Change what is behind the objects, on the faces they name, or switch to one of the backgrounds of the environment |
 | Control blocks | `wait`, `repeat`, `forever` | Decide *when* and *how many times* |
 
 **Why data and not code?** Because "a list of plain objects" can be saved, sent over the network to the Pi, shown in a UI, checked for mistakes before running, and interpreted by *any* language. If students wrote JavaScript, none of that would be true, and it would also be unsafe to run.
@@ -399,7 +400,7 @@ A small but valuable detail: if a command changes nothing, it does not touch the
 Each function lives in the file of its block, in the folder of its category under [blocks/](src/app/cube/blocks/):
 
 - **Object blocks:** what `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete` and `pointUp` do.
-- **Background blocks:** `setBackgroundImage` copies a picture onto the background of the faces it names (the picture travels inside the block, already 64×64) and `setBackgroundColor` fills them with one color. They write to the same layer as the environment.
+- **Background blocks:** `setBackgroundImage` copies a picture onto the background of the faces it names (the picture travels inside the block, already 64×64) and `setBackgroundColor` fills them with one color. `setBackground` (by `name`) and `nextBackground` switch to one of the named backgrounds of the environment (`environment.backgrounds`, in order; `startBackground` is the one the cube starts with): the faces it has a picture for show it, and the others keep what they show, so backgrounds on different faces combine. They write to the same layer as the environment.
 - **The dispatcher (`applyCommand`):** looks the command up by `op` in the blocks registry and runs its `apply`. It has no logic of its own, and adding a block does not change it. The registry is typed so that a block type without a definition does not compile.
 
 Control blocks (`wait`, `repeat`, `forever`) are not commands. They do not change the world; they decide *when* other blocks run, which is the next chapter's problem.

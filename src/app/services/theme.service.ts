@@ -39,7 +39,7 @@ export class ThemeService {
 		effect(() => {
 			const theme = this.state();
 
-			this.document.documentElement.classList.toggle('light', theme === 'light');
+			this.document.documentElement.classList.toggle('light', 'light' === theme);
 
 			try {
 				localStorage.setItem(STORAGE_KEY, theme);
@@ -57,7 +57,7 @@ export class ThemeService {
 	 * Switches between dark and light.
 	 */
 	toggle (): void {
-		this.state.update((theme) => (theme === 'dark' ? 'light' : 'dark'));
+		this.state.update((theme) => ('dark' === theme ? 'light' : 'dark'));
 	}
 
 	/**
@@ -67,7 +67,7 @@ export class ThemeService {
 		try {
 			const saved = localStorage.getItem(STORAGE_KEY);
 
-			if (saved === 'dark' || saved === 'light')
+			if ('dark' === saved || 'light' === saved)
 				return saved;
 		}
 

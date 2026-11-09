@@ -12,14 +12,31 @@
  */
 
 import { CubeGeometry, GeometryConfig } from '../geometry/geometry';
-import { CubeState } from '../state/cube-state';
+import { FaceName } from '../program/program';
+import { Color, CubeState } from '../state/cube-state';
 import { EngineError } from '../errors';
 import { CubeObject } from './cube-object';
 
 /**
+ * A background the program can switch to: a name, and the picture of each face that has one
+ * (`FACE_RESOLUTION * FACE_RESOLUTION` colors, row after row). A face without a picture is dark.
+ */
+export type NamedBackground = {
+	/**
+	 * What the blocks call it.
+	 */
+	name: string;
+
+	/**
+	 * The picture of each face that has one.
+	 */
+	images: Partial<Record<FaceName, ArrayLike<Color>>>;
+};
+
+/**
  * The parts of an object a command can change.
  */
-export type ObjectChanges = Partial<Pick<CubeObject, 'pose' | 'color' | 'visible'>>;
+export type ObjectChanges = Partial<Pick<CubeObject, 'pose' | 'color' | 'visible' | 'shape' | 'costume'>>;
 
 /**
  * The objects of the program and the background behind them, placed on the geometry of the cube.
@@ -39,6 +56,17 @@ export class World {
 	 * painted here stays on the cube.
 	 */
 	readonly background = new CubeState();
+
+	/**
+	 * The backgrounds the program can switch to, in order (the environment gives them). The
+	 * background blocks paint one of them onto `background`.
+	 */
+	backgrounds: readonly NamedBackground[] = [];
+
+	/**
+	 * Name of the background on the cube, or null when none of `backgrounds` is.
+	 */
+	currentBackground: string | null = null;
 
 	/**
 	 * Objects by name. A Map remembers insertion order, so objects are drawn in the order

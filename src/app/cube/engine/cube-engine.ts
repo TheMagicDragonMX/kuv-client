@@ -31,7 +31,7 @@ import { FACE_BY_NAME, FACE_NAME, HEADING_BY_NAME } from '../program/names';
 import { validateProgram } from '../program/validate-program';
 import { Renderer } from '../renderer/renderer';
 import { Scheduler, ScriptError } from '../runtime/scheduler';
-import { CubeState, FACE_RESOLUTION, Face } from '../state/cube-state';
+import { CubeState, Face } from '../state/cube-state';
 import { CubeObject } from '../world/cube-object';
 import { World } from '../world/world';
 
@@ -128,6 +128,22 @@ export class CubeEngine {
 	 * and reset paints it again.
 	 */
 	private environment?: Environment;
+
+	/**
+	 * The frames worked out by `frameOf`, by padding and object name.
+	 */
+	private readonly frames = new Map<string, Frame>();
+
+	/**
+	 * The world the kept frames are of, and its version then. When either is not the current one,
+	 * the kept frames are old.
+	 */
+	private framesWorld?: World;
+
+	/**
+	 * See `framesWorld`.
+	 */
+	private framesVersion = -1;
 
 	/**
 	 * Objects kept out of sight by the user (see `setHidden`).
@@ -235,8 +251,35 @@ export class CubeEngine {
 	 * so where it goes over an edge it continues on the next face: `boxes` are the parts on each
 	 * face, and `edges` are the sides of cells that make up its outline, which does not run along
 	 * the edges of the cube. Empty if the object is hidden or does not exist.
+	 *
+	 * Walking the cells is the slow part, and the answer only changes when the world does, so the
+	 * frames are kept until the world changes (its `version` goes up). Do not change a frame you
+	 * get: the same one is handed out again.
 	 */
 	frameOf (name: string, padding = 0): Frame {
+		if (this.framesWorld !== this.world || this.framesVersion !== this.world.version) {
+			this.frames.clear();
+			this.framesWorld = this.world;
+			this.framesVersion = this.world.version;
+		}
+
+		const key = `${padding}/${name}`;
+		const kept = this.frames.get(key);
+
+		if (kept)
+			return kept;
+
+		const frame = this.measureFrame(name, padding);
+
+		this.frames.set(key, frame);
+
+		return frame;
+	}
+
+	/**
+	 * Works out the frame of an object (see `frameOf`), which walks every cell of its rectangle.
+	 */
+	private measureFrame (name: string, padding: number): Frame {
 		const frame: Frame = { boxes: [], edges: [] };
 		let object: CubeObject;
 

@@ -85,10 +85,10 @@ export type RecordResult = {
  */
 export function isRecordingSupported (): boolean {
 	return (
-		typeof window !== 'undefined' &&
-		typeof HTMLCanvasElement !== 'undefined' &&
+		'undefined' !== typeof window &&
+		'undefined' !== typeof HTMLCanvasElement &&
 		'captureStream' in HTMLCanvasElement.prototype &&
-		typeof MediaRecorder !== 'undefined'
+		'undefined' !== typeof MediaRecorder
 	);
 }
 
@@ -137,8 +137,6 @@ export async function recordCubeVideo (
 	});
 	renderer.setSize(width, height, false);
 	renderer.setClearColor(BACKGROUND, 1);
-	renderer.shadowMap.enabled = true;
-	renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 	const stage = new Stage();
 	const model = new CubeModel(engine.state);
@@ -149,7 +147,7 @@ export async function recordCubeVideo (
 	const radius = 7.5;
 	const phi = SIDE_VIEW_POLAR;
 
-	const stream = (canvas as any).captureStream(fps);
+	const stream = (canvas as HTMLCanvasElement).captureStream(fps);
 
 	// Select best supported MIME type
 	const mimeCandidates = [

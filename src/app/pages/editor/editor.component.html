@@ -65,6 +65,7 @@
 			<app-blocks-tab
 				#blocks
 				[(objects)]="objects"
+				[backgrounds]="backgroundNames()"
 				class="block h-full"
 				[running]="cube.running()"
 				[problem]="cube.problem()"
