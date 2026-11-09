@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_URL } from './api-url';
+import { environment } from '../environments';
 
 /**
  * A user's profile, as the signed-in user sees it.
@@ -123,7 +123,7 @@ export const MAX_DESCRIPTION = 280;
  * interceptor sends the token.
  */
 @Injectable({ providedIn: 'root' })
-export class UsersApi {
+export class UsersHttpService {
 	/**
 	 * Sends the HTTP requests.
 	 */
@@ -132,7 +132,7 @@ export class UsersApi {
 	/**
 	 * Address of the user endpoints.
 	 */
-	private readonly endpoint = `${API_URL}/users`;
+	private readonly endpoint = `${environment.apiUrl}/users`;
 
 	/**
 	 * The signed-in user's profile, with their email.

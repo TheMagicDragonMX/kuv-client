@@ -2,10 +2,27 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { switchMap } from 'rxjs';
+import { switchMap, tap } from 'rxjs';
 import { returnPath } from '../services/auth.guard';
 import { AuthSession } from '../services/auth-session.service';
-import { SessionApi } from '../services/session-api.service';
+import { SessionHttpService } from '../services/session.http.service';
+import { SnackbarService } from '../services/snackbar.service';
+
+/**
+ * The names of the fields of the registration form.
+ */
+type RegisterField = 'username' | 'email' | 'age' | 'password';
+
+/**
+ * The tip of each field: the limits the API enforces. It is always shown under the field and turns
+ * red when the value breaks it.
+ */
+const FIELD_TIPS: Record<RegisterField, string> = {
+	username: 'Entre 3 y 50 caracteres.',
+	email: 'Un correo válido, como nombre@ejemplo.com.',
+	age: 'Un número entre 0 y 150.',
+	password: 'Al menos 8 caracteres.',
+};
 
 /**
  * The register page: asks for the data of a new account, creates it through the API and signs
@@ -26,7 +43,7 @@ export class RegisterPage {
 	/**
 	 * Talks to the API's session endpoints.
 	 */
-	private readonly sessionApi = inject(SessionApi);
+	private readonly sessionHttp = inject(SessionHttpService);
 
 	/**
 	 * Keeps the tokens of the session.
@@ -54,6 +71,11 @@ export class RegisterPage {
 	protected readonly errorMessage = signal('');
 
 	/**
+	 * Shows the message when the account is created.
+	 */
+	private readonly snackbar = inject(SnackbarService);
+
+	/**
 	 * The registration form with the limits the API enforces.
 	 */
 	protected readonly form = this.formBuilder.nonNullable.group({
@@ -62,6 +84,31 @@ export class RegisterPage {
 		age: [ 18, [ Validators.required, Validators.min(0), Validators.max(150) ] ],
 		password: [ '', [ Validators.required, Validators.minLength(8) ] ],
 	});
+
+	/**
+	 * The tip of a field.
+	 */
+	protected tip (field: RegisterField): string {
+		return FIELD_TIPS[field];
+	}
+
+	/**
+	 * True when the user touched a field and its value breaks the tip.
+	 */
+	protected isInvalid (field: RegisterField): boolean {
+		const control = this.form.controls[field];
+
+		return control.invalid && (control.touched || control.dirty);
+	}
+
+	/**
+	 * What to say under a field: the tip, or that the field is required when it is empty.
+	 */
+	protected hint (field: RegisterField): string {
+		return this.isInvalid(field) && this.form.controls[field].hasError('required')
+			? 'Este campo es obligatorio.'
+			: FIELD_TIPS[field];
+	}
 
 	/**
 	 * Creates the account and signs in with it, or marks the fields when the form is invalid.
@@ -76,8 +123,9 @@ export class RegisterPage {
 		this.isSubmitting.set(true);
 		const account = this.form.getRawValue();
 
-		this.sessionApi.register(account).pipe(
-			switchMap(() => this.sessionApi.login(account.username.trim(), account.password)),
+		this.sessionHttp.register(account).pipe(
+			tap(() => this.snackbar.success(`Cuenta creada. ¡Bienvenido, ${account.username.trim()}!`)),
+			switchMap(() => this.sessionHttp.login(account.username.trim(), account.password)),
 		).subscribe({
 			next: (tokens) => {
 				this.session.save(tokens);

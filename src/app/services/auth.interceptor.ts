@@ -2,9 +2,9 @@ import { HttpErrorResponse, HttpInterceptorFn, HttpRequest } from '@angular/comm
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
-import { API_URL } from './api-url';
+import { environment } from '../environments';
 import { AuthSession } from './auth-session.service';
-import { SessionApi } from './session-api.service';
+import { SessionHttpService } from './session.http.service';
 
 /**
  * The request with the access token in its Authorization header, or as it was without a token.
@@ -20,11 +20,11 @@ function withToken (request: HttpRequest<unknown>, token: string | null): HttpRe
  * the user goes to the login page, which brings them back where they were.
  */
 export const authInterceptor: HttpInterceptorFn = (request, next) => {
-	if (!request.url.startsWith(API_URL) || request.url.startsWith(`${API_URL}/session`))
+	if (!request.url.startsWith(environment.apiUrl) || request.url.startsWith(`${environment.apiUrl}/session`))
 		return next(request);
 
 	const session = inject(AuthSession);
-	const sessionApi = inject(SessionApi);
+	const sessionHttp = inject(SessionHttpService);
 	const router = inject(Router);
 
 	return next(withToken(request, session.accessToken())).pipe(catchError((error: unknown) => {
@@ -33,7 +33,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 		if (!(error instanceof HttpErrorResponse) || 401 !== error.status || !refreshToken)
 			return throwError(() => error);
 
-		return sessionApi.refresh(refreshToken).pipe(
+		return sessionHttp.refresh(refreshToken).pipe(
 			switchMap((tokens) => {
 				session.save(tokens);
 

@@ -13,7 +13,8 @@ import {
 	recordCubeVideo,
 } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
-import { CreationsApi } from '../../services/creations-api.service';
+import { CreationsHttpService } from '../../services/creations.http.service';
+import { creationForm } from '../../services/creations';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { backgroundsOf, normalizeBackgrounds } from './backgrounds';
@@ -51,7 +52,7 @@ export class EditorPage implements OnInit {
 	private exportPreviewHostRef?: ElementRef<HTMLDivElement>;
 
 	private readonly projectStorage = inject(ProjectStorageService);
-	private readonly creationsApi = inject(CreationsApi);
+	private readonly creationsHttp = inject(CreationsHttpService);
 	private readonly authSession = inject(AuthSession);
 	private readonly route = inject(ActivatedRoute);
 	private readonly router = inject(Router);
@@ -224,10 +225,10 @@ export class EditorPage implements OnInit {
 
 				const currentId = this.currentCreationId();
 				if (null !== currentId) {
-					const updated = await firstValueFrom(this.creationsApi.updateCreation(currentId, payload));
+					const updated = await firstValueFrom(this.creationsHttp.updateCreation(currentId, creationForm(payload, true)));
 					this.currentCreationId.set(updated.id);
 				} else {
-					const created = await firstValueFrom(this.creationsApi.createCreation(payload));
+					const created = await firstValueFrom(this.creationsHttp.createCreation(creationForm(payload)));
 					this.currentCreationId.set(created.id);
 				}
 			} else {

@@ -1,8 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { API_URL } from '../../services/api-url';
-import { Profile, UserSummary } from '../../services/users-api.service';
+import { environment } from '../../environments';
+import { Profile, UserSummary } from '../../services/users.http.service';
 import { FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
 
 /**
@@ -28,8 +28,8 @@ function createSection () {
 	fixture.detectChanges();
 
 	const server = TestBed.inject(HttpTestingController);
-	server.expectOne(`${API_URL}/users/1/following`).flush([ user(2, 'beto', true, true) ]);
-	server.expectOne(`${API_URL}/users/1/followers`).flush([ user(2, 'beto', true, true), user(3, 'caro', true, false) ]);
+	server.expectOne(`${environment.apiUrl}/users/1/following`).flush([ user(2, 'beto', true, true) ]);
+	server.expectOne(`${environment.apiUrl}/users/1/followers`).flush([ user(2, 'beto', true, true), user(3, 'caro', true, false) ]);
 	fixture.detectChanges();
 
 	return {
@@ -101,7 +101,7 @@ describe('FollowSectionComponent', () => {
 			expect(names(element)).toEqual([ '@beto' ]);
 
 			vi.advanceTimersByTime(300);
-			server.expectOne(`${API_URL}/users?search=be`).flush([ user(2, 'beto', true, true), user(4, 'bere', false, false) ]);
+			server.expectOne(`${environment.apiUrl}/users?search=be`).flush([ user(2, 'beto', true, true), user(4, 'bere', false, false) ]);
 			fixture.detectChanges();
 
 			expect(element.textContent).toContain('Otras personas');
@@ -120,12 +120,12 @@ describe('FollowSectionComponent', () => {
 
 		section.toggleFollow(user(3, 'caro', true, false));
 
-		const follow = server.expectOne(`${API_URL}/users/3/follow`);
+		const follow = server.expectOne(`${environment.apiUrl}/users/3/follow`);
 		expect(follow.request.method).toBe('PUT');
 		follow.flush({ ...ME, id: 3, username: 'caro', followsYou: true, youFollow: true, isYou: false });
 
-		server.expectOne(`${API_URL}/users/1/following`).flush([]);
-		server.expectOne(`${API_URL}/users/1/followers`).flush([]);
+		server.expectOne(`${environment.apiUrl}/users/1/following`).flush([]);
+		server.expectOne(`${environment.apiUrl}/users/1/followers`).flush([]);
 
 		expect(changed).toBe(1);
 	});
@@ -135,6 +135,6 @@ describe('FollowSectionComponent', () => {
 
 		section.toggleFollow(user(2, 'beto', true, true));
 
-		expect(server.expectOne(`${API_URL}/users/2/follow`).request.method).toBe('DELETE');
+		expect(server.expectOne(`${environment.apiUrl}/users/2/follow`).request.method).toBe('DELETE');
 	});
 });

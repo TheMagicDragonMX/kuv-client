@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { SnackbarComponent } from './components/snackbar.component';
 import { ThemeToggleComponent } from './components/theme-toggle.component';
 
 /**
@@ -8,7 +9,7 @@ import { ThemeToggleComponent } from './components/theme-toggle.component';
 @Component({
 	selector: 'app-root',
 	standalone: true,
-	imports: [ RouterOutlet, ThemeToggleComponent ],
+	imports: [ RouterOutlet, SnackbarComponent, ThemeToggleComponent ],
 	templateUrl: './app.component.html',
 })
 export class App {

@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_URL } from './api-url';
+import { environment } from '../environments';
 
 /**
  * What the API answers after a login.
@@ -52,7 +52,7 @@ export type RegisterPayload = {
  * Talks to the API's session endpoints.
  */
 @Injectable({ providedIn: 'root' })
-export class SessionApi {
+export class SessionHttpService {
 	/**
 	 * Sends the HTTP requests.
 	 */
@@ -61,7 +61,7 @@ export class SessionApi {
 	/**
 	 * Address of the session endpoints.
 	 */
-	private readonly endpoint = `${API_URL}/session`;
+	private readonly endpoint = `${environment.apiUrl}/session`;
 
 	/**
 	 * Logs in with a username and a password.

@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { returnPath } from '../services/auth.guard';
 import { AuthSession } from '../services/auth-session.service';
-import { SessionApi } from '../services/session-api.service';
+import { SessionHttpService } from '../services/session.http.service';
 
 /**
  * The login page: asks for a username and a password, keeps the session the API answers with and
@@ -25,7 +25,7 @@ export class LoginPage {
 	/**
 	 * Talks to the API's session endpoints.
 	 */
-	private readonly sessionApi = inject(SessionApi);
+	private readonly sessionHttp = inject(SessionHttpService);
 
 	/**
 	 * Keeps the tokens of the session.
@@ -73,7 +73,7 @@ export class LoginPage {
 		this.isSubmitting.set(true);
 		const { username, password } = this.form.getRawValue();
 
-		this.sessionApi.login(username, password).subscribe({
+		this.sessionHttp.login(username, password).subscribe({
 			next: (tokens) => {
 				this.session.save(tokens);
 				void this.router.navigateByUrl(returnPath(this.returnUrl));

@@ -1,5 +1,5 @@
 import { Injectable, computed, signal } from '@angular/core';
-import { TokenResponse } from './session-api.service';
+import { TokenResponse } from './session.http.service';
 
 /**
  * Where the access token is kept in localStorage. The cube chat reads it from there too.
@@ -26,7 +26,7 @@ function read (key: string): string | null {
 
 /**
  * The session of the user: the tokens the API gave at login, kept in localStorage so the session
- * survives reloading the page. It only stores them; `SessionApi` gets them and the auth
+ * survives reloading the page. It only stores them; `SessionHttpService` gets them and the auth
  * interceptor sends them.
  */
 @Injectable({ providedIn: 'root' })

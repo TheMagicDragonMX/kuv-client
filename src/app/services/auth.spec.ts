@@ -2,7 +2,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
-import { API_URL } from './api-url';
+import { environment } from '../environments';
 import { returnPath, signedInGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthSession } from './auth-session.service';
@@ -103,12 +103,12 @@ describe('authInterceptor', () => {
 		const { http, server, session } = setup();
 		session.save(TOKENS);
 
-		http.get(`${API_URL}/users/me`).subscribe();
-		http.post(`${API_URL}/session/login`, {}).subscribe();
+		http.get(`${environment.apiUrl}/users/me`).subscribe();
+		http.post(`${environment.apiUrl}/session/login`, {}).subscribe();
 		http.get('https://elsewhere.example/data').subscribe();
 
-		expect(server.expectOne(`${API_URL}/users/me`).request.headers.get('Authorization')).toBe('Bearer access-1');
-		expect(server.expectOne(`${API_URL}/session/login`).request.headers.has('Authorization')).toBe(false);
+		expect(server.expectOne(`${environment.apiUrl}/users/me`).request.headers.get('Authorization')).toBe('Bearer access-1');
+		expect(server.expectOne(`${environment.apiUrl}/session/login`).request.headers.has('Authorization')).toBe(false);
 		expect(server.expectOne('https://elsewhere.example/data').request.headers.has('Authorization')).toBe(false);
 	});
 
@@ -117,14 +117,14 @@ describe('authInterceptor', () => {
 		const answers: unknown[] = [];
 		session.save(TOKENS);
 
-		http.get(`${API_URL}/users/me`).subscribe((answer) => answers.push(answer));
-		server.expectOne(`${API_URL}/users/me`).flush(null, { status: 401, statusText: 'Unauthorized' });
+		http.get(`${environment.apiUrl}/users/me`).subscribe((answer) => answers.push(answer));
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(null, { status: 401, statusText: 'Unauthorized' });
 
-		const refresh = server.expectOne(`${API_URL}/session/refresh`);
+		const refresh = server.expectOne(`${environment.apiUrl}/session/refresh`);
 		expect(refresh.request.body).toEqual({ refreshToken: 'refresh-1' });
 		refresh.flush({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
 
-		const again = server.expectOne(`${API_URL}/users/me`);
+		const again = server.expectOne(`${environment.apiUrl}/users/me`);
 		expect(again.request.headers.get('Authorization')).toBe('Bearer access-2');
 		again.flush({ username: 'ana' });
 
@@ -138,9 +138,9 @@ describe('authInterceptor', () => {
 		let failed = false;
 		session.save(TOKENS);
 
-		http.get(`${API_URL}/users/me`).subscribe({ error: () => failed = true });
-		server.expectOne(`${API_URL}/users/me`).flush(null, { status: 401, statusText: 'Unauthorized' });
-		server.expectOne(`${API_URL}/session/refresh`).flush(null, { status: 401, statusText: 'Unauthorized' });
+		http.get(`${environment.apiUrl}/users/me`).subscribe({ error: () => failed = true });
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(null, { status: 401, statusText: 'Unauthorized' });
+		server.expectOne(`${environment.apiUrl}/session/refresh`).flush(null, { status: 401, statusText: 'Unauthorized' });
 
 		expect(failed).toBe(true);
 		expect(session.signedIn()).toBe(false);

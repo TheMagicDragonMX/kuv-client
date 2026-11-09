@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { API_URL } from '../../services/api-url';
+import { environment } from '../../environments';
 import { AuthSession } from '../../services/auth-session.service';
-import { Profile } from '../../services/users-api.service';
+import { Profile } from '../../services/users.http.service';
 import { ProfilePage } from './profile.component';
 import { centerSquare, photoFileProblem } from './profile-photo';
 
@@ -23,7 +23,7 @@ function createPage (profile: Profile | null = ME) {
 	const server = TestBed.inject(HttpTestingController);
 	fixture.detectChanges();
 
-	const request = server.expectOne(`${API_URL}/users/me`);
+	const request = server.expectOne(`${environment.apiUrl}/users/me`);
 
 	if (profile)
 		request.flush(profile);
@@ -70,7 +70,7 @@ describe('ProfilePage', () => {
 		page.draft.set('Hola');
 		page.saveDescription();
 
-		const save = server.expectOne(`${API_URL}/users/me`);
+		const save = server.expectOne(`${environment.apiUrl}/users/me`);
 		expect(save.request.method).toBe('PUT');
 		expect(save.request.body).toEqual({ description: 'Hola', photo: null });
 		save.flush({ ...ME, description: 'Hola' });

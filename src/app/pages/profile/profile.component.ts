@@ -4,8 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { AvatarComponent } from '../../components/avatar.component';
 import { SiteHeaderComponent } from '../../components/site-header.component';
 import { AuthSession } from '../../services/auth-session.service';
-import { CreationsApi, UserCreation } from '../../services/creations-api.service';
-import { MAX_DESCRIPTION, Profile, ProfileChanges, UsersApi } from '../../services/users-api.service';
+import { CreationsHttpService, UserCreation } from '../../services/creations.http.service';
+import { videoUrl } from '../../services/creations';
+import { MAX_DESCRIPTION, Profile, ProfileChanges, UsersHttpService } from '../../services/users.http.service';
 import { FollowList, FollowSectionComponent } from './follow-section.component';
 import { photoFileProblem, photoFromFile } from './profile-photo';
 
@@ -89,12 +90,12 @@ export class ProfilePage implements OnInit {
 	/**
 	 * Talks to the user API.
 	 */
-	private readonly usersApi = inject(UsersApi);
+	private readonly usersHttp = inject(UsersHttpService);
 
 	/**
 	 * Talks to the creations API.
 	 */
-	private readonly creationsApi = inject(CreationsApi);
+	private readonly creationsHttp = inject(CreationsHttpService);
 
 	/**
 	 * The session, to sign out.
@@ -121,7 +122,7 @@ export class ProfilePage implements OnInit {
 	 */
 	protected load (): void {
 		this.loadProblem.set(null);
-		this.usersApi.me().subscribe({
+		this.usersHttp.me().subscribe({
 			next: (profile) => this.profile.set(profile),
 			error: (error: HttpErrorResponse) => this.loadProblem.set(0 === error.status
 				? 'No se pudo conectar con el servidor.'
@@ -136,14 +137,14 @@ export class ProfilePage implements OnInit {
 		this.loadingCreations.set(true);
 		this.creationsProblem.set(null);
 
-		this.creationsApi.getMyCreations().subscribe({
+		this.creationsHttp.getMyCreations().subscribe({
 			next: (items) => {
 				this.creations.set(items);
 				const token = this.session.accessToken();
 				const urls: Record<number, string> = {};
 				for (const item of items) {
 					if (item.hasVideo) {
-						urls[item.id] = this.creationsApi.getVideoUrl(item.id, token);
+						urls[item.id] = videoUrl(item.id, token);
 					}
 				}
 				this.videoUrls.set(urls);
@@ -177,7 +178,7 @@ export class ProfilePage implements OnInit {
 		}
 
 		this.deletingId.set(creation.id);
-		this.creationsApi.deleteCreation(creation.id).subscribe({
+		this.creationsHttp.deleteCreation(creation.id).subscribe({
 			next: () => {
 				this.deletingId.set(null);
 				this.creations.update((list) => list.filter((c) => c.id !== creation.id));
@@ -280,7 +281,7 @@ export class ProfilePage implements OnInit {
 	 * Loads the profile again after someone was followed or unfollowed, so the counts are right.
 	 */
 	protected refresh (): void {
-		this.usersApi.me().subscribe({ next: (profile) => this.profile.set(profile) });
+		this.usersHttp.me().subscribe({ next: (profile) => this.profile.set(profile) });
 	}
 
 	/**
@@ -297,7 +298,7 @@ export class ProfilePage implements OnInit {
 	private save (changes: ProfileChanges, done?: () => void): void {
 		this.saving.set(true);
 		this.saveProblem.set(null);
-		this.usersApi.updateMe(changes).subscribe({
+		this.usersHttp.updateMe(changes).subscribe({
 			next: (profile) => {
 				this.profile.set(profile);
 				this.saving.set(false);
