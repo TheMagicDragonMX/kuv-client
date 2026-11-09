@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CubeState, FACE_COUNT, FACE_RESOLUTION } from '../state/cube-state';
-import { CubeModel } from './cube-model';
+import { CubeModel, createLedGeometry } from './cube-model';
 import { Stage } from './stage';
 import { LED_DEPTH } from './view-settings';
 
@@ -29,21 +29,42 @@ describe('CubeModel', () => {
 			expect(leds.count).toBe(FACE_RESOLUTION * FACE_RESOLUTION);
 	});
 
-	it('makes each LED a single square facing out, not a box', () => {
+	it('gives each LED a body that is cheaper than a box: 8 shared corners and 10 triangles, positions only', () => {
 		for (const leds of matrices) {
-			expect(leds.geometry.attributes['position'].count).toBe(4);
-			expect(leds.geometry.index?.count).toBe(6);
+			expect(leds.geometry.attributes['position'].count).toBe(8);
+			expect(leds.geometry.index?.count).toBe(30);
+			expect(Object.keys(leds.geometry.attributes)).toEqual([ 'position' ]);
 		}
 	});
 
-	it('puts the squares where the front of the old boxes was, just above the panel', () => {
+	it('stands the body on the panel with its front where the front of the old box was', () => {
 		const position = new THREE.Vector3();
 		const matrix = new THREE.Matrix4();
 
 		matrices[0].getMatrixAt(0, matrix);
 		position.setFromMatrixPosition(matrix);
+		matrices[0].geometry.computeBoundingBox();
 
-		expect(position.z).toBeCloseTo(LED_DEPTH + 0.002, 6);
+		const box = matrices[0].geometry.boundingBox as THREE.Box3;
+
+		expect(position.z + box.min.z).toBeCloseTo(0.002, 6);
+		expect(position.z + box.max.z).toBeCloseTo(LED_DEPTH + 0.002, 6);
+	});
+
+	it('draws every triangle counter-clockwise seen from outside, so none of the visible ones is culled', () => {
+		const geometry = createLedGeometry(0.03, 0.02);
+		const points = geometry.attributes['position'];
+		const index = geometry.index as THREE.BufferAttribute;
+		const center = new THREE.Vector3(0, 0, 0.01);
+		const corner = (at: number) => new THREE.Vector3().fromBufferAttribute(points, index.getX(at));
+
+		for (let triangle = 0; triangle < index.count; triangle += 3) {
+			const [ a, b, c ] = [ corner(triangle), corner(triangle + 1), corner(triangle + 2) ];
+			const normal = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a));
+			const outward = new THREE.Vector3().addVectors(a, b).add(c).divideScalar(3).sub(center);
+
+			expect(normal.dot(outward), `triangle ${triangle / 3}`).toBeGreaterThan(0);
+		}
 	});
 
 	it('does not ask for shadows that no light casts', () => {

@@ -7,8 +7,8 @@
  *   CubeState --copied by--> CubeModel --is part of--> the scene
  *
  * Each face's 4096 LEDs are one *instanced mesh*: the GPU draws them all in a single call,
- * and the only per-LED data is a color. An LED is a single square facing out, not a box: only its
- * front can be seen, so the sides would be vertices and triangles drawn for nothing. The model only reads the state and never changes it.
+ * and the only per-LED data is a color. An LED has a body, a tray with no bottom (see
+ * `createLedGeometry`), so it stands out of the panel instead of floating over it. The model only reads the state and never changes it.
  * The order of the faces here is the order of the `Face` enum, so a face is also an index.
  *
  * Copying the colors is the hottest loop of the view (20480 LEDs, on every frame the state
@@ -54,6 +54,44 @@ const FACE_PLACEMENTS = [
 	{ position: new THREE.Vector3(0, 0, -FACE_OFFSET), rotation: new THREE.Euler(0, Math.PI, 0) },
 	{ position: new THREE.Vector3(0, FACE_OFFSET, 0), rotation: new THREE.Euler(-Math.PI / 2, 0, 0) },
 ];
+
+/**
+ * The body of one LED: a short square prism of the given side and depth with its base on the
+ * plane z = 0 and its front at z = depth, so it stands on the panel. It is the cheapest body
+ * that still looks like a box from every angle:
+ *
+ *   - it has no bottom, which rests on the panel and is never seen
+ *   - its 8 corners are shared by the 10 triangles (a box has 24 vertices, because each of its
+ *     faces repeats its corners to give them a normal and texture coordinates)
+ *   - it only has positions: the LEDs are drawn unlit, which needs no normals or UVs
+ *
+ * The triangles run counter-clockwise seen from outside, so the GPU discards the ones turned
+ * away from the camera.
+ */
+export function createLedGeometry (side: number, depth: number): THREE.BufferGeometry {
+	const half = side / 2;
+	const geometry = new THREE.BufferGeometry();
+
+	geometry.setAttribute('position', new THREE.Float32BufferAttribute([
+		-half, -half, depth,
+		half, -half, depth,
+		half, half, depth,
+		-half, half, depth,
+		-half, -half, 0,
+		half, -half, 0,
+		half, half, 0,
+		-half, half, 0,
+	], 3));
+	geometry.setIndex([
+		0, 1, 2, 0, 2, 3, // front
+		1, 5, 6, 1, 6, 2, // right
+		0, 3, 7, 0, 7, 4, // left
+		3, 2, 6, 3, 6, 7, // top
+		0, 4, 5, 0, 5, 1, // bottom
+	]);
+
+	return geometry;
+}
 
 /**
  * Linear value of each 0..255 sRGB channel, which is what three.js wants in the LED color
@@ -274,7 +312,7 @@ export class CubeModel {
 		 * apart.
 		 */
 		const ledPitch = (ledSpan - ledSize) / (FACE_RESOLUTION - 1);
-		const ledGeometry = new THREE.PlaneGeometry(ledSize, ledSize);
+		const ledGeometry = createLedGeometry(ledSize, LED_DEPTH);
 
 		for (const placement of FACE_PLACEMENTS) {
 			const faceGroup = new THREE.Group();
@@ -312,7 +350,7 @@ export class CubeModel {
 				FACE_RESOLUTION * FACE_RESOLUTION,
 			);
 			const dummy = new THREE.Object3D();
-			const ledZ = LED_DEPTH + 0.002;
+			const ledZ = 0.002;
 			let ledIndex = 0;
 
 			for (let row = 0; row < FACE_RESOLUTION; row += 1)
