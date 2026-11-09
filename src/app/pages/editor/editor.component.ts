@@ -104,6 +104,11 @@ export class EditorPage implements OnInit {
 	protected readonly environment = signal<Environment>({ brightness: { ...DEFAULT_BRIGHTNESS } });
 
 	/**
+	 * Names of the backgrounds made in the Background tab, which the background blocks switch to.
+	 */
+	protected readonly backgroundNames = computed(() => backgroundsOf(this.environment()).map((background) => background.name));
+
+	/**
 	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
 	 * face being edited does not turn away. The Spin button brings the rotation back.
 	 */
