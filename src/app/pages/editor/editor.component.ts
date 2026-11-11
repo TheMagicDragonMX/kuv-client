@@ -13,8 +13,7 @@ import {
 	recordCubeVideo,
 } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
-import { CreationsHttpService } from '../../services/creations.http.service';
-import { creationForm } from '../../services/creations';
+import { CreationsService } from '../../services/middle/creations.service';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { backgroundsOf, normalizeBackgrounds } from './backgrounds';
@@ -52,7 +51,7 @@ export class EditorPage implements OnInit {
 	private exportPreviewHostRef?: ElementRef<HTMLDivElement>;
 
 	private readonly projectStorage = inject(ProjectStorageService);
-	private readonly creationsHttp = inject(CreationsHttpService);
+	private readonly creationsService = inject(CreationsService);
 	private readonly authSession = inject(AuthSession);
 	private readonly route = inject(ActivatedRoute);
 	private readonly router = inject(Router);
@@ -155,7 +154,7 @@ export class EditorPage implements OnInit {
 			try {
 				const numericId = parseInt(projectId, 10);
 				if (!isNaN(numericId) && this.signedIn()) {
-					this.creationsHttp.getCreation(numericId).subscribe({
+					this.creationsService.getCreation({ id: numericId }).subscribe({
 						next: (creation) => {
 							this.currentCreationId.set(creation.id);
 							this.exportTitle.set(creation.title);
@@ -278,10 +277,10 @@ export class EditorPage implements OnInit {
 
 				const currentId = this.currentCreationId();
 				if (null !== currentId) {
-					const updated = await firstValueFrom(this.creationsHttp.updateCreation(currentId, creationForm(payload, true)));
+					const updated = await firstValueFrom(this.creationsService.updateCreation({ id: currentId }, payload));
 					this.currentCreationId.set(updated.id);
 				} else {
-					const created = await firstValueFrom(this.creationsHttp.createCreation(creationForm(payload)));
+					const created = await firstValueFrom(this.creationsService.createCreation(payload));
 					this.currentCreationId.set(created.id);
 				}
 			} else {
@@ -312,7 +311,7 @@ export class EditorPage implements OnInit {
 
 	protected goToProfile(): void {
 		this.showExportModal.set(false);
-		void this.router.navigate(['/profile']);
+		void this.router.navigate(['/perfil']);
 	}
 
 	protected goToGallery(): void {

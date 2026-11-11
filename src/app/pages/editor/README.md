@@ -49,7 +49,7 @@ When Blockly arrives it replaces the tab, `workspace.ts` and `visual-blocks.ts`,
 | | Repeat | `repeat` |
 | | Repeat forever | `forever` |
 
-**Change background image** is the one that *contains* something. The user presses "Choose image", picks a photo in a popup, crops it to a square, and the block keeps the result: the photo already shrunk to the 64 × 64 pixels of a face, the way the Raspberry Pi library does it (see `pixelate` in [cube/environment/](../../cube/environment/)). The block shows that thumbnail. When the block runs, the faces it names change to that picture. The pixels travel inside the compiled block, so the program alone is all the cube (or the Pi) needs.
+**Change background image** is the one that *contains* something. The user presses "Choose image", picks a photo in a popup, crops it to a square, and the block keeps the result: the photo already shrunk to the 64 × 64 pixels of a face, the way the Raspberry Pi library does it (see `pixelate` in [cube/environment/](../../cube/engine/environment/)). The block shows that thumbnail. When the block runs, the faces it names change to that picture. The pixels travel inside the compiled block, so the program alone is all the cube (or the Pi) needs.
 
 There is no "Create object" block: objects are made in the Objects tab, and the blocks only handle them. Every block that acts on an object has an Object dropdown with the objects made there.
 
@@ -65,7 +65,7 @@ A block is one entry of `VISUAL_BLOCKS` in [visual-blocks.ts](visual-blocks.ts):
 - `compile`: the engine block it becomes. Leave out what is on its default (an optional field the user did not set), so a program that was loaded comes back the same.
 - `read`: the reverse of `compile`: the values of the block, from the engine block.
 
-If it needs an engine block that does not exist yet, add that first (see [cube/blocks/README.md](../../cube/blocks/README.md)). Add a test in [visual-blocks.spec.ts](visual-blocks.spec.ts): the spec checks that every block starts with values that make a valid program and that `read` undoes `compile`.
+If it needs an engine block that does not exist yet, add that first (see [cube/blocks/README.md](../../cube/engine/blocks/README.md)). Add a test in [visual-blocks.spec.ts](visual-blocks.spec.ts): the spec checks that every block starts with values that make a valid program and that `read` undoes `compile`.
 
 ## Other files
 

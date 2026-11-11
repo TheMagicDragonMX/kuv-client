@@ -1,32 +1,3 @@
-/**
- * Public surface of the cube.
- *
- * Everything outside `src/app/cube/` should import from here and nothing else. If something
- * is not exported here, it is an internal detail of the cube.
- */
-
-export { CubeComponent } from './component/cube.component';
-export type { ObjectMove } from './component/cube.component';
-export { CubeEngine } from './engine/cube-engine';
-export type { CubeEngineOptions } from './engine/cube-engine';
-export { CubePlayer } from './engine/cube-player';
-export type { CubePlayerOptions } from './engine/cube-player';
-export { EngineError, ProgramError } from './errors';
-export type { BackgroundImages, Environment } from './environment/environment';
-export type { NamedBackground } from './world/world';
-export { DEFAULT_BRIGHTNESS } from './renderer/renderer';
-export type { Brightness } from './renderer/renderer';
-export { pixelate } from './environment/pixelate';
-export type { RawImage } from './environment/pixelate';
-export { EXAMPLE_PROGRAMS } from './examples/example-programs';
-export type { ExampleProgram } from './examples/example-programs';
-export { formatColor, parseColor } from './program/names';
-export type { Block, CreateCommand } from './blocks';
-export type { CostumeDefinition, FaceName, HeadingName, Program, ProgramConfig, Script, ShapePixelDefinition, SideName, Trigger } from './program/program';
-export { validateProgram } from './program/validate-program';
-export type { ScriptError } from './runtime/scheduler';
-export { CubeState, FACE_RESOLUTION, Face } from './state/cube-state';
-export type { Color } from './state/cube-state';
-export { CubeView } from './view/cube-view';
-export { isRecordingSupported, recordCubeVideo } from './recorder/cube-recorder';
-export type { RecordCubeOptions, RecordProgress, RecordResult } from './recorder/cube-recorder';
+export * from './engine';
+export * from './link';
+export * from './setup';

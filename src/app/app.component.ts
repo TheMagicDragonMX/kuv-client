@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { SnackbarComponent } from './components/snackbar.component';
-import { ThemeToggleComponent } from './components/theme-toggle.component';
+import { SnackbarComponent } from './components/snackbar/snackbar.component';
+import { ThemeToggleComponent } from './components/theme-toggle/theme-toggle.component';
 
 /**
  * The root component, which only hosts the router outlet.

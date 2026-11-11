@@ -2,7 +2,7 @@
 
 How the Kü-V cube works: users program **objects** with Blockly blocks, and an **engine** turns those programs into pixels on the cube. This document is the reference for the engine. The same logic is implemented twice, once in TypeScript for the browser and once in Python for the Raspberry Pi.
 
-The code is laid out in [src/app/cube/](src/app/cube/README.md), one folder per layer. It replaces the architecture described in [VIRTUAL_CUBE_API.md](VIRTUAL_CUBE_API.md), where one virtual cube was the shared source of truth for the browser and the Pi. That is no longer the plan. See [section 2](#2-what-changed).
+The code is laid out in [src/app/cube/engine/](src/app/cube/engine/README.md), one folder per layer. It replaces the architecture described in [VIRTUAL_CUBE_API.md](VIRTUAL_CUBE_API.md), where one virtual cube was the shared source of truth for the browser and the Pi. That is no longer the plan. See [section 2](#2-what-changed).
 
 ## Contents
 
@@ -81,7 +81,7 @@ The layers are cheap. The whole cube is 5 × 64 × 64 = 20,480 pixels (about 80 
 
 ## 4. Surfaces and geometry
 
-Reference implementation: [src/app/cube/geometry/geometry.ts](src/app/cube/geometry/geometry.ts), tests in `geometry.spec.ts`. The Python engine must reproduce this behavior exactly.
+Reference implementation: [src/app/cube/engine/geometry/geometry.ts](src/app/cube/engine/geometry/geometry.ts), tests in `geometry.spec.ts`. The Python engine must reproduce this behavior exactly.
 
 ### 4.1 The strip and the top face
 
@@ -351,7 +351,7 @@ On the Pi, use bulk operations (a numpy array, slice assignment) instead of per-
 | | Browser | Raspberry Pi |
 | --- | --- | --- |
 | Language | TypeScript | Python |
-| Location | `kuv-client/src/app/cube/` (see its [README](src/app/cube/README.md)) | `kuv-cube/` |
+| Location | `kuv-client/src/app/cube/engine/` (see its [README](src/app/cube/engine/README.md)) | `kuv-cube/` |
 | Output | `CubeState` → three.js | `CubeState` → panel mapping → `rpi-rgb-led-matrix` |
 | Role | Simulator and preview | Runs programs on its own |
 

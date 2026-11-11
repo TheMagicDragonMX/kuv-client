@@ -14,7 +14,14 @@
 		</div>
 
 		@for (section of sections; track section.id) {
-			<app-animation-row [id]="section.id" [title]="section.title" [animations]="section.animations" [liked]="liked()" (toggled)="toggle($event)" />
+			<app-animation-row [id]="section.id" [title]="section.title" [animations]="section.animations" [liked]="liked()"
+				[saved]="saved()"
+				[favorites]="favorites()"
+				(toggled)="toggle(liked, $event)"
+				(viewed)="view($event)"
+				(saveToggled)="toggle(saved, $event)"
+				(favoriteToggled)="toggle(favorites, $event)"
+			/>
 		}
 	</main>
 </div>

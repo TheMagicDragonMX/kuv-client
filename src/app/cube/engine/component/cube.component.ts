@@ -39,7 +39,7 @@ import {
 	untracked,
 	viewChild,
 } from '@angular/core';
-import { ThemeService } from '../../services/theme.service';
+import { ThemeService } from '../../../services/theme.service';
 import { EngineError, ProgramError } from '../errors';
 import { CreateCommand } from '../blocks';
 import { CubePlayer } from '../engine/cube-player';

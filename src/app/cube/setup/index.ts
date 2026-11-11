@@ -2,7 +2,7 @@
  * Public surface of the setup section: connecting to a physical cube over Bluetooth to set its
  * WiFi and see its state.
  *
- * Everything outside `src/app/setup/` should import from here and nothing else.
+ * Everything outside `src/app/cube/setup/` should import from here and nothing else.
  */
 
 export { connectBluetooth, isBluetoothAvailable } from './bluetooth-transport';

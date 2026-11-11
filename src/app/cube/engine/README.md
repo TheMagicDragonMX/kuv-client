@@ -1,8 +1,8 @@
-# `src/app/cube/`: the cube
+# `src/app/cube/engine/`: the cube engine
 
 Everything about how the cube works lives in this folder, and nothing outside it knows. If you are looking for how something about the cube works, find its layer below and open that file.
 
-Design and reasoning: [CUBE_DESIGN.md](../../../CUBE_DESIGN.md). To understand how it all works, step by step, read [ENGINE_MANUAL.md](../../../ENGINE_MANUAL.md). This file is the map of the code.
+Design and reasoning: [CUBE_DESIGN.md](../../../../CUBE_DESIGN.md). To understand how it all works, step by step, read [ENGINE_MANUAL.md](../../../../ENGINE_MANUAL.md). This file is the map of the code.
 
 ## Using the cube
 
@@ -24,7 +24,7 @@ To put pictures on the faces, give it an environment (shown at once, and kept th
 
 Anything else is on the template reference: `cube.run(program)`, `cube.stop()`, `cube.reset()`, `cube.showFace(face)`, `cube.spin()`, and the signals `cube.running()`, `cube.problem()` and `cube.camera()`. The full list is at the top of [component/cube.component.ts](component/cube.component.ts).
 
-The editor page does exactly this, plus a side panel with three tabs next to the cube ([pages/editor/](../pages/editor/README.md)): the blocks, the program area (the same program as JSON), and the background panel, where the user picks a picture, crops it to a square and chooses the faces it goes on.
+The editor page does exactly this, plus a side panel with three tabs next to the cube ([pages/editor/](../../pages/editor/README.md)): the blocks, the program area (the same program as JSON), and the background panel, where the user picks a picture, crops it to a square and chooses the faces it goes on.
 
 ## The layers
 

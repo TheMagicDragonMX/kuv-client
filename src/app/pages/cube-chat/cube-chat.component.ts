@@ -2,7 +2,7 @@ import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { CubeLinkService, EVENT_CUBE_STATUS, EVENT_ERROR, EVENT_REPLY, LinkState } from '../../cube-link';
+import { CubeLinkService, EVENT_CUBE_STATUS, EVENT_ERROR, EVENT_REPLY, LinkState } from '../../cube';
 
 /**
  * Who wrote a line of the conversation.

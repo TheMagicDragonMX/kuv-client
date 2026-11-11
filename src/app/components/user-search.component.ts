@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, inject, output, signal, viewChild } from '@angular/core';
 import { Router } from '@angular/router';
-import { AvatarComponent } from './avatar.component';
-import { UserSummary, UsersHttpService } from '../services/users.http.service';
+import { AvatarComponent } from './avatar/avatar.component';
+import { UserSummary } from '../models';
+import { UsersService } from '../services/middle/users.service';
 import { relationOf } from '../pages/profile/follow-section.component';
 
 const SEARCH_DELAY = 250;
@@ -126,7 +127,7 @@ export class UserSearchModalComponent {
 	protected readonly loading = signal(false);
 	protected readonly relationOf = relationOf;
 
-	private readonly usersHttp = inject(UsersHttpService);
+	private readonly usersService = inject(UsersService);
 	private readonly router = inject(Router);
 	private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
@@ -155,7 +156,7 @@ export class UserSearchModalComponent {
 		this.loading.set(true);
 		this.searchTimer = setTimeout(() => {
 			this.searchTimer = null;
-			this.usersHttp.search(trimmed).subscribe({
+			this.usersService.search({ search: trimmed }).subscribe({
 				next: (users) => {
 					if (text === this.query()) {
 						this.results.set(users);

@@ -2,30 +2,30 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { returnPath } from '../services/auth.guard';
-import { AuthSession } from '../services/auth-session.service';
-import { SessionHttpService } from '../services/session.http.service';
+import { returnPath } from '../../services/auth.guard';
+import { AuthSession } from '../../services/auth-session.service';
+import { SessionService } from '../../services/middle/session.service';
 
 /**
  * The login page: asks for a username and a password, keeps the session the API answers with and
  * goes back to the page that asked for it (the profile, when none did).
  */
 @Component({
-	selector: 'app-login-page',
+	selector: 'app-login',
 	standalone: true,
 	imports: [ ReactiveFormsModule, RouterLink ],
-	templateUrl: './login-page.component.html',
+	templateUrl: './login.component.html',
 })
-export class LoginPage {
+export class LoginComponent {
 	/**
 	 * Builds the form.
 	 */
 	private readonly formBuilder = inject(FormBuilder);
 
 	/**
-	 * Talks to the API's session endpoints.
+	 * Logs in and creates accounts through the API.
 	 */
-	private readonly sessionHttp = inject(SessionHttpService);
+	private readonly sessionService = inject(SessionService);
 
 	/**
 	 * Keeps the tokens of the session.
@@ -73,7 +73,7 @@ export class LoginPage {
 		this.isSubmitting.set(true);
 		const { username, password } = this.form.getRawValue();
 
-		this.sessionHttp.login(username, password).subscribe({
+		this.sessionService.login({ username, password }).subscribe({
 			next: (tokens) => {
 				this.session.save(tokens);
 				void this.router.navigateByUrl(returnPath(this.returnUrl));

@@ -1,0 +1,5 @@
+@if (photo(); as source) {
+	<img class="size-full object-cover" [src]="source" alt="" />
+} @else {
+	<span class="grid size-full place-items-center font-display font-bold" [class]="color()">{{ initial() }}</span>
+}

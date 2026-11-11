@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { SnackbarService } from '../../services/snackbar.service';
 import { SECTIONS } from './home-data';
 import { HomePage } from './home.component';
 
@@ -56,5 +57,36 @@ describe('HomePage', () => {
 		fixture.detectChanges();
 
 		expect(buttons().every((button) => 'false' === button.getAttribute('aria-pressed'))).toBe(true);
+	});
+
+	it('says an animation cannot be seen yet, since the animations are examples', () => {
+		const { element } = createPage();
+		const snackbar = TestBed.inject(SnackbarService);
+
+		(element.querySelector('app-animation-card button[aria-label^="Visualizar"]') as HTMLButtonElement).click();
+
+		expect(snackbar.message()?.text).toContain(SECTIONS[0].animations[0].title);
+		expect(snackbar.message()?.text).toContain('todavía no se puede visualizar');
+		snackbar.dismiss();
+	});
+
+	it('saves an animation and adds it to the favorites in every row it is in, and takes them back', () => {
+		const { fixture, element } = createPage();
+		const first = SECTIONS[0].animations[0];
+		const buttons = (name: string): HTMLButtonElement[] => [ ...element.querySelectorAll('app-animation-card') ]
+			.filter((card) => card.querySelector('h3')?.textContent?.includes(first.title))
+			.map((card) => card.querySelector(`button[aria-label^="${name}"]`) as HTMLButtonElement);
+
+		for (const name of [ 'Guardar', 'Favorito' ]) {
+			expect(buttons(name).length).toBeGreaterThan(1);
+
+			buttons(name)[0].click();
+			fixture.detectChanges();
+			expect(buttons(name).every((button) => 'true' === button.getAttribute('aria-pressed')), name).toBe(true);
+
+			buttons(name)[1].click();
+			fixture.detectChanges();
+			expect(buttons(name).every((button) => 'false' === button.getAttribute('aria-pressed')), name).toBe(true);
+		}
 	});
 });

@@ -1,4 +1,4 @@
-# `src/app/cube/blocks/`: the blocks a user can program with
+# `src/app/cube/engine/blocks/`: the blocks a user can program with
 
 Every block lives in its own file, inside the folder of its category. Open the file of a block to see **everything** about it: its shape in the JSON program, which fields it has, and what it does.
 
@@ -81,7 +81,7 @@ Example: a `turn` block in the `object` category.
 1. **Create the file** `object/turn.ts`, following the anatomy above. Copy a similar block (`point-up.ts` is the smallest) and change it. Name the type `TurnCommand` and the definition `turnBlock`.
 2. **Register it** in `object/index.ts`: add `TurnCommand` to the `ObjectCommand` union, and `turn: turnBlock` to the `OBJECT_BLOCKS` table. Forgetting either one is a compile error.
 3. **Test it** in `commands/commands.spec.ts` (what it does) and `program/validate-program.spec.ts` (what it accepts and rejects).
-4. **Document it**: add a row to the table above and to the block tables in [ENGINE_MANUAL.md](../../../../ENGINE_MANUAL.md#6-what-a-block-actually-does).
+4. **Document it**: add a row to the table above and to the block tables in [ENGINE_MANUAL.md](../../../../../ENGINE_MANUAL.md#6-what-a-block-actually-does).
 
 Nothing else changes: the validator, the dispatcher and the program types all read the registry. A **control** block is the same, except it has no `apply`; the interpreter (`runtime/interpreter.ts`) must also learn what it means, and its `switch` fails to compile until it does.
 

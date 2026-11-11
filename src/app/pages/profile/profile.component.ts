@@ -1,12 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AvatarComponent } from '../../components/avatar.component';
-import { SiteHeaderComponent } from '../../components/site-header.component';
+import { AvatarComponent } from '../../components/avatar/avatar.component';
+import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
+import { MAX_DESCRIPTION, Profile, ProfileChanges, UserCreation } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
-import { CreationsHttpService, UserCreation } from '../../services/creations.http.service';
-import { videoUrl } from '../../services/creations';
-import { MAX_DESCRIPTION, Profile, ProfileChanges, UsersHttpService } from '../../services/users.http.service';
+import { CreationsService } from '../../services/middle/creations.service';
+import { UsersService } from '../../services/middle/users.service';
 import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
 import { photoFileProblem, photoFromFile } from './profile-photo';
 
@@ -112,12 +112,12 @@ export class ProfilePage implements OnInit {
 	/**
 	 * Talks to the user API.
 	 */
-	private readonly usersHttp = inject(UsersHttpService);
+	private readonly usersService = inject(UsersService);
 
 	/**
 	 * Talks to the creations API.
 	 */
-	private readonly creationsHttp = inject(CreationsHttpService);
+	private readonly creationsService = inject(CreationsService);
 
 	/**
 	 * The session, to sign out.
@@ -155,8 +155,7 @@ export class ProfilePage implements OnInit {
 	protected load (): void {
 		this.loadProblem.set(null);
 		const id = this.targetUserId();
-
-		const request = null === id ? this.usersHttp.me() : this.usersHttp.profile(id);
+		const request = null === id ? this.usersService.me() : this.usersService.profile({ id });
 
 		request.subscribe({
 			next: (profile) => this.profile.set(profile),
@@ -181,8 +180,8 @@ export class ProfilePage implements OnInit {
 		const id = this.targetUserId();
 
 		const request = null === id
-			? this.creationsHttp.getMyCreations()
-			: this.creationsHttp.getUserCreations(id);
+			? this.creationsService.getMyCreations()
+			: this.creationsService.getUserCreations({ id });
 
 		request.subscribe({
 			next: (items) => {
@@ -191,7 +190,7 @@ export class ProfilePage implements OnInit {
 				const urls: Record<number, string> = {};
 				for (const item of items) {
 					if (item.hasVideo) {
-						urls[item.id] = videoUrl(item.id, token);
+						urls[item.id] = this.creationsService.videoUrl({ id: item.id, token });
 					}
 				}
 				this.videoUrls.set(urls);
@@ -218,8 +217,8 @@ export class ProfilePage implements OnInit {
 
 		this.followingUser.set(true);
 		const request = current.youFollow
-			? this.usersHttp.unfollow(current.id)
-			: this.usersHttp.follow(current.id);
+			? this.usersService.unfollow({ id: current.id })
+			: this.usersService.follow({ id: current.id });
 
 		request.subscribe({
 			next: (updatedProfile) => {
@@ -249,11 +248,11 @@ export class ProfilePage implements OnInit {
 		const nextState = !creation.isPublic;
 		this.togglingVisibilityId.set(creation.id);
 
-		this.creationsHttp.setVisibility(creation.id, nextState).subscribe({
+		this.creationsService.setVisibility({ id: creation.id }, { isPublic: nextState }).subscribe({
 			next: (updated) => {
 				this.togglingVisibilityId.set(null);
 				this.creations.update((list) =>
-					list.map((c) => (c.id === updated.id ? { ...c, isPublic: updated.isPublic } : c))
+					list.map((c) => (c.id === updated.id ? { ...c, isPublic: updated.isPublic } : c)),
 				);
 			},
 			error: (error: HttpErrorResponse) => {
@@ -273,7 +272,7 @@ export class ProfilePage implements OnInit {
 		}
 
 		this.deletingId.set(creation.id);
-		this.creationsHttp.deleteCreation(creation.id).subscribe({
+		this.creationsService.deleteCreation({ id: creation.id }).subscribe({
 			next: () => {
 				this.deletingId.set(null);
 				this.creations.update((list) => list.filter((c) => c.id !== creation.id));
@@ -377,7 +376,7 @@ export class ProfilePage implements OnInit {
 	 */
 	protected refresh (): void {
 		const id = this.targetUserId();
-		const request = null === id ? this.usersHttp.me() : this.usersHttp.profile(id);
+		const request = null === id ? this.usersService.me() : this.usersService.profile({ id });
 
 		request.subscribe({ next: (profile) => this.profile.set(profile) });
 	}
@@ -396,7 +395,7 @@ export class ProfilePage implements OnInit {
 	private save (changes: ProfileChanges, done?: () => void): void {
 		this.saving.set(true);
 		this.saveProblem.set(null);
-		this.usersHttp.updateMe(changes).subscribe({
+		this.usersService.updateMe(changes).subscribe({
 			next: (profile) => {
 				this.profile.set(profile);
 				this.saving.set(false);
