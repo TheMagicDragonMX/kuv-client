@@ -147,11 +147,58 @@ export class EditorPage implements OnInit {
 	protected readonly exportProgress = signal<RecordProgress | null>(null);
 	protected readonly exportSuccess = signal(false);
 	protected readonly saveError = signal<string | null>(null);
+	protected readonly exportIsPublic = signal(true);
 
 	async ngOnInit(): Promise<void> {
 		const projectId = this.route.snapshot.queryParamMap.get('project');
 		if (projectId) {
 			try {
+				const numericId = parseInt(projectId, 10);
+				if (!isNaN(numericId) && this.signedIn()) {
+					this.creationsHttp.getCreation(numericId).subscribe({
+						next: (creation) => {
+							this.currentCreationId.set(creation.id);
+							this.exportTitle.set(creation.title);
+							this.exportDescription.set(creation.description ?? '');
+							this.exportDuration.set(creation.durationSeconds || 15);
+							this.exportIsPublic.set(creation.isPublic);
+							if (creation.environmentJson) {
+								try {
+									this.environment.set(JSON.parse(creation.environmentJson));
+								} catch (e) {
+									console.error('Error parsing environment JSON:', e);
+								}
+							}
+							if (creation.programJson) {
+								try {
+									const program = JSON.parse(creation.programJson);
+									setTimeout(() => {
+										this.blocksRef?.loadProgram(program);
+										this.cubeRef?.run(program);
+									}, 100);
+								} catch (e) {
+									console.error('Error parsing program JSON:', e);
+								}
+							}
+						},
+						error: async () => {
+							const project = await this.projectStorage.get(projectId);
+							if (project) {
+								this.exportTitle.set(project.title);
+								this.exportDescription.set(project.description);
+								if (project.environment)
+									this.environment.set(project.environment);
+
+								setTimeout(() => {
+									this.blocksRef?.loadProgram(project.program);
+									this.cubeRef?.run(project.program);
+								}, 100);
+							}
+						},
+					});
+					return;
+				}
+
 				const project = await this.projectStorage.get(projectId);
 				if (project) {
 					this.exportTitle.set(project.title);
@@ -225,6 +272,7 @@ export class EditorPage implements OnInit {
 					program,
 					environment: this.environment(),
 					durationSeconds: this.exportDuration(),
+					isPublic: this.exportIsPublic(),
 					videoBlob: result.blob,
 				};
 
@@ -247,6 +295,7 @@ export class EditorPage implements OnInit {
 					durationSeconds: this.exportDuration(),
 					program,
 					environment: this.environment(),
+					isPublic: this.exportIsPublic(),
 					videoBlob: result.blob,
 					videoMimeType: result.mimeType,
 				});

@@ -44,6 +44,14 @@ export class CreationsHttpService {
 	}
 
 	/**
+	 * Lists creations of a specific user.
+	 * If viewing another user, the server only returns their public creations.
+	 */
+	getUserCreations (userId: number): Observable<UserCreation[]> {
+		return this.http.get<UserCreation[]>(`${this.endpoint}/user/${userId}`);
+	}
+
+	/**
 	 * Gets a creation by its id.
 	 */
 	getCreation (id: number): Observable<UserCreation> {
@@ -55,6 +63,13 @@ export class CreationsHttpService {
 	 */
 	getVideoBlob (id: number): Observable<Blob> {
 		return this.http.get(`${this.endpoint}/${id}/video`, { responseType: 'blob' });
+	}
+
+	/**
+	 * Changes whether a creation is public or private.
+	 */
+	setVisibility (id: number, isPublic: boolean): Observable<UserCreation> {
+		return this.http.patch<UserCreation>(`${this.endpoint}/${id}/visibility`, { isPublic });
 	}
 
 	/**

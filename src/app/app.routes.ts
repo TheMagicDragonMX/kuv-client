@@ -15,6 +15,7 @@ export const routes: Routes = [
 	{ path: 'editor', component: EditorPage },
 	{ path: 'inicio', loadComponent: () => import('./pages/home/home.component').then((page) => page.HomePage) },
 	{ path: 'perfil', canActivate: [ signedInGuard ], loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
+	{ path: 'perfil/:id', canActivate: [ signedInGuard ], loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
 	{ path: 'gallery', loadComponent: () => import('./pages/gallery/gallery.component').then((page) => page.GalleryPage) },
 
 	/**

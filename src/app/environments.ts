@@ -12,5 +12,5 @@ export type AppEnvironment = {
  * The settings the app runs with.
  */
 export const environment: AppEnvironment = {
-	apiUrl: 'https://api.kuv.lol',
+	apiUrl: 'http://localhost:5038',
 };

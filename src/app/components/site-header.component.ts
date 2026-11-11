@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CubeLinkService, LinkState } from '../cube-link';
 import { AuthSession } from '../services/auth-session.service';
+import { UserSearchModalComponent } from './user-search.component';
 
 /**
  * A place the main navigation leads to.
@@ -54,7 +55,7 @@ const STATUS: Record<LinkState, { label: string; classes: string; dot: string }>
 	selector: 'app-site-header',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ RouterLink, RouterLinkActive ],
+	imports: [ RouterLink, RouterLinkActive, UserSearchModalComponent ],
 	host: { class: 'contents' },
 	template: `
 		<header class="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-slate-400/20 bg-(--surface) py-3 pr-18 pl-4 backdrop-blur-[10px] sm:pl-10">
@@ -78,11 +79,28 @@ const STATUS: Record<LinkState, { label: string; classes: string; dot: string }>
 				}
 			</nav>
 
-			<div class="flex items-center gap-3">
+			<div class="flex items-center gap-2.5 sm:gap-3">
+				<!-- Botón de búsqueda de usuarios -->
+				@if (signedIn()) {
+					<button
+						type="button"
+						class="grid size-11 place-items-center rounded-full border border-slate-400/25 bg-slate-400/10 text-slate-300 transition hover:bg-slate-400/20 hover:text-white focus-visible:outline-2 focus-visible:outline-accent cursor-pointer"
+						aria-label="Buscar creadores"
+						title="Buscar usuarios y creadores"
+						(click)="searchOpen.set(true)"
+					>
+						<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<circle cx="11" cy="11" r="8" />
+							<line x1="21" y1="21" x2="16.65" y2="16.65" />
+						</svg>
+					</button>
+				}
+
 				<a routerLink="/setup" class="inline-flex min-h-11 items-center gap-2 rounded-full border px-3 text-[0.8rem] font-bold focus-visible:outline-2 focus-visible:outline-accent sm:px-3.5" [class]="status().classes">
 					<span class="size-2 rounded-full" [class]="status().dot" aria-hidden="true"></span>
 					<span class="sr-only sm:not-sr-only">{{ status().label }}</span>
 				</a>
+
 				<a
 					routerLink="/perfil"
 					routerLinkActive="ring-2 ring-accent ring-offset-2 ring-offset-(--page)"
@@ -95,6 +113,10 @@ const STATUS: Record<LinkState, { label: string; classes: string; dot: string }>
 				</a>
 			</div>
 		</header>
+
+		@if (searchOpen()) {
+			<app-user-search (close)="searchOpen.set(false)" />
+		}
 
 		<nav class="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-slate-400/20 bg-(--surface) px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-[10px] md:hidden" aria-label="Navegación principal">
 			@for (item of items; track item.path) {
@@ -116,6 +138,11 @@ export class SiteHeaderComponent {
 	 * The places of the navigation.
 	 */
 	protected readonly items = ITEMS;
+
+	/**
+	 * State of the search modal.
+	 */
+	protected readonly searchOpen = signal(false);
 
 	/**
 	 * Where the link to the cube stands, as the service tells it.

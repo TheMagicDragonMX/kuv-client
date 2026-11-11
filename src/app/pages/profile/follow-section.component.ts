@@ -15,6 +15,7 @@ import {
 	untracked,
 	viewChild,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar.component';
 import { Profile, UserSummary, UsersHttpService } from '../../services/users.http.service';
@@ -72,7 +73,7 @@ export function followLabel (user: Pick<UserSummary, 'followsYou' | 'youFollow'>
 })
 export class FollowSectionComponent {
 	/**
-	 * The signed-in user's profile, whose lists are shown.
+	 * The profile whose lists are shown.
 	 */
 	readonly me = input.required<Profile>();
 
@@ -97,12 +98,12 @@ export class FollowSectionComponent {
 	protected readonly followLabel = followLabel;
 
 	/**
-	 * The users the signed-in user follows, or null until they are loaded.
+	 * The users the profile user follows, or null until they are loaded.
 	 */
 	protected readonly following = signal<UserSummary[] | null>(null);
 
 	/**
-	 * The users who follow the signed-in user, or null until they are loaded.
+	 * The users who follow the profile user, or null until they are loaded.
 	 */
 	protected readonly followers = signal<UserSummary[] | null>(null);
 
@@ -169,6 +170,11 @@ export class FollowSectionComponent {
 	private readonly usersHttp = inject(UsersHttpService);
 
 	/**
+	 * Router for navigating to user profiles (optional so unit tests don't require provideRouter).
+	 */
+	private readonly router = inject(Router, { optional: true });
+
+	/**
 	 * The panel with the details, to bring it into view on small screens.
 	 */
 	private readonly details = viewChild<ElementRef<HTMLElement>>('details');
@@ -189,6 +195,21 @@ export class FollowSectionComponent {
 		});
 
 		inject(DestroyRef).onDestroy(() => this.cancelSearch());
+	}
+
+	/**
+	 * Reloads the follower and following lists manually.
+	 */
+	public reload (): void {
+		this.load(this.me().id);
+	}
+
+	/**
+	 * Navigates to a user's full profile page.
+	 */
+	protected goToProfile (userId: number, event?: MouseEvent): void {
+		event?.preventDefault();
+		void this.router?.navigate(['/perfil', userId]);
 	}
 
 	/**

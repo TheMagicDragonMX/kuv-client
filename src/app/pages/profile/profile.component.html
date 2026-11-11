@@ -3,24 +3,34 @@
 
 	<main class="mx-auto flex max-w-340 flex-col gap-10 px-4 pt-8 pb-28 sm:px-10 sm:pt-10 md:pb-16">
 		@if (profile(); as me) {
-			<section class="flex flex-wrap items-center gap-6 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-5 sm:gap-7 sm:p-7" aria-label="Datos de la cuenta">
+			<section class="flex flex-wrap items-center gap-6 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-5 sm:gap-7 sm:p-7" [attr.aria-label]="me.isYou ? 'Datos de tu cuenta' : 'Perfil de ' + me.username">
 				<div class="flex flex-col items-center gap-2.5">
 					<div class="rounded-full bg-accent-pink p-1">
 						<app-avatar class="size-28 text-[3.25rem] sm:size-32" [name]="me.username" [photo]="me.photo" />
 					</div>
-					<div class="flex flex-wrap justify-center gap-1.5">
-						<label class="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-slate-400/30 px-3.5 text-sm font-bold text-slate-300 hover:bg-slate-400/15 focus-within:outline-2 focus-within:outline-accent">
-							{{ me.photo ? 'Cambiar foto' : 'Poner foto' }}
-							<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="sr-only" [disabled]="saving()" (change)="changePhoto($event)" />
-						</label>
-						@if (me.photo) {
-							<button type="button" class="min-h-11 cursor-pointer rounded-xl px-3 text-sm font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200 disabled:opacity-60" [disabled]="saving()" (click)="removePhoto()">Quitar</button>
-						}
-					</div>
+					@if (me.isYou) {
+						<div class="flex flex-wrap justify-center gap-1.5">
+							<label class="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-slate-400/30 px-3.5 text-sm font-bold text-slate-300 hover:bg-slate-400/15 focus-within:outline-2 focus-within:outline-accent">
+								{{ me.photo ? 'Cambiar foto' : 'Poner foto' }}
+								<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="sr-only" [disabled]="saving()" (change)="changePhoto($event)" />
+							</label>
+							@if (me.photo) {
+								<button type="button" class="min-h-11 cursor-pointer rounded-xl px-3 text-sm font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200 disabled:opacity-60" [disabled]="saving()" (click)="removePhoto()">Quitar</button>
+							}
+						</div>
+					}
 				</div>
 
 				<div class="flex min-w-0 flex-[1_1_20rem] flex-col gap-2">
-					<h1 class="font-display text-[clamp(2rem,6vw,2.75rem)] leading-[1.05] font-bold break-words">&#64;{{ me.username }}</h1>
+					<div class="flex flex-wrap items-center gap-3">
+						<h1 class="font-display text-[clamp(2rem,6vw,2.75rem)] leading-[1.05] font-bold break-words">&#64;{{ me.username }}</h1>
+						@if (!me.isYou && relationOf(me); as relation) {
+							<span class="rounded-full bg-slate-400/15 border border-slate-400/25 px-3 py-1 text-xs font-extrabold text-slate-200">
+								{{ relation }}
+							</span>
+						}
+					</div>
+
 					@if (me.email) {
 						<p class="flex items-center gap-2 text-base text-slate-400 sm:text-[1.05rem]">
 							<svg viewBox="0 0 24 24" class="size-4.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>
@@ -48,12 +58,18 @@
 					} @else if (me.description) {
 						<p class="mt-1 max-w-160 text-base whitespace-pre-line text-slate-200">{{ me.description }}</p>
 					} @else {
-						<p class="mt-1 text-base text-slate-400">Aún no escribiste nada sobre ti.</p>
+						<p class="mt-1 text-base text-slate-400">
+							{{ me.isYou ? 'Aún no escribiste nada sobre ti.' : 'Todavía no ha escrito una descripción.' }}
+						</p>
 					}
 
 					<div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-base text-slate-400">
-						<button type="button" class="-mx-2 min-h-11 cursor-pointer rounded-lg px-2 hover:bg-slate-400/15" (click)="showList('followers')"><strong class="text-slate-100">{{ me.followers }}</strong> {{ 1 === me.followers ? 'seguidor' : 'seguidores' }}</button>
-						<button type="button" class="-mx-2 min-h-11 cursor-pointer rounded-lg px-2 hover:bg-slate-400/15" (click)="showList('following')"><strong class="text-slate-100">{{ me.following }}</strong> {{ 1 === me.following ? 'seguido' : 'seguidos' }}</button>
+						<button type="button" class="-mx-2 min-h-11 cursor-pointer rounded-lg px-2 hover:bg-slate-400/15 transition" (click)="showList('followers')">
+							<strong class="text-slate-100">{{ me.followers }}</strong> {{ 1 === me.followers ? 'seguidor' : 'seguidores' }}
+						</button>
+						<button type="button" class="-mx-2 min-h-11 cursor-pointer rounded-lg px-2 hover:bg-slate-400/15 transition" (click)="showList('following')">
+							<strong class="text-slate-100">{{ me.following }}</strong> {{ 1 === me.following ? 'seguido' : 'seguidos' }}
+						</button>
 					</div>
 
 					@if (saveProblem(); as text) {
@@ -61,37 +77,69 @@
 					}
 				</div>
 
-				<div class="flex w-full flex-col gap-2 sm:w-auto">
-					@if (!editing()) {
-						<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 bg-slate-400/15 px-5.5 text-[0.95rem] font-extrabold text-slate-100 hover:bg-slate-400/25" (click)="edit()">Editar perfil</button>
+				<div class="flex w-full flex-col gap-2.5 sm:w-auto">
+					@if (me.isYou) {
+						@if (!editing()) {
+							<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 bg-slate-400/15 px-5.5 text-[0.95rem] font-extrabold text-slate-100 hover:bg-slate-400/25 transition" (click)="edit()">Editar perfil</button>
+						}
+						<button type="button" class="min-h-11 cursor-pointer rounded-xl px-5.5 text-[0.95rem] font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200 transition" (click)="signOut()">Cerrar sesión</button>
+					} @else {
+						<button
+							type="button"
+							class="min-h-11 cursor-pointer rounded-xl border px-6 text-[0.95rem] font-extrabold transition duration-150 disabled:opacity-60 shadow-md"
+							[class]="me.youFollow ? 'border-slate-400/30 text-slate-100 hover:bg-slate-400/15' : 'border-transparent bg-accent-pink text-on-accent-pink hover:brightness-110 active:scale-95'"
+							[disabled]="followingUser()"
+							(click)="toggleFollowCurrentProfile()"
+						>
+							{{ followLabel(me) }}
+						</button>
+
+						<a
+							routerLink="/perfil"
+							class="inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-400/30 bg-slate-800/80 px-5 text-[0.95rem] font-bold text-slate-200 hover:bg-slate-700 hover:text-white transition"
+						>
+							<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+							</svg>
+							Mi perfil
+						</a>
 					}
-					<button type="button" class="min-h-11 cursor-pointer rounded-xl px-5.5 text-[0.95rem] font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200" (click)="signOut()">Cerrar sesión</button>
 				</div>
 			</section>
 
-			<!-- SECCIÓN: MIS CREACIONES -->
+			<!-- SECCIÓN: CREACIONES -->
 			<section class="flex flex-col gap-6" aria-labelledby="creations-title">
 				<div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-700/50 pb-4">
 					<div class="flex items-center gap-3">
-						<h2 id="creations-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">Mis Creaciones</h2>
+						<h2 id="creations-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">
+							{{ me.isYou ? 'Mis Creaciones' : 'Creaciones de @' + me.username }}
+						</h2>
 						<span class="rounded-full bg-accent-pink/20 border border-accent-pink/40 px-3 py-0.5 text-xs font-bold text-accent-pink">
 							{{ creations().length }}
 						</span>
+						@if (!me.isYou) {
+							<span class="rounded-full bg-slate-800 border border-slate-700 px-2.5 py-0.5 text-[0.7rem] font-medium text-slate-400">
+								Públicas
+							</span>
+						}
 					</div>
-					<a
-						routerLink="/editor"
-						class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-4 text-sm font-bold text-on-accent-pink shadow-md hover:opacity-90 transition active:scale-95"
-					>
-						<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
-						</svg>
-						Nueva creación
-					</a>
+
+					@if (me.isYou) {
+						<a
+							routerLink="/editor"
+							class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-4 text-sm font-bold text-on-accent-pink shadow-md hover:opacity-90 transition active:scale-95"
+						>
+							<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+							</svg>
+							Nueva creación
+						</a>
+					}
 				</div>
 
 				@if (loadingCreations()) {
 					<div class="flex items-center justify-center py-12 text-slate-400">
-						<p class="text-sm">Cargando tus creaciones…</p>
+						<p class="text-sm">Cargando creaciones…</p>
 					</div>
 				} @else if (creationsProblem(); as problem) {
 					<div class="flex flex-col items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/10 p-5">
@@ -112,17 +160,19 @@
 								<div>
 									<div class="flex items-start justify-between gap-2">
 										<h3 class="text-base font-bold text-slate-100 break-words">{{ item.title }}</h3>
-										<button
-											type="button"
-											class="cursor-pointer text-slate-400 hover:text-red-400 p-1 transition disabled:opacity-50"
-											title="Eliminar creación"
-											[disabled]="deletingId() === item.id"
-											(click)="deleteCreation(item, $event)"
-										>
-											<svg class="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-												<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-											</svg>
-										</button>
+										@if (me.isYou) {
+											<button
+												type="button"
+												class="cursor-pointer text-slate-400 hover:text-red-400 p-1 transition disabled:opacity-50"
+												title="Eliminar creación"
+												[disabled]="deletingId() === item.id"
+												(click)="deleteCreation(item, $event)"
+											>
+												<svg class="size-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+												</svg>
+											</button>
+										}
 									</div>
 									<p class="mt-1 line-clamp-2 text-xs text-slate-400 min-h-[2rem]">
 										{{ item.description || 'Sin descripción' }}
@@ -156,7 +206,24 @@
 								<div class="flex flex-col gap-3 pt-2 border-t border-slate-800/80">
 									<div class="flex items-center justify-between text-[0.72rem] text-slate-400">
 										<span>{{ formatDate(item.createdAt) }}</span>
-										<span class="text-slate-500">{{ item.isPublic ? 'Pública' : 'Solo tú' }}</span>
+										@if (me.isYou) {
+											<button
+												type="button"
+												class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[0.7rem] font-medium transition cursor-pointer disabled:opacity-50"
+												[class]="item.isPublic ? 'bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border border-emerald-500/30' : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700'"
+												[disabled]="togglingVisibilityId() === item.id"
+												(click)="toggleVisibility(item, $event)"
+												[title]="item.isPublic ? 'Pública: visible en tu perfil para otros usuarios. Clic para hacerla privada.' : 'Privada: solo tú puedes verla. Clic para hacerla pública.'"
+											>
+												<span class="inline-block size-1.5 rounded-full" [class]="item.isPublic ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'"></span>
+												{{ togglingVisibilityId() === item.id ? 'Cambiando...' : (item.isPublic ? 'Pública' : 'Solo tú') }}
+											</button>
+										} @else {
+											<span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[0.7rem] font-medium text-emerald-300 border border-emerald-500/20">
+												<span class="inline-block size-1.5 rounded-full bg-emerald-400"></span>
+												Pública
+											</span>
+										}
 									</div>
 
 									<button
@@ -167,7 +234,7 @@
 										<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 											<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
 										</svg>
-										Editar en el Editor
+										{{ me.isYou ? 'Editar en el Editor' : 'Ver en el Editor' }}
 									</button>
 								</div>
 							</div>
@@ -180,31 +247,45 @@
 								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
 							</svg>
 						</div>
-						<h3 class="text-base font-bold text-slate-200">Aún no tienes creaciones</h3>
-						<p class="mt-1 text-xs text-slate-400 max-w-sm">
-							Diseña animaciones tridimensionales en el editor interactivo y guárdalas directamente en tu perfil.
-						</p>
-						<a
-							routerLink="/editor"
-							class="mt-5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-5 text-sm font-bold text-on-accent-pink hover:opacity-90 transition active:scale-95"
-						>
-							Ir al Editor
-						</a>
+						@if (me.isYou) {
+							<h3 class="text-base font-bold text-slate-200">Aún no tienes creaciones</h3>
+							<p class="mt-1 text-xs text-slate-400 max-w-sm">
+								Diseña animaciones tridimensionales en el editor interactivo y guárdalas directamente en tu perfil.
+							</p>
+							<a
+								routerLink="/editor"
+								class="mt-5 inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-5 text-sm font-bold text-on-accent-pink hover:opacity-90 transition active:scale-95"
+							>
+								Ir al Editor
+							</a>
+						} @else {
+							<h3 class="text-base font-bold text-slate-200">Sin creaciones públicas</h3>
+							<p class="mt-1 text-xs text-slate-400 max-w-sm">
+								Este usuario aún no ha publicado ninguna creación en su perfil.
+							</p>
+						}
 					</div>
 				}
 			</section>
 
 			<section #follows class="flex scroll-mt-24 flex-col gap-5" aria-labelledby="follows-title">
-				<h2 id="follows-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">Seguidores y seguidos</h2>
+				<h2 id="follows-title" class="font-display text-[1.75rem] font-semibold sm:text-[1.9rem]">
+					{{ me.isYou ? 'Seguidores y seguidos' : 'Seguidores y seguidos de @' + me.username }}
+				</h2>
 				<app-follow-section [me]="me" [(list)]="list" (changed)="refresh()" />
 			</section>
 		} @else if (loadProblem(); as text) {
-			<div class="flex flex-col items-start gap-3 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-7" role="alert">
+			<div class="flex flex-col items-start gap-4 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-7" role="alert">
 				<p class="text-base text-red-200">{{ text }}</p>
-				<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 px-5 font-bold text-slate-100 hover:bg-slate-400/15" (click)="load()">Reintentar</button>
+				<div class="flex flex-wrap items-center gap-3">
+					<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 px-5 font-bold text-slate-100 hover:bg-slate-400/15" (click)="load()">Reintentar</button>
+					@if (targetUserId() !== null) {
+						<a routerLink="/perfil" class="min-h-11 inline-flex items-center rounded-xl bg-slate-800 px-5 font-bold text-slate-200 hover:bg-slate-700">Ir a mi perfil</a>
+					}
+				</div>
 			</div>
 		} @else {
-			<p class="text-slate-400" role="status">Cargando tu perfil…</p>
+			<p class="text-slate-400" role="status">Cargando perfil…</p>
 		}
 	</main>
 </div>

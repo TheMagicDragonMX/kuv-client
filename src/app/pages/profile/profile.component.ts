@@ -1,18 +1,19 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AvatarComponent } from '../../components/avatar.component';
 import { SiteHeaderComponent } from '../../components/site-header.component';
 import { AuthSession } from '../../services/auth-session.service';
 import { CreationsHttpService, UserCreation } from '../../services/creations.http.service';
 import { videoUrl } from '../../services/creations';
 import { MAX_DESCRIPTION, Profile, ProfileChanges, UsersHttpService } from '../../services/users.http.service';
-import { FollowList, FollowSectionComponent } from './follow-section.component';
+import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
 import { photoFileProblem, photoFromFile } from './profile-photo';
 
 /**
- * The profile of the signed-in user: their photo, name, email and description, which they can
- * change, their personal cube creations, and below it the followers and followed section.
+ * The profile of a user (the signed-in user or another creator): their photo, name, email
+ * (if viewing own profile) and description, their public or personal cube creations,
+ * and below it the followers and followed section.
  */
 @Component({
 	selector: 'app-profile',
@@ -26,6 +27,11 @@ export class ProfilePage implements OnInit {
 	 * Longest description there can be.
 	 */
 	protected readonly maxDescription = MAX_DESCRIPTION;
+
+	/**
+	 * Target user id if viewing another user's profile, or null if viewing own profile.
+	 */
+	protected readonly targetUserId = signal<number | null>(null);
 
 	/**
 	 * The profile, or null until it is loaded.
@@ -58,6 +64,11 @@ export class ProfilePage implements OnInit {
 	protected readonly saveProblem = signal<string | null>(null);
 
 	/**
+	 * True while following or unfollowing the user from the profile header.
+	 */
+	protected readonly followingUser = signal(false);
+
+	/**
 	 * The list shown in the followers section.
 	 */
 	protected readonly list = signal<FollowList>('following');
@@ -88,6 +99,17 @@ export class ProfilePage implements OnInit {
 	protected readonly deletingId = signal<number | null>(null);
 
 	/**
+	 * ID of the creation whose visibility is currently being toggled.
+	 */
+	protected readonly togglingVisibilityId = signal<number | null>(null);
+
+	/**
+	 * Relation and follow label helpers.
+	 */
+	protected readonly relationOf = relationOf;
+	protected readonly followLabel = followLabel;
+
+	/**
 	 * Talks to the user API.
 	 */
 	private readonly usersHttp = inject(UsersHttpService);
@@ -103,18 +125,28 @@ export class ProfilePage implements OnInit {
 	private readonly session = inject(AuthSession);
 
 	/**
-	 * Goes to another page after signing out.
+	 * Routing and current route.
 	 */
 	private readonly router = inject(Router);
+	private readonly route = inject(ActivatedRoute);
 
 	/**
-	 * The followers section, to scroll to it from the counts.
+	 * The followers section element and component reference.
 	 */
 	private readonly followSection = viewChild<ElementRef<HTMLElement>>('follows');
+	private readonly followSectionComponent = viewChild(FollowSectionComponent);
 
 	ngOnInit (): void {
-		this.load();
-		this.loadCreations();
+		this.route.paramMap.subscribe((params) => {
+			const idParam = params.get('id');
+			const parsedId = idParam ? parseInt(idParam, 10) : null;
+			const id = parsedId && !isNaN(parsedId) ? parsedId : null;
+
+			this.targetUserId.set(id);
+			this.editing.set(false);
+			this.load();
+			this.loadCreations();
+		});
 	}
 
 	/**
@@ -122,22 +154,37 @@ export class ProfilePage implements OnInit {
 	 */
 	protected load (): void {
 		this.loadProblem.set(null);
-		this.usersHttp.me().subscribe({
+		const id = this.targetUserId();
+
+		const request = null === id ? this.usersHttp.me() : this.usersHttp.profile(id);
+
+		request.subscribe({
 			next: (profile) => this.profile.set(profile),
-			error: (error: HttpErrorResponse) => this.loadProblem.set(0 === error.status
-				? 'No se pudo conectar con el servidor.'
-				: 'No se pudo cargar tu perfil.'),
+			error: (error: HttpErrorResponse) => this.loadProblem.set(
+				0 === error.status
+					? 'No se pudo conectar con el servidor.'
+					: 404 === error.status
+						? 'El usuario no existe o ha sido eliminado.'
+						: null === id
+							? 'No se pudo cargar tu perfil.'
+							: 'No se pudo cargar el perfil.',
+			),
 		});
 	}
 
 	/**
-	 * Loads the user's creations from the API.
+	 * Loads creations from the API (all if own profile, public only if another creator).
 	 */
 	protected loadCreations (): void {
 		this.loadingCreations.set(true);
 		this.creationsProblem.set(null);
+		const id = this.targetUserId();
 
-		this.creationsHttp.getMyCreations().subscribe({
+		const request = null === id
+			? this.creationsHttp.getMyCreations()
+			: this.creationsHttp.getUserCreations(id);
+
+		request.subscribe({
 			next: (items) => {
 				this.creations.set(items);
 				const token = this.session.accessToken();
@@ -154,9 +201,35 @@ export class ProfilePage implements OnInit {
 				this.loadingCreations.set(false);
 				this.creationsProblem.set(
 					0 === error.status
-						? 'No se pudo conectar para cargar tus creaciones.'
-						: 'No se pudieron cargar tus creaciones.',
+						? 'No se pudo conectar para cargar las creaciones.'
+						: 'No se pudieron cargar las creaciones.',
 				);
+			},
+		});
+	}
+
+	/**
+	 * Follows or unfollows the profile currently viewed.
+	 */
+	protected toggleFollowCurrentProfile (): void {
+		const current = this.profile();
+		if (!current || current.isYou || this.followingUser())
+			return;
+
+		this.followingUser.set(true);
+		const request = current.youFollow
+			? this.usersHttp.unfollow(current.id)
+			: this.usersHttp.follow(current.id);
+
+		request.subscribe({
+			next: (updatedProfile) => {
+				this.profile.set(updatedProfile);
+				this.followingUser.set(false);
+				this.followSectionComponent()?.reload();
+			},
+			error: (error: HttpErrorResponse) => {
+				this.followingUser.set(false);
+				alert(error.error?.message ?? 'No se pudo actualizar el seguimiento. Inténtalo de nuevo.');
 			},
 		});
 	}
@@ -166,6 +239,28 @@ export class ProfilePage implements OnInit {
 	 */
 	protected openInEditor (creation: UserCreation): void {
 		void this.router.navigate(['/editor'], { queryParams: { project: creation.id } });
+	}
+
+	/**
+	 * Toggles whether a creation is public or private.
+	 */
+	protected toggleVisibility (creation: UserCreation, event: MouseEvent): void {
+		event.stopPropagation();
+		const nextState = !creation.isPublic;
+		this.togglingVisibilityId.set(creation.id);
+
+		this.creationsHttp.setVisibility(creation.id, nextState).subscribe({
+			next: (updated) => {
+				this.togglingVisibilityId.set(null);
+				this.creations.update((list) =>
+					list.map((c) => (c.id === updated.id ? { ...c, isPublic: updated.isPublic } : c))
+				);
+			},
+			error: (error: HttpErrorResponse) => {
+				this.togglingVisibilityId.set(null);
+				alert(error.error?.message ?? 'No se pudo cambiar la visibilidad de la creación.');
+			},
+		});
 	}
 
 	/**
@@ -281,7 +376,10 @@ export class ProfilePage implements OnInit {
 	 * Loads the profile again after someone was followed or unfollowed, so the counts are right.
 	 */
 	protected refresh (): void {
-		this.usersHttp.me().subscribe({ next: (profile) => this.profile.set(profile) });
+		const id = this.targetUserId();
+		const request = null === id ? this.usersHttp.me() : this.usersHttp.profile(id);
+
+		request.subscribe({ next: (profile) => this.profile.set(profile) });
 	}
 
 	/**

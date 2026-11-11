@@ -10,6 +10,7 @@ export type CustomProject = {
 	description: string;
 	createdAt: number;
 	durationSeconds: number;
+	isPublic?: boolean;
 	program: Program;
 	environment?: Environment;
 	videoBlob?: Blob;
