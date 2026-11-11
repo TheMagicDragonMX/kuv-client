@@ -1,4 +1,4 @@
-import { ART_SIDE, ArtName, COMMUNITY, SECTIONS, artOf, formatLikes } from './home-data';
+import { ART_SIDE, ArtName, COMMUNITY, SECTIONS, artOf, formatDate, formatLikes } from './home-data';
 
 /**
  * Every picture there is.
@@ -39,6 +39,22 @@ describe('formatLikes', () => {
 		expect(formatLikes(1000)).toBe('1k');
 		expect(formatLikes(1200)).toBe('1.2k');
 		expect(formatLikes(18000)).toBe('18k');
+	});
+});
+
+describe('formatDate', () => {
+	it('writes the day as it was given, whatever the time zone', () => {
+		expect(formatDate('2026-01-01')).toMatch(/^1 ene\.? 2026$/);
+		expect(formatDate('2026-10-28')).toMatch(/^28 oct\.? 2026$/);
+	});
+});
+
+describe('COMMUNITY', () => {
+	it('gives every animation a day it was shared and a category', () => {
+		for (const animation of COMMUNITY) {
+			expect(animation.createdAt, animation.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+			expect(animation.category, animation.id).not.toBe('');
+		}
 	});
 });
 

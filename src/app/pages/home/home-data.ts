@@ -37,14 +37,36 @@ export type CommunityAnimation = {
 	title: string;
 
 	/**
-	 * Who made it.
+	 * Who made it: their username, without an @.
 	 */
 	author: string;
+
+	/**
+	 * The picture of the author as a data URL, or nothing when they have none (the card then shows
+	 * the first letter of their name).
+	 */
+	authorPhoto?: string | null;
+
+	/**
+	 * Address of a short video of the animation playing, or nothing when it has none yet (the card
+	 * then plays its LEDs instead).
+	 */
+	video?: string | null;
 
 	/**
 	 * How many people liked it.
 	 */
 	likes: number;
+
+	/**
+	 * The day it was shared, as YYYY-MM-DD.
+	 */
+	createdAt: string;
+
+	/**
+	 * What kind of animation it is, like "Patrones" or "Juegos".
+	 */
+	category: string;
 
 	/**
 	 * The picture that stands for it.
@@ -185,21 +207,29 @@ export function formatLikes (likes: number): string {
 }
 
 /**
+ * A day written as YYYY-MM-DD, as it is shown on a card: "12 oct 2026". The day is read as it is
+ * written, whatever the time zone of the user.
+ */
+export function formatDate (day: string): string {
+	return new Date(`${day}T00:00:00Z`).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
+
+/**
  * The animations that were shared.
  */
 export const COMMUNITY: CommunityAnimation[] = [
-	{ id: 'corazon', title: 'Corazón que late', author: '@lunapixel', likes: 3200, art: 'heart' },
-	{ id: 'lluvia', title: 'Lluvia de LEDs', author: '@toño_dev', likes: 2700, art: 'rain' },
-	{ id: 'serpiente', title: 'Serpiente que da la vuelta', author: '@mafer.cubo', likes: 11000, art: 'snake' },
-	{ id: 'fuegos', title: 'Fuegos artificiales', author: '@pixelito', likes: 15000, art: 'fire' },
-	{ id: 'arcoiris', title: 'Arcoíris diagonal', author: '@diego_bloques', likes: 18000, art: 'rainbow' },
-	{ id: 'fantasma', title: 'Fantasma saltarín', author: '@sofi.led', likes: 12000, art: 'ghost' },
-	{ id: 'ola', title: 'Ola en las 5 caras', author: '@marea', likes: 2500, art: 'wave' },
-	{ id: 'espiral', title: 'Espiral hipnótica', author: '@ren', likes: 2800, art: 'spiral' },
-	{ id: 'carita', title: 'Carita feliz', author: '@sofi.led', likes: 9800, art: 'smile' },
-	{ id: 'estrella', title: 'Estrella fugaz', author: '@lunapixel', likes: 9100, art: 'star' },
-	{ id: 'tablero', title: 'Tablero que parpadea', author: '@ren', likes: 8400, art: 'checker' },
-	{ id: 'flecha', title: 'Flecha que gira', author: '@toño_dev', likes: 7900, art: 'arrow' },
+	{ id: 'corazon', title: 'Corazón que late', author: 'lunapixel', likes: 3200, createdAt: '2026-10-28', category: 'Arte', art: 'heart' },
+	{ id: 'lluvia', title: 'Lluvia de LEDs', author: 'toño_dev', likes: 2700, createdAt: '2026-10-30', category: 'Naturaleza', art: 'rain' },
+	{ id: 'serpiente', title: 'Serpiente que da la vuelta', author: 'mafer.cubo', likes: 11000, createdAt: '2026-09-14', category: 'Juegos', art: 'snake' },
+	{ id: 'fuegos', title: 'Fuegos artificiales', author: 'pixelito', likes: 15000, createdAt: '2026-08-02', category: 'Arte', art: 'fire' },
+	{ id: 'arcoiris', title: 'Arcoíris diagonal', author: 'diego_bloques', likes: 18000, createdAt: '2026-05-19', category: 'Patrones', art: 'rainbow' },
+	{ id: 'fantasma', title: 'Fantasma saltarín', author: 'sofi.led', likes: 12000, createdAt: '2026-07-07', category: 'Personajes', art: 'ghost' },
+	{ id: 'ola', title: 'Ola en las 5 caras', author: 'marea', likes: 2500, createdAt: '2026-10-21', category: 'Naturaleza', art: 'wave' },
+	{ id: 'espiral', title: 'Espiral hipnótica', author: 'ren', likes: 2800, createdAt: '2026-10-11', category: 'Patrones', art: 'spiral' },
+	{ id: 'carita', title: 'Carita feliz', author: 'sofi.led', likes: 9800, createdAt: '2026-06-25', category: 'Personajes', art: 'smile' },
+	{ id: 'estrella', title: 'Estrella fugaz', author: 'lunapixel', likes: 9100, createdAt: '2026-09-30', category: 'Arte', art: 'star' },
+	{ id: 'tablero', title: 'Tablero que parpadea', author: 'ren', likes: 8400, createdAt: '2026-08-18', category: 'Patrones', art: 'checker' },
+	{ id: 'flecha', title: 'Flecha que gira', author: 'toño_dev', likes: 7900, createdAt: '2026-09-03', category: 'Juegos', art: 'arrow' },
 ];
 
 /**
