@@ -189,3 +189,15 @@ else
 
 ### Others
 - Use `type` aliases instead of `interface`, everywhere. The only exception is augmenting an existing global or library interface (declaration merging), which requires `interface`.
+
+### Services and API calls
+- Services live in `src/app/services/`. Those that call the API are split in two folders:
+  - `http/`: files named `*.http.service.ts`. They only make the HTTP call, and they are the only code that injects `HttpClient`.
+  - `middle/`: files named `*.service.ts`. Components (and the auth interceptor) use these, never the http ones. A middle service injects its http version and passes the calls to it, adjusting what goes out (building or cleaning the payload) and what comes in (formatting or parsing the answer).
+- Services that do not call the API (session storage, theme, snackbar, local storage, guards, interceptors) stay in the root of `services/`.
+- Every method of an http or middle service takes objects, with no exception (not even a lone id):
+  - `payload`: what is sent in the body.
+  - `params`: what is sent in the URL, whether as query params or as a path value like an id (`profile({ id })`).
+  - A method with both takes `(params, payload)`. A method with neither takes nothing.
+- Types of what is sent are defined in `src/app/models/*.requests.ts`, and types of what the API returns in `src/app/models/*.types.ts`, where `*` is the section name (`users`, `session`, `creations`). Services import them from the barrel `src/app/models/index.ts`, which exports all of them; add every new file there.
+- Every endpoint and every type is documented, following the rules above.

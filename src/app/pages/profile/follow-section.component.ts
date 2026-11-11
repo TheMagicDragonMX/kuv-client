@@ -17,7 +17,8 @@ import {
 } from '@angular/core';
 import { forkJoin } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar.component';
-import { Profile, UserSummary, UsersHttpService } from '../../services/users.http.service';
+import { Profile, UserSummary } from '../../models';
+import { UsersService } from '../../services/middle/users.service';
 
 /**
  * The two lists of the section.
@@ -166,7 +167,7 @@ export class FollowSectionComponent {
 	/**
 	 * Talks to the API.
 	 */
-	private readonly usersHttp = inject(UsersHttpService);
+	private readonly usersService = inject(UsersService);
 
 	/**
 	 * The panel with the details, to bring it into view on small screens.
@@ -213,7 +214,7 @@ export class FollowSectionComponent {
 
 		this.searchTimer = setTimeout(() => {
 			this.searchTimer = null;
-			this.usersHttp.search(text.trim()).subscribe({
+			this.usersService.search({ search: text }).subscribe({
 				next: (users) => {
 					if (text === this.query())
 						this.found.set(users);
@@ -244,7 +245,7 @@ export class FollowSectionComponent {
 		this.busy.set(true);
 		this.problem.set(null);
 
-		const request = user.youFollow ? this.usersHttp.unfollow(user.id) : this.usersHttp.follow(user.id);
+		const request = user.youFollow ? this.usersService.unfollow({ id: user.id }) : this.usersService.follow({ id: user.id });
 
 		request.subscribe({
 			next: (profile) => {
@@ -267,7 +268,7 @@ export class FollowSectionComponent {
 	 * Loads both lists of a user.
 	 */
 	protected load (id: number): void {
-		forkJoin({ following: this.usersHttp.following(id), followers: this.usersHttp.followers(id) }).subscribe({
+		forkJoin({ following: this.usersService.following({ id }), followers: this.usersService.followers({ id }) }).subscribe({
 			next: ({ following, followers }) => {
 				this.following.set(following);
 				this.followers.set(followers);

@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from '../../environments';
-import { Profile, UserSummary } from '../../services/users.http.service';
+import { Profile, UserSummary } from '../../models';
 import { FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
 
 /**

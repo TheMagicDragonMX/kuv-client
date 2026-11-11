@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { environment } from '../environments';
 import { AuthSession } from './auth-session.service';
-import { SessionHttpService } from './session.http.service';
+import { SessionService } from './middle/session.service';
 
 /**
  * The request with the access token in its Authorization header, or as it was without a token.
@@ -24,7 +24,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 		return next(request);
 
 	const session = inject(AuthSession);
-	const sessionHttp = inject(SessionHttpService);
+	const sessionService = inject(SessionService);
 	const router = inject(Router);
 
 	return next(withToken(request, session.accessToken())).pipe(catchError((error: unknown) => {
@@ -33,7 +33,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 		if (!(error instanceof HttpErrorResponse) || 401 !== error.status || !refreshToken)
 			return throwError(() => error);
 
-		return sessionHttp.refresh(refreshToken).pipe(
+		return sessionService.refresh({ refreshToken }).pipe(
 			switchMap((tokens) => {
 				session.save(tokens);
 

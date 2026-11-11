@@ -5,7 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap, tap } from 'rxjs';
 import { returnPath } from '../services/auth.guard';
 import { AuthSession } from '../services/auth-session.service';
-import { SessionHttpService } from '../services/session.http.service';
+import { SessionService } from '../services/middle/session.service';
 import { SnackbarService } from '../services/snackbar.service';
 
 /**
@@ -41,9 +41,9 @@ export class RegisterPage {
 	private readonly formBuilder = inject(FormBuilder);
 
 	/**
-	 * Talks to the API's session endpoints.
+	 * Logs in and creates accounts through the API.
 	 */
-	private readonly sessionHttp = inject(SessionHttpService);
+	private readonly sessionService = inject(SessionService);
 
 	/**
 	 * Keeps the tokens of the session.
@@ -123,9 +123,9 @@ export class RegisterPage {
 		this.isSubmitting.set(true);
 		const account = this.form.getRawValue();
 
-		this.sessionHttp.register(account).pipe(
+		this.sessionService.register(account).pipe(
 			tap(() => this.snackbar.success(`Cuenta creada. ¡Bienvenido, ${account.username.trim()}!`)),
-			switchMap(() => this.sessionHttp.login(account.username.trim(), account.password)),
+			switchMap(() => this.sessionService.login({ username: account.username, password: account.password })),
 		).subscribe({
 			next: (tokens) => {
 				this.session.save(tokens);

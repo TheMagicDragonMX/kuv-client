@@ -4,7 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { environment } from '../../environments';
 import { AuthSession } from '../../services/auth-session.service';
-import { Profile } from '../../services/users.http.service';
+import { Profile } from '../../models';
 import { ProfilePage } from './profile.component';
 import { centerSquare, photoFileProblem } from './profile-photo';
 
