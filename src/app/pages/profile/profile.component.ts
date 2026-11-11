@@ -1,8 +1,8 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { AvatarComponent } from '../../components/avatar.component';
-import { SiteHeaderComponent } from '../../components/site-header.component';
+import { AvatarComponent } from '../../components/avatar/avatar.component';
+import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { AuthSession } from '../../services/auth-session.service';
 import { MAX_DESCRIPTION, Profile, ProfileChanges, UserCreation } from '../../models';
 import { CreationsService } from '../../services/middle/creations.service';

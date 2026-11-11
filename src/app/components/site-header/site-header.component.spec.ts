@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { CubeLinkService, LinkState } from '../cube-link';
+import { CubeLinkService, LinkState } from '../../cube';
 import { SiteHeaderComponent } from './site-header.component';
 
 /**

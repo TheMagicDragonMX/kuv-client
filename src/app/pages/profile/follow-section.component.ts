@@ -16,7 +16,7 @@ import {
 	viewChild,
 } from '@angular/core';
 import { forkJoin } from 'rxjs';
-import { AvatarComponent } from '../../components/avatar.component';
+import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { Profile, UserSummary } from '../../models';
 import { UsersService } from '../../services/middle/users.service';
 

@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { SIMULATED_PIN } from '../../setup';
+import { SIMULATED_PIN } from '../../cube';
 import { SetupPage } from './setup.component';
 
 describe('SetupPage with the simulated cube', () => {

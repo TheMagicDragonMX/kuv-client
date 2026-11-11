@@ -1,6 +1,6 @@
 # How the cube engine works
 
-A guided tour for understanding the engine from the ground up. It is written as a chain of problems: each chapter starts with something that is hard or missing, then shows the idea that fixes it, how it works, and which file holds it. By the end, every file in [src/app/cube/](src/app/cube/) should feel like an obvious answer to a question you already asked.
+A guided tour for understanding the engine from the ground up. It is written as a chain of problems: each chapter starts with something that is hard or missing, then shows the idea that fixes it, how it works, and which file holds it. By the end, every file in [src/app/cube/engine/](src/app/cube/engine/) should feel like an obvious answer to a question you already asked.
 
 You do not need to read the code first. Read this top to bottom once, then open the files as you go. Each chapter ends with **Where**, the files to open.
 
@@ -120,7 +120,7 @@ Three small details matter later:
 - **A `version` number goes up on every write.** This is how readers cheaply ask "did anything change since I last looked?" without comparing 20,480 pixels. You will see it used in chapters 9 and 11.
 - **`copyFrom(other)`** copies a whole state into this one in a single operation. The renderer uses it (chapter 9).
 
-**Where.** [state/cube-state.ts](src/app/cube/state/cube-state.ts)
+**Where.** [state/cube-state.ts](src/app/cube/engine/state/cube-state.ts)
 
 ---
 
@@ -251,7 +251,7 @@ advance(pose, direction):
 
 Walk around the corner of the top face and you come back facing a different way. For example, starting at the top-right cell of FRONT: step `right`, then `up`, then `left` brings you back to the *same cell*, but now facing west instead of north. This is real geometry, not a bug: it is the same reason a cube's corner "adds up" to less than a full turn. We keep a `pointUp` block so students can reset it.
 
-**Where.** [geometry/geometry.ts](src/app/cube/geometry/geometry.ts), with all of the cases above as tests in [geometry.spec.ts](src/app/cube/geometry/geometry.spec.ts). The file is pure functions: no state, no framework.
+**Where.** [geometry/geometry.ts](src/app/cube/engine/geometry/geometry.ts), with all of the cases above as tests in [geometry.spec.ts](src/app/cube/engine/geometry/geometry.spec.ts). The file is pure functions: no state, no framework.
 
 ---
 
@@ -289,7 +289,7 @@ Some rules the world enforces:
 
 **The version number.** Like the pixel buffer, the world has a `version` that rises whenever objects or the background change. The renderer uses it to skip work when nothing happened.
 
-**Where.** [world/cube-object.ts](src/app/cube/world/cube-object.ts) and [world/world.ts](src/app/cube/world/world.ts). The world also owns the geometry settings (floor and anchor), because an object's pose only makes sense under the settings it was created with, so they are fixed for the life of that world.
+**Where.** [world/cube-object.ts](src/app/cube/engine/world/cube-object.ts) and [world/world.ts](src/app/cube/engine/world/world.ts). The world also owns the geometry settings (floor and anchor), because an object's pose only makes sense under the settings it was created with, so they are fixed for the life of that world.
 
 ---
 
@@ -303,7 +303,7 @@ Some rules the world enforces:
 
 Right now they work **per face**: a circle that hangs over the edge of FRONT is cut off at that edge instead of continuing onto RIGHT. Making shapes aware of the strip (so they wrap around a corner) is a planned improvement. Those same functions will be reused; only the surface they draw on will change.
 
-**Where.** [drawing/](src/app/cube/drawing/): `pixel.ts`, `shapes.ts`, `bitmap.ts`. They were written before the engine existed. Today `drawBitmap` (pictures) and `fillRect` (a face of one color) are used by the environment and the background blocks; the rest are internal tools waiting for objects with more shapes. No block exposes lines or circles: there used to be an "advanced tier" of blocks that painted on the background pixel by pixel, and it was removed to focus on the block scripts.
+**Where.** [drawing/](src/app/cube/engine/drawing/): `pixel.ts`, `shapes.ts`, `bitmap.ts`. They were written before the engine existed. Today `drawBitmap` (pictures) and `fillRect` (a face of one color) are used by the environment and the background blocks; the rest are internal tools waiting for objects with more shapes. No block exposes lines or circles: there used to be an "advanced tier" of blocks that painted on the background pixel by pixel, and it was removed to focus on the block scripts.
 
 ---
 
@@ -364,11 +364,11 @@ scripts[0].blocks[2].count: must be a whole number, zero or more
 
 It deliberately **rejects unknown fields**. Without that, a typo such as `"cont": 5` instead of `"count": 5` would be silently ignored and the block would do the wrong thing with no explanation.
 
-The rules for each block are not hard-coded in the validator. Each block's file in [blocks/](src/app/cube/blocks/) has a **schema**: which fields exist and what kind of value each takes (plus, when needed, a rule between several fields). The validator just looks the block up by its `op` and reads it. That schema is also exactly what you will consult when you build a Blockly block, because it is the list of that block's inputs.
+The rules for each block are not hard-coded in the validator. Each block's file in [blocks/](src/app/cube/engine/blocks/) has a **schema**: which fields exist and what kind of value each takes (plus, when needed, a rule between several fields). The validator just looks the block up by its `op` and reads it. That schema is also exactly what you will consult when you build a Blockly block, because it is the list of that block's inputs.
 
 TypeScript helps too: a block's schema must have exactly the fields of its type, and the registry fails to compile if a block type exists without a definition.
 
-**Where.** [program/](src/app/cube/program/) and [blocks/](src/app/cube/blocks/):
+**Where.** [program/](src/app/cube/engine/program/) and [blocks/](src/app/cube/engine/blocks/):
 
 | File | Role |
 | --- | --- |
@@ -377,7 +377,7 @@ TypeScript helps too: a block's schema must have exactly the fields of its type,
 | `program/validate-program.ts` | The checker |
 | `blocks/<category>/<block>.ts` | One block: its type, its schema, what it does |
 
-[examples/example-programs.ts](src/app/cube/examples/example-programs.ts) has four complete, valid programs to read.
+[examples/example-programs.ts](src/app/cube/engine/examples/example-programs.ts) has four complete, valid programs to read.
 
 ---
 
@@ -397,7 +397,7 @@ That is the whole function. Notice what is *not* there: no edge calculations, no
 
 A small but valuable detail: if a command changes nothing, it does not touch the world at all (it checks that `move` returned the same pose object, or that the color is already that color). That keeps the world's `version` still, which lets the renderer skip the frame (chapter 9). A ball pushed against the floor, "moving down" forever, costs nothing.
 
-Each function lives in the file of its block, in the folder of its category under [blocks/](src/app/cube/blocks/):
+Each function lives in the file of its block, in the folder of its category under [blocks/](src/app/cube/engine/blocks/):
 
 - **Object blocks:** what `create`, `move`, `moveTo`, `setColor`, `show`, `hide`, `delete` and `pointUp` do.
 - **Background blocks:** `setBackgroundImage` copies a picture onto the background of the faces it names (the picture travels inside the block, already 64×64) and `setBackgroundColor` fills them with one color. `setBackground` (by `name`) and `nextBackground` switch to one of the named backgrounds of the environment (`environment.backgrounds`, in order; `startBackground` is the one the cube starts with): the faces it has a picture for show it, and the others keep what they show, so backgrounds on different faces combine. They write to the same layer as the environment.
@@ -405,7 +405,7 @@ Each function lives in the file of its block, in the folder of its category unde
 
 Control blocks (`wait`, `repeat`, `forever`) are not commands. They do not change the world; they decide *when* other blocks run, which is the next chapter's problem.
 
-**Where.** [blocks/](src/app/cube/blocks/) (the blocks) and [commands/](src/app/cube/commands/) (the dispatcher)
+**Where.** [blocks/](src/app/cube/engine/blocks/) (the blocks) and [commands/](src/app/cube/engine/commands/) (the dispatcher)
 
 ---
 
@@ -481,7 +481,7 @@ Why `yield*`? When a loop's body contains more blocks, the interpreter calls its
 
 Notice what the interpreter does *not* know: what time it is, or when to resume. It only says "pause, and here is why". Someone else decides.
 
-**Where.** [runtime/interpreter.ts](src/app/cube/runtime/interpreter.ts). Its tests ([interpreter.spec.ts](src/app/cube/runtime/interpreter.spec.ts)) read like a specification of the loop rule: an empty `forever` still pauses, a loop with a `wait` does not get an extra pause, and so on.
+**Where.** [runtime/interpreter.ts](src/app/cube/engine/runtime/interpreter.ts). Its tests ([interpreter.spec.ts](src/app/cube/engine/runtime/interpreter.spec.ts)) read like a specification of the loop rule: an empty `forever` still pauses, a loop with a `wait` does not get an extra pause, and so on.
 
 ---
 
@@ -530,7 +530,7 @@ Over time the moves happen every 100 ms on average, instead of drifting. There i
 
 **Is anything running?** `active` is true while any script is mid-way or any `every` timer exists. The player uses it to know when the program is over.
 
-**Where.** [runtime/scheduler.ts](src/app/cube/runtime/scheduler.ts), with timing tests in [scheduler.spec.ts](src/app/cube/runtime/scheduler.spec.ts).
+**Where.** [runtime/scheduler.ts](src/app/cube/engine/runtime/scheduler.ts), with timing tests in [scheduler.spec.ts](src/app/cube/engine/runtime/scheduler.spec.ts).
 
 ---
 
@@ -549,7 +549,7 @@ Notice there is no "erase the old position" step. Because every frame *starts ov
 
 **Skipping work.** The renderer remembers the world `version` it last drew. If it has not changed, `render()` does nothing and returns `false`. A cube where nothing is moving costs nothing per tick. And since the output state's own version also only rises when something is drawn, the 3D view (chapter 11) is spared too.
 
-**Where.** [renderer/renderer.ts](src/app/cube/renderer/renderer.ts)
+**Where.** [renderer/renderer.ts](src/app/cube/engine/renderer/renderer.ts)
 
 ### 9.1 The environment: pictures under the program
 
@@ -561,7 +561,7 @@ Changing the environment (`setEnvironment`) shows at once, even with nothing run
 
 **From a photo to a face.** The cube has 64×64 pixels per face, so a picture has to be shrunk. `pixelate` does it the way the Raspberry Pi will: `rpi-rgb-led-matrix`'s image viewer shrinks with ImageMagick's `scale`, which averages the area of the original that each LED covers (a box filter, on the colors as written, with no gamma conversion). Transparent parts become black (LED off). It works on raw RGBA bytes and has no DOM, so it is the same code that can be written in Python. One thing the virtual cube does not copy is the brightness correction of the real panels: the library can apply a luminance curve to the colors on the LEDs, which makes mid-tones look darker there.
 
-**Where.** [environment/](src/app/cube/environment/) (`environment.ts`: the type and the painting, `pixelate.ts`: picture to pixels). The editor's panel for it is [pages/editor/background-panel.component.ts](src/app/pages/editor/background-panel.component.ts).
+**Where.** [environment/](src/app/cube/engine/environment/) (`environment.ts`: the type and the painting, `pixelate.ts`: picture to pixels). The editor's panel for it is [pages/editor/background-panel.component.ts](src/app/pages/editor/background-panel.component.ts).
 
 ---
 
@@ -617,7 +617,7 @@ player.dispose();
 
 `play` loads the program, starts the engine, and starts the timer; each timer beat ticks the engine. After every beat it checks whether the program is over (`engine.running` is false); if so it **stops its own timer**, so a finished program costs nothing. It also reports changes ("started running", "stopped running") to a callback so a button can reflect them.
 
-**Where.** [engine/](src/app/cube/engine/): `cube-engine.ts`, `run-loop.ts`, `cube-player.ts`. Tests in the matching `.spec.ts` files run whole programs end to end, including an object going over the top and appearing on the other side.
+**Where.** [engine/](src/app/cube/engine/engine/): `cube-engine.ts`, `run-loop.ts`, `cube-player.ts`. Tests in the matching `.spec.ts` files run whole programs end to end, including an object going over the top and appearing on the other side.
 
 ---
 
@@ -655,7 +655,7 @@ The copy in step 1 is the hottest loop of the view, so it is careful: it reads e
 
 The view also watches its container with a `ResizeObserver`, so the canvas follows if the page layout changes.
 
-**Where.** [view/](src/app/cube/view/). The visuals are the same as before the rewrite; the old single large file was split by responsibility.
+**Where.** [view/](src/app/cube/engine/view/). The visuals are the same as before the rewrite; the old single large file was split by responsibility.
 
 ---
 
@@ -681,7 +681,7 @@ The view also watches its container with a `ResizeObserver`, so the canvas follo
 
 On the **editor page** the logic is the same, with one extra piece: a **Blocks tab** next to the cube. The page only connects them: the program the blocks emit is passed to `cube.run(...)`. The blocks are the source of truth; the Program tab shows the JSON they compile to, read only. When Blockly arrives, only the Blocks tab is replaced.
 
-**Where.** [component/cube.component.ts](src/app/cube/component/cube.component.ts), [pages/test-cube/](src/app/pages/test-cube/) (the simplest use) and [pages/editor/](src/app/pages/editor/).
+**Where.** [component/cube.component.ts](src/app/cube/engine/component/cube.component.ts), [pages/test-cube/](src/app/pages/test-cube/) (the simplest use) and [pages/editor/](src/app/pages/editor/).
 
 ---
 
@@ -752,7 +752,7 @@ state ← geometry ← world ← commands ← interpreter ← scheduler ← engi
 
 **Programs are data.** The JSON format is the one thing both engines must agree on. When the Python engine exists, "does it behave the same?" is answered by running the same programs through both and comparing pixels.
 
-**One public door.** Everything outside the folder imports from [index.ts](src/app/cube/index.ts) and nothing else. If it is not exported there, it is an internal detail.
+**One public door.** Everything outside the folder imports from [index.ts](src/app/cube/engine/index.ts) and nothing else. If it is not exported there, it is an internal detail.
 
 **Compiler guard rails.** Adding a block and forgetting its schema, or forgetting its case in the dispatcher, fails the build instead of failing silently at runtime.
 

@@ -14,7 +14,7 @@ import {
 	SIMULATED_PIN,
 	WifiNetwork,
 	WifiState,
-} from '../../setup';
+} from '../../cube';
 
 /**
  * Where the setup flow stands: not connected, connecting, waiting for the PIN, or ready.

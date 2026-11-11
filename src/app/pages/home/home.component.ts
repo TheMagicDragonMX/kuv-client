@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { SiteHeaderComponent } from '../../components/site-header.component';
+import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { SnackbarService } from '../../services/snackbar.service';
 import { AnimationRowComponent } from './animation-row.component';
 import { COMMUNITY, SECTIONS } from './home-data';

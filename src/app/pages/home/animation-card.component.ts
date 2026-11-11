@@ -1,6 +1,6 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
-import { AvatarComponent } from '../../components/avatar.component';
+import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { ART_SIDE, CommunityAnimation, Dot, LedColor, artOf, formatDate, formatLikes } from './home-data';
 
 /**

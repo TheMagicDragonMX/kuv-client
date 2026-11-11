@@ -1,6 +1,6 @@
-# `src/app/setup/`: setting up a cube over Bluetooth
+# `src/app/cube/setup/`: setting up a cube over Bluetooth
 
-The `/setup` page ([pages/setup/](../pages/setup/setup.component.ts)) connects to a physical cube over Bluetooth Low Energy, straight from the browser (Web Bluetooth). The user unlocks the cube with its PIN, picks its WiFi network and sees how it is doing. No app and no network are needed, only being near the cube.
+The `/setup` page ([pages/setup/](../../pages/setup/setup.component.ts)) connects to a physical cube over Bluetooth Low Energy, straight from the browser (Web Bluetooth). The user unlocks the cube with its PIN, picks its WiFi network and sees how it is doing. No app and no network are needed, only being near the cube.
 
 The page works from any HTTPS address, but Bluetooth only reaches about 10 m. Reaching a cube that is already online from anywhere is a different problem (Tailscale for now, the API later).
 

@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { SnackbarKind, SnackbarService } from '../services/snackbar.service';
+import { SnackbarKind, SnackbarService } from '../../services/snackbar.service';
 
 /**
  * Border and text colors of each kind of snackbar.
@@ -18,20 +18,7 @@ const KIND_CLASSES: Record<SnackbarKind, string> = {
 	selector: 'app-snackbar',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	template: `
-		<div class="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4" aria-live="polite">
-			@if (snackbar.message(); as message) {
-				<div
-					class="pointer-events-auto flex max-w-md items-center gap-3 rounded-xl border bg-(--surface) px-4 py-3 text-[0.92rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]"
-					[class]="kindClasses[message.kind]"
-					[attr.role]="'error' === message.kind ? 'alert' : 'status'"
-				>
-					<span>{{ message.text }}</span>
-					<button type="button" class="cursor-pointer text-lg leading-none opacity-70 hover:opacity-100" aria-label="Cerrar" (click)="snackbar.dismiss()">×</button>
-				</div>
-			}
-		</div>
-	`,
+	templateUrl: './snackbar.component.html',
 })
 export class SnackbarComponent {
 	/**

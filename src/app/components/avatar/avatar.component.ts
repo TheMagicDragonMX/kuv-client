@@ -35,13 +35,7 @@ export function avatarColor (name: string): string {
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	host: { class: 'block shrink-0 overflow-hidden rounded-full', 'aria-hidden': 'true' },
-	template: `
-		@if (photo(); as source) {
-			<img class="size-full object-cover" [src]="source" alt="" />
-		} @else {
-			<span class="grid size-full place-items-center font-display font-bold" [class]="color()">{{ initial() }}</span>
-		}
-	`,
+	templateUrl: './avatar.component.html',
 })
 export class AvatarComponent {
 	/**
