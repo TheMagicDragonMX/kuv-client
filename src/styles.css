@@ -14,6 +14,22 @@
 	--color-like: var(--like);
 }
 
+/* The wave of light that runs over the LEDs of an expanded card of the home page while it has no
+   video: each LED dims and comes back, a little after the one before it. */
+@theme {
+	--animate-led-wave: led-wave 1.8s ease-in-out infinite;
+
+	@keyframes led-wave {
+		0%, 100% {
+			opacity: 1;
+		}
+
+		50% {
+			opacity: 0.35;
+		}
+	}
+}
+
 /* The colors an LED shows. They are the same in both themes, because the panel of the cube is dark
    whatever the page is. `static` keeps them as variables even when no utility uses them. */
 @theme static {

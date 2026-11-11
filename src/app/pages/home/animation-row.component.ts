@@ -10,8 +10,9 @@ const PAGE_SHARE = 0.8;
 
 /**
  * A titled row of animation cards that the user moves through by hand: swiping on a touch screen,
- * with the scroll wheel or the keyboard, or with the arrow buttons (only on devices with a mouse).
- * Nothing moves by itself, and every card is in the row once, so a screen reader or the Tab key
+ * with the scroll wheel or the keyboard, or with the arrow buttons at the sides of the row (only on
+ * devices with a mouse, and only drawn while the pointer is over the row). The row has no scroll
+ * bar. Nothing moves by itself, and every card is in the row once, so a screen reader or the Tab key
  * meets each of them once.
  */
 @Component({
@@ -24,44 +25,53 @@ const PAGE_SHARE = 0.8;
 		<section class="flex flex-col gap-2" [attr.aria-labelledby]="'row-' + id()">
 			<div class="flex items-center justify-between gap-4">
 				<h2 class="font-display text-2xl font-semibold sm:text-[1.75rem]" [id]="'row-' + id()">{{ title() }}</h2>
-				<div class="flex items-center gap-1">
-					<button
-						type="button"
-						class="hidden size-11 cursor-pointer place-items-center rounded-full border border-slate-400/20 text-slate-100 transition duration-150 hover:bg-slate-400/15 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent pointer-fine:grid"
-						[attr.aria-label]="'Anteriores: ' + title()"
-						[disabled]="atStart()"
-						(click)="scroll(-1)"
-					>
-						<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
-					</button>
-					<button
-						type="button"
-						class="hidden size-11 cursor-pointer place-items-center rounded-full border border-slate-400/20 text-slate-100 transition duration-150 hover:bg-slate-400/15 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent pointer-fine:grid"
-						[attr.aria-label]="'Siguientes: ' + title()"
-						[disabled]="atEnd()"
-						(click)="scroll(1)"
-					>
-						<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7" /></svg>
-					</button>
-					<a routerLink="/gallery" class="ml-1 inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-accent hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent">
-						Ver todo<span class="sr-only">: {{ title() }}</span>
-					</a>
-				</div>
+				<a routerLink="/gallery" class="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-accent hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent">
+					Ver todo<span class="sr-only">: {{ title() }}</span>
+				</a>
 			</div>
 
-			<!-- The padding leaves room for the lift and shadow of a card, which the scrolling would cut. -->
-			<ul
-				#scroller
-				role="list"
-				class="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto overscroll-x-contain px-4 py-6 [scrollbar-width:thin] sm:-mx-10 sm:scroll-px-10 sm:px-10"
-				(scroll)="update()"
-			>
-				@for (animation of animations(); track animation.id) {
-					<li class="w-52 flex-none snap-start sm:w-54">
-						<app-animation-card class="h-full" [animation]="animation" [liked]="liked().has(animation.id)" (toggled)="toggled.emit(animation.id)" />
-					</li>
-				}
-			</ul>
+			<!-- The arrows are tall rounded buttons at the sides of the row, in the middle of its height, with a pixel-art chevron (drawn on a 6 by 9 grid, 3 pixels a square, strokes 2 squares thick), and fade in when the pointer is over the row (or one has the keyboard focus), and fade out when it leaves or when there is nothing more in that direction. They are not drawn on touch screens, where the row is swiped. -->
+			<div class="group/row relative -mx-4 sm:-mx-10">
+				<button
+					type="button"
+					class="absolute top-1/2 left-0.5 z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-slate-400/30 bg-slate-900/60 text-slate-100 opacity-0 transition-[opacity,background-color] duration-300 ease-in-out group-focus-within/row:enabled:opacity-100 group-hover/row:enabled:opacity-100 hover:bg-slate-900/80 focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none motion-reduce:transition-none pointer-fine:grid"
+					[attr.aria-label]="'Anteriores: ' + title()"
+					[disabled]="atStart()"
+					(click)="scroll(-1)"
+				>
+					<svg viewBox="0 0 6 9" class="h-[27px] w-[18px]" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M4 0h2v1H4z M3 1h2v1H3z M2 2h2v1H2z M1 3h2v1H1z M0 4h2v1H0z M1 5h2v1H1z M2 6h2v1H2z M3 7h2v1H3z M4 8h2v1H4z" /></svg>
+				</button>
+				<button
+					type="button"
+					class="absolute top-1/2 right-0.5 z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-slate-400/30 bg-slate-900/60 text-slate-100 opacity-0 transition-[opacity,background-color] duration-300 ease-in-out group-focus-within/row:enabled:opacity-100 group-hover/row:enabled:opacity-100 hover:bg-slate-900/80 focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none motion-reduce:transition-none pointer-fine:grid"
+					[attr.aria-label]="'Siguientes: ' + title()"
+					[disabled]="atEnd()"
+					(click)="scroll(1)"
+				>
+					<svg viewBox="0 0 6 9" class="h-[27px] w-[18px]" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true"><path d="M0 0h2v1H0z M1 1h2v1H1z M2 2h2v1H2z M3 3h2v1H3z M4 4h2v1H4z M3 5h2v1H3z M2 6h2v1H2z M1 7h2v1H1z M0 8h2v1H0z" /></svg>
+				</button>
+
+				<!-- The padding leaves room for the lift and shadow of a card, which the scrolling would cut. The scroll bar is hidden: the row moves by swiping, the wheel, the keyboard or the arrows. -->
+				<ul
+					#scroller
+					role="list"
+					class="flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto overscroll-x-contain px-4 py-6 [scrollbar-width:none] sm:scroll-px-10 sm:px-10 [&::-webkit-scrollbar]:hidden"
+					(scroll)="update()"
+				>
+					@for (animation of animations(); track animation.id) {
+						<li class="w-52 flex-none snap-start sm:w-54">
+							<app-animation-card class="h-full" [animation]="animation" [liked]="liked().has(animation.id)"
+								[saved]="saved().has(animation.id)"
+								[favorite]="favorites().has(animation.id)"
+								(toggled)="toggled.emit(animation.id)"
+								(viewed)="viewed.emit(animation.id)"
+								(saveToggled)="saveToggled.emit(animation.id)"
+								(favoriteToggled)="favoriteToggled.emit(animation.id)"
+							/>
+						</li>
+					}
+				</ul>
+			</div>
 		</section>
 	`,
 })
@@ -90,6 +100,31 @@ export class AnimationRowComponent {
 	 * The user pressed the like button of an animation: its id.
 	 */
 	readonly toggled = output<string>();
+
+	/**
+	 * The ids of the animations the user saved.
+	 */
+	readonly saved = input<ReadonlySet<string>>(new Set());
+
+	/**
+	 * The ids of the user's favorite animations.
+	 */
+	readonly favorites = input<ReadonlySet<string>>(new Set());
+
+	/**
+	 * The user asked to see an animation: its id.
+	 */
+	readonly viewed = output<string>();
+
+	/**
+	 * The user saved an animation or took it out of what they saved: its id.
+	 */
+	readonly saveToggled = output<string>();
+
+	/**
+	 * The user added an animation to their favorites or took it out: its id.
+	 */
+	readonly favoriteToggled = output<string>();
 
 	/**
 	 * True while the row is scrolled all the way to the start.
