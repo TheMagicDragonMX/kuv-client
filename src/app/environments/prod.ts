@@ -5,5 +5,5 @@ import type { AppEnvironment } from './types';
  */
 export const environment: AppEnvironment = {
 	apiUrl: 'https://api.kuv.lol',
-	googleClientId: '',
+	googleClientId: '520269687438-t0432o0ngjrkfghpi6m23b9dcjrenm24.apps.googleusercontent.com',
 };
