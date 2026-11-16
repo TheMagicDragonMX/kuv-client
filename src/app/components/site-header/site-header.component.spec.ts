@@ -43,7 +43,7 @@ describe('SiteHeaderComponent', () => {
 		const paths = navs.map((nav) => [ ...nav.querySelectorAll('a') ].map((link) => link.getAttribute('href')));
 
 		expect(navs).toHaveLength(2);
-		expect(paths[0]).toEqual([ '/inicio', '/editor', '/gallery', '/setup' ]);
+		expect(paths[0]).toEqual([ '/inicio', '/editor', '/gallery', '/test-cube', '/setup' ]);
 		expect(paths[1]).toEqual(paths[0]);
 	});
 
