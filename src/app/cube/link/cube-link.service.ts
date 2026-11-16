@@ -1,11 +1,12 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
+import { environment } from '@environment';
 import { COMMAND_MESSAGE, CubeMessage, LinkState } from './protocol';
 
 /**
- * Address of the API's WebSocket endpoints.
+ * Address of the API's WebSocket endpoints, derived from the API address of the current environment.
  */
-const ENDPOINT = 'ws://localhost:5038/ws';
+const ENDPOINT = `${environment.apiUrl.replace(/^http/, 'ws')}/ws`;
 
 /**
  * Milliseconds to wait before connecting again after the socket drops.

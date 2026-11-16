@@ -7,10 +7,3 @@ export type AppEnvironment = {
 	 */
 	apiUrl: string;
 };
-
-/**
- * The settings the app runs with.
- */
-export const environment: AppEnvironment = {
-	apiUrl: 'https://api.kuv.lol',
-};

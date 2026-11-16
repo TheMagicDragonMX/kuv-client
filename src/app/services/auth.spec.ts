@@ -2,7 +2,7 @@ import { HttpClient, provideHttpClient, withInterceptors } from '@angular/common
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
-import { environment } from '../environments';
+import { environment } from '@environment';
 import { returnPath, signedInGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthSession } from './auth-session.service';

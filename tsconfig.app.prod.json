@@ -1,0 +1,9 @@
+/* Same as tsconfig.app.json, but `@environment` points at the production settings. */
+{
+	"extends": "./tsconfig.app.json",
+	"compilerOptions": {
+		"paths": {
+			"@environment": ["./src/app/environments.prod.ts"]
+		}
+	}
+}

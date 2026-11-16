@@ -13,7 +13,10 @@
 		"experimentalDecorators": true,
 		"importHelpers": true,
 		"target": "esnext",
-		"module": "preserve"
+		"module": "preserve",
+		"paths": {
+			"@environment": ["./src/app/environments.local.ts"]
+		}
 	},
 	"angularCompilerOptions": {
 		"enableI18nLegacyMessageIdFormat": false,

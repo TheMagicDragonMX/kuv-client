@@ -41,7 +41,8 @@
 									"maximumError": "8kB"
 								}
 							],
-							"outputHashing": "all"
+							"outputHashing": "all",
+							"tsConfig": "tsconfig.app.prod.json"
 						},
 						"development": {
 							"optimization": false,

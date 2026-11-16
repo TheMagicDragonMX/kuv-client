@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
-import { environment } from '../../environments';
+import { environment } from '@environment';
 import { AuthSession } from '../../services/auth-session.service';
 import { Profile } from '../../models';
 import { ProfilePage } from './profile.component';

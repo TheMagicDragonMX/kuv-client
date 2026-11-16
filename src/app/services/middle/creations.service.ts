@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { environment } from '../../environments';
+import { environment } from '@environment';
 import { Environment, Program } from '../../cube';
 import {
 	CreationFormPayload,
