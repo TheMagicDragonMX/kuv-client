@@ -3,6 +3,7 @@ import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { TestCubePage } from './pages/test-cube/test-cube.component';
 import { EditorPage } from './pages/editor/editor.component';
+import { VIRTUAL_CUBE } from './components/pixel-glow/pixel-glow.component';
 import { MainLayoutComponent } from './components/main-layout/main-layout.component';
 import { signedInGuard, signedOutGuard, signupGuard } from './services/auth.guard';
 
@@ -24,8 +25,8 @@ export const routes: Routes = [
 		canActivateChild: [ signedInGuard ],
 		component: MainLayoutComponent,
 		children: [
-			{ path: 'test-cube', component: TestCubePage },
-			{ path: 'editor', component: EditorPage },
+			{ path: 'test-cube', component: TestCubePage, data: { [VIRTUAL_CUBE]: true } },
+			{ path: 'editor', component: EditorPage, data: { [VIRTUAL_CUBE]: true } },
 			{ path: 'inicio', loadComponent: () => import('./pages/home/home.component').then((page) => page.HomePage) },
 			{ path: 'perfil', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
 			{ path: 'perfil/:id', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
