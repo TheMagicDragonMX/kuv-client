@@ -3,11 +3,13 @@ import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { TestCubePage } from './pages/test-cube/test-cube.component';
 import { EditorPage } from './pages/editor/editor.component';
+import { MainLayoutComponent } from './components/main-layout/main-layout.component';
 import { signedInGuard, signedOutGuard, signupGuard } from './services/auth.guard';
 
 /**
  * The pages of the app and the path of each one. Only the login, register and signup pages open without a
- * session; every other page sits under a parent that checks it on each navigation.
+ * session; every other page sits under a parent that checks it on each navigation and draws the
+ * header around them.
  */
 export const routes: Routes = [
 	{ path: 'login', canActivate: [ signedOutGuard ], component: LoginComponent },
@@ -20,6 +22,7 @@ export const routes: Routes = [
 	{
 		path: '',
 		canActivateChild: [ signedInGuard ],
+		component: MainLayoutComponent,
 		children: [
 			{ path: 'test-cube', component: TestCubePage },
 			{ path: 'editor', component: EditorPage },

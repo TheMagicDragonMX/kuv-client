@@ -1,8 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CubeLinkService, LinkState } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
+import { CurrentUser } from '../../services/current-user.service';
+import { UsersService } from '../../services/middle/users.service';
+import { AvatarComponent } from '../avatar/avatar.component';
 import { CubeLogoComponent } from '../cube-logo/cube-logo.component';
 import { UserSearchModalComponent } from '../user-search.component';
 
@@ -47,17 +50,26 @@ const STATUS: Record<LinkState, { label: string; classes: string; dot: string }>
 };
 
 /**
+ * How far, in pixels, the page has to scroll for the header to turn into a floating bubble.
+ */
+const BUBBLE_AFTER = 8;
+
+/**
  * The top of the main pages: the logo, the navigation, whether a cube is connected and the way to
- * the account. On a phone the navigation moves to a bar at the bottom of the screen, where the
- * thumb reaches it. The theme button floats at the top right of every page, so the header leaves
- * room for it.
+ * the account, with the user's photo. On a phone the navigation moves to a bar at the bottom of
+ * the screen, where the thumb reaches it. The theme button floats at the top right of every page,
+ * so the header leaves room for it.
+ *
+ * At the top of the page the header is a see-through bar across it; once the page scrolls it
+ * becomes a rounded bubble floating over the content. It always takes the same height
+ * (`--header-height`), so the page does not jump when it changes.
  */
 @Component({
 	selector: 'app-site-header',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ RouterLink, RouterLinkActive, CubeLogoComponent, UserSearchModalComponent ],
-	host: { class: 'contents' },
+	imports: [ RouterLink, RouterLinkActive, AvatarComponent, CubeLogoComponent, UserSearchModalComponent ],
+	host: { class: 'contents', '(window:scroll)': 'onScroll()' },
 	templateUrl: './site-header.component.html',
 })
 export class SiteHeaderComponent {
@@ -85,4 +97,45 @@ export class SiteHeaderComponent {
 	 * True while someone is signed in, to say where the account button leads.
 	 */
 	protected readonly signedIn = inject(AuthSession).signedIn;
+
+	/**
+	 * The signed-in user's profile, for their name and photo, or null while it is not known.
+	 */
+	protected readonly me = inject(CurrentUser).profile;
+
+	/**
+	 * True once the page has scrolled down: the header is a floating bubble.
+	 */
+	protected readonly scrolled = signal(this.scrollTop() > BUBBLE_AFTER);
+
+	/**
+	 * Asks for the profile of the user who is signed in.
+	 */
+	private readonly usersService = inject(UsersService);
+
+	constructor () {
+
+		/**
+		 * The header is on every page, so it is the one that asks for the profile when nobody has
+		 * yet. Failing is fine: the account button shows a plain icon instead of the photo.
+		 */
+		effect(() => {
+			if (this.signedIn() && !this.me())
+				untracked(() => this.usersService.me().subscribe({ error: () => undefined }));
+		});
+	}
+
+	/**
+	 * Turns the header into a bubble, or back into a bar, as the page scrolls.
+	 */
+	protected onScroll (): void {
+		this.scrolled.set(this.scrollTop() > BUBBLE_AFTER);
+	}
+
+	/**
+	 * How far the page has scrolled down, in pixels.
+	 */
+	private scrollTop (): number {
+		return 'undefined' === typeof window ? 0 : window.scrollY;
+	}
 }

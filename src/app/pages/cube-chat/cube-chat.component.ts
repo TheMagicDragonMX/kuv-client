@@ -1,6 +1,5 @@
 import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { CubeLinkService, EVENT_CUBE_STATUS, EVENT_ERROR, EVENT_REPLY, LinkState } from '../../cube';
 
@@ -45,7 +44,7 @@ const LINK_STATES: Record<LinkState, string> = {
 @Component({
 	selector: 'app-cube-chat-page',
 	standalone: true,
-	imports: [ ReactiveFormsModule, RouterLink ],
+	imports: [ ReactiveFormsModule ],
 	templateUrl: './cube-chat.component.html',
 })
 export class CubeChatPage implements OnDestroy {

@@ -1,5 +1,4 @@
 import { Component, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { CubeComponent, EXAMPLE_PROGRAMS } from '../../cube';
 
 /**
@@ -9,7 +8,7 @@ import { CubeComponent, EXAMPLE_PROGRAMS } from '../../cube';
 @Component({
 	selector: 'app-test-cube',
 	standalone: true,
-	imports: [ RouterLink, CubeComponent ],
+	imports: [ CubeComponent ],
 	templateUrl: './test-cube.component.html',
 })
 export class TestCubePage {

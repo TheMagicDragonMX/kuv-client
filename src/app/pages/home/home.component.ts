@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, WritableSignal, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { SnackbarService } from '../../services/snackbar.service';
 import { AnimationRowComponent } from './animation-row.component';
 import { COMMUNITY, SECTIONS } from './home-data';
@@ -13,7 +12,7 @@ import { COMMUNITY, SECTIONS } from './home-data';
 	selector: 'app-home',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ RouterLink, SiteHeaderComponent, AnimationRowComponent ],
+	imports: [ RouterLink, AnimationRowComponent ],
 	templateUrl: './home.component.html',
 })
 export class HomePage {

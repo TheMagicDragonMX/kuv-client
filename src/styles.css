@@ -58,6 +58,17 @@
 	);
 }
 
+/* Heights of the header at the top of the main pages and of the navigation bar at the bottom of
+   phones (none from md up). Full-screen pages like the editor take them off the screen height. */
+:root {
+	--header-height: 4.5rem;
+	--bottom-bar-height: calc(3.75rem + env(safe-area-inset-bottom));
+
+	@media (width >= 48rem) {
+		--bottom-bar-height: 0px;
+	}
+}
+
 /* The colors an LED shows. They are the same in both themes, because the panel of the cube is dark
    whatever the page is. `static` keeps them as variables even when no utility uses them. */
 @theme static {

@@ -1,6 +1,4 @@
-<div class="min-h-dvh bg-(--page) font-body text-slate-100">
-	<app-site-header />
-
+<div>
 	<main class="mx-auto flex max-w-340 flex-col gap-10 px-4 pt-8 pb-28 sm:px-10 sm:pt-10 md:pb-16">
 		@if (profile(); as me) {
 			<section class="flex flex-wrap items-center gap-6 rounded-3xl border border-slate-400/20 bg-slate-900/80 p-5 sm:gap-7 sm:p-7" [attr.aria-label]="me.isYou ? 'Datos de tu cuenta' : 'Perfil de ' + me.username">

@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal,
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
-import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { MAX_BIO, Profile, UserCreation } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
 import { SnackbarService } from '../../services/snackbar.service';
@@ -22,7 +21,7 @@ import { Crop, openPicture, photoFileProblem, photoFromCrop } from './profile-ph
 	selector: 'app-profile',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ SiteHeaderComponent, AvatarComponent, FollowSectionComponent, PhotoCropperComponent, RouterLink ],
+	imports: [ AvatarComponent, FollowSectionComponent, PhotoCropperComponent, RouterLink ],
 	templateUrl: './profile.component.html',
 })
 export class ProfilePage implements OnInit {

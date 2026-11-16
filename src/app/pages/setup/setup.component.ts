@@ -1,6 +1,5 @@
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
 import {
 	connectBluetooth,
 	connectSimulated,
@@ -43,7 +42,7 @@ const WIFI_STATES: Record<WifiState, string> = {
 @Component({
 	selector: 'app-setup-page',
 	standalone: true,
-	imports: [ ReactiveFormsModule, RouterLink ],
+	imports: [ ReactiveFormsModule ],
 	templateUrl: './setup.component.html',
 })
 export class SetupPage implements OnInit, OnDestroy {

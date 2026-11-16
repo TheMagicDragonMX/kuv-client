@@ -31,10 +31,10 @@ describe('HomePage', () => {
 		expect(link?.getAttribute('href')).toBe('/editor');
 	});
 
-	it('shows the header with the navigation', () => {
+	it('brings no header of its own: the layout around it has it', () => {
 		const { element } = createPage();
 
-		expect(element.querySelector('app-site-header header')).not.toBeNull();
+		expect(element.querySelector('app-site-header')).toBeNull();
 	});
 
 	it('likes an animation in every row it is in, and takes the like back on the second press', () => {

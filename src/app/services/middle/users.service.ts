@@ -1,7 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map } from 'rxjs';
+import { Observable, map, tap } from 'rxjs';
 import { environment } from '@environment';
 import { PhotoPayload, Profile, ProfileChanges, SearchUsersParams, UserParams, UserSummary } from '../../models';
+import { CurrentUser } from '../current-user.service';
 import { UsersHttpService } from '../http/users.http.service';
 
 /**
@@ -15,7 +16,8 @@ function withPhotoAddress<T extends { photo: string | null }> (user: T): T {
 /**
  * What the components use to read and change users, their profiles and who follows whom. The
  * calls are made by `UsersHttpService`; this one adjusts what goes out (building the form of a
- * picture) and what comes in (the address of the pictures).
+ * picture) and what comes in (the address of the pictures), and keeps the signed-in user's own
+ * profile in `CurrentUser` each time it comes.
  */
 @Injectable({ providedIn: 'root' })
 export class UsersService {
@@ -25,17 +27,22 @@ export class UsersService {
 	private readonly http = inject(UsersHttpService);
 
 	/**
+	 * Remembers the signed-in user's profile for the rest of the page.
+	 */
+	private readonly currentUser = inject(CurrentUser);
+
+	/**
 	 * The signed-in user's profile, with their email.
 	 */
 	me (): Observable<Profile> {
-		return this.http.me().pipe(map(withPhotoAddress));
+		return this.http.me().pipe(map(withPhotoAddress), tap((profile) => this.currentUser.set(profile)));
 	}
 
 	/**
 	 * Changes the signed-in user's bio.
 	 */
 	updateMe (payload: ProfileChanges): Observable<Profile> {
-		return this.http.updateMe(payload).pipe(map(withPhotoAddress));
+		return this.http.updateMe(payload).pipe(map(withPhotoAddress), tap((profile) => this.currentUser.set(profile)));
 	}
 
 	/**
@@ -49,14 +56,14 @@ export class UsersService {
 		 */
 		form.append('photo', payload.photo, 'photo.jpg');
 
-		return this.http.updatePhoto(form).pipe(map(withPhotoAddress));
+		return this.http.updatePhoto(form).pipe(map(withPhotoAddress), tap((profile) => this.currentUser.set(profile)));
 	}
 
 	/**
 	 * Removes the signed-in user's picture.
 	 */
 	removePhoto (): Observable<Profile> {
-		return this.http.removePhoto().pipe(map(withPhotoAddress));
+		return this.http.removePhoto().pipe(map(withPhotoAddress), tap((profile) => this.currentUser.set(profile)));
 	}
 
 	/**
