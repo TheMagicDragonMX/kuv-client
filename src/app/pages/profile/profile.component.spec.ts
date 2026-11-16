@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { environment } from '@environment';
+import { SnackbarService } from '../../services/snackbar.service';
 import { AuthSession } from '../../services/auth-session.service';
 import { Profile } from '../../models';
 import { ProfilePage } from './profile.component';
@@ -125,6 +126,7 @@ describe('ProfilePage', () => {
 		expect(element.querySelector('section app-avatar img')?.getAttribute('src')).toBe(`${environment.apiUrl}/users/1/photo?v=8`);
 		expect(element.querySelector('dialog app-photo-cropper')).toBeNull();
 		expect(bitmap.close).toHaveBeenCalled();
+		expect(TestBed.inject(SnackbarService).messages()[0]).toMatchObject({ kind: 'success', text: 'Tu foto de perfil se actualizó.' });
 
 		vi.unstubAllGlobals();
 		vi.restoreAllMocks();
@@ -176,6 +178,7 @@ describe('ProfilePage', () => {
 		fixture.detectChanges();
 
 		expect(element.querySelector('section app-avatar')?.textContent?.trim()).toBe('A');
+		expect(TestBed.inject(SnackbarService).messages()[0]).toMatchObject({ kind: 'success', text: 'Quitaste tu foto de perfil.' });
 	});
 
 	it('says so when the profile cannot be loaded, and offers to try again', () => {

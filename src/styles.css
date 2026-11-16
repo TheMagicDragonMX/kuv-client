@@ -30,6 +30,34 @@
 	}
 }
 
+/* A message of the snackbar slides in from the corner in four jumps, like a sprite, not smoothly. */
+@theme {
+	--animate-snack-in: snack-in 0.3s steps(4) both;
+
+	@keyframes snack-in {
+		from {
+			opacity: 0;
+			transform: translateX(2rem);
+		}
+
+		to {
+			opacity: 1;
+			transform: translateX(0);
+		}
+	}
+}
+
+/* A box with its corners cut in steps of 4 pixels, like a sprite. The snackbar draws two, one
+   inside the other, so the outer one shows as a 4px border. */
+@utility pixel-box {
+	clip-path: polygon(
+		0 8px, 4px 8px, 4px 4px, 8px 4px, 8px 0,
+		calc(100% - 8px) 0, calc(100% - 8px) 4px, calc(100% - 4px) 4px, calc(100% - 4px) 8px, 100% 8px,
+		100% calc(100% - 8px), calc(100% - 4px) calc(100% - 8px), calc(100% - 4px) calc(100% - 4px), calc(100% - 8px) calc(100% - 4px), calc(100% - 8px) 100%,
+		8px 100%, 8px calc(100% - 4px), 4px calc(100% - 4px), 4px calc(100% - 8px), 0 calc(100% - 8px)
+	);
+}
+
 /* The colors an LED shows. They are the same in both themes, because the panel of the cube is dark
    whatever the page is. `static` keeps them as variables even when no utility uses them. */
 @theme static {

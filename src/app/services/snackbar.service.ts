@@ -1,14 +1,20 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
 
 /**
- * What a snackbar is about, which sets its color.
+ * What a snackbar is about, which sets its icon and color.
  */
-export type SnackbarKind = 'success' | 'error' | 'info';
+export type SnackbarKind = 'success' | 'error' | 'info' | 'warning';
 
 /**
  * A message the snackbar is showing.
  */
 export type SnackbarMessage = {
+	/**
+	 * Tells it apart from the others on screen.
+	 */
+	id: number;
+
 	/**
 	 * What the snackbar says.
 	 */
@@ -21,64 +27,128 @@ export type SnackbarMessage = {
 };
 
 /**
- * Milliseconds a snackbar stays on screen when the caller does not say.
+ * Milliseconds each kind of message stays on screen when the caller does not say. Errors stay
+ * longer: they are the ones people need to read.
  */
-const DEFAULT_DURATION = 4000;
+const DURATIONS: Record<SnackbarKind, number> = {
+	success: 4000,
+	info: 4000,
+	warning: 6000,
+	error: 6000,
+};
 
 /**
- * Shows short messages at the bottom of the screen. Any component injects it and calls `show`;
- * `SnackbarComponent`, placed once in the root component, draws it.
+ * Most messages on screen at once. When another comes, the oldest goes.
+ */
+const MAX_MESSAGES = 4;
+
+/**
+ * Shows short messages in a corner of the screen. Any component or service injects it and calls
+ * `success`, `error`, `info`, `warning` (or `show`, for a kind chosen at runtime);
+ * `SnackbarComponent`, placed once in the root component, draws them. Messages pile up, the newest
+ * at the bottom, and each one hides itself after its time.
  */
 @Injectable({ providedIn: 'root' })
 export class SnackbarService {
 	/**
-	 * The message on screen, or null when there is none.
+	 * The messages on screen, the oldest first.
 	 */
-	readonly message = signal<SnackbarMessage | null>(null);
+	readonly messages = signal<SnackbarMessage[]>([]);
 
 	/**
-	 * The timer that hides the current message.
+	 * The id the next message gets.
 	 */
-	private timer: ReturnType<typeof setTimeout> | null = null;
+	private nextId = 1;
 
 	/**
-	 * Shows a message, replacing the one on screen, and hides it after `duration` milliseconds.
+	 * The timers that hide the messages, by the id of the message.
 	 */
-	show (text: string, kind: SnackbarKind = 'info', duration = DEFAULT_DURATION): void {
-		this.clearTimer();
-		this.message.set({ text, kind });
-		this.timer = setTimeout(() => this.dismiss(), duration);
+	private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
+
+	/**
+	 * Shows a message and hides it after `duration` milliseconds (by default, what its kind has).
+	 * If the same message is already on screen it stays where it is and its time starts again,
+	 * instead of piling up a copy.
+	 */
+	show (text: string, kind: SnackbarKind = 'info', duration = DURATIONS[kind]): void {
+		const repeated = this.messages().find((message) => message.text === text && message.kind === kind);
+		const message = repeated ?? { id: this.nextId++, text, kind };
+
+		if (!repeated)
+			this.messages.update((messages) => [ ...messages, message ]);
+
+		this.clearTimer(message.id);
+		this.timers.set(message.id, setTimeout(() => this.dismiss({ id: message.id }), duration));
+
+		for (const old of this.messages().slice(0, -MAX_MESSAGES))
+			this.dismiss({ id: old.id });
 	}
 
 	/**
-	 * Shows a success message.
+	 * Shows a success message: something worked.
 	 */
-	success (text: string, duration = DEFAULT_DURATION): void {
+	success (text: string, duration?: number): void {
 		this.show(text, 'success', duration);
 	}
 
 	/**
-	 * Shows an error message.
+	 * Shows an error message: something failed.
 	 */
-	error (text: string, duration = DEFAULT_DURATION): void {
+	error (text: string, duration?: number): void {
 		this.show(text, 'error', duration);
 	}
 
 	/**
-	 * Hides the message on screen.
+	 * Shows an info message: something the user should know.
 	 */
-	dismiss (): void {
-		this.clearTimer();
-		this.message.set(null);
+	info (text: string, duration?: number): void {
+		this.show(text, 'info', duration);
 	}
 
 	/**
-	 * Cancels the pending hide, if any.
+	 * Shows a warning: something worked, but not as the user may expect, or may go wrong.
 	 */
-	private clearTimer (): void {
-		if (null !== this.timer)
-			clearTimeout(this.timer);
+	warning (text: string, duration?: number): void {
+		this.show(text, 'warning', duration);
+	}
 
-		this.timer = null;
+	/**
+	 * Shows an error for a failed request: the message the API sent if it sent one, or else
+	 * `fallback`.
+	 */
+	failure (error: unknown, fallback: string): void {
+		const sent = error instanceof HttpErrorResponse ? error.error?.message : null;
+
+		this.error('string' === typeof sent && '' !== sent ? sent : fallback);
+	}
+
+	/**
+	 * Hides a message.
+	 */
+	dismiss (params: { id: number }): void {
+		this.clearTimer(params.id);
+		this.messages.update((messages) => messages.filter((message) => message.id !== params.id));
+	}
+
+	/**
+	 * Hides every message.
+	 */
+	clear (): void {
+		for (const id of this.timers.keys())
+			this.clearTimer(id);
+
+		this.messages.set([]);
+	}
+
+	/**
+	 * Cancels the pending hide of a message, if any.
+	 */
+	private clearTimer (id: number): void {
+		const timer = this.timers.get(id);
+
+		if (undefined !== timer)
+			clearTimeout(timer);
+
+		this.timers.delete(id);
 	}
 }

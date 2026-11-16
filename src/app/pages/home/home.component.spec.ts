@@ -65,9 +65,9 @@ describe('HomePage', () => {
 
 		(element.querySelector('app-animation-card button[aria-label^="Visualizar"]') as HTMLButtonElement).click();
 
-		expect(snackbar.message()?.text).toContain(SECTIONS[0].animations[0].title);
-		expect(snackbar.message()?.text).toContain('todavía no se puede visualizar');
-		snackbar.dismiss();
+		expect(snackbar.messages()[0]?.text).toContain(SECTIONS[0].animations[0].title);
+		expect(snackbar.messages()[0]?.text).toContain('todavía no se puede visualizar');
+		snackbar.clear();
 	});
 
 	it('saves an animation and adds it to the favorites in every row it is in, and takes them back', () => {

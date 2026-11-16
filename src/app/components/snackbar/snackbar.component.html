@@ -1,12 +1,20 @@
-<div class="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center px-4" aria-live="polite">
-	@if (snackbar.message(); as message) {
-		<div
-			class="pointer-events-auto flex max-w-md items-center gap-3 rounded-xl border bg-(--surface) px-4 py-3 text-[0.92rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]"
-			[class]="kindClasses[message.kind]"
-			[attr.role]="'error' === message.kind ? 'alert' : 'status'"
-		>
-			<span>{{ message.text }}</span>
-			<button type="button" class="cursor-pointer text-lg leading-none opacity-70 hover:opacity-100" aria-label="Cerrar" (click)="snackbar.dismiss()">×</button>
+<div class="pointer-events-none fixed right-4 bottom-20 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col items-end gap-3 md:bottom-6" aria-live="polite">
+	@for (message of snackbar.messages(); track message.id) {
+		<!-- The shadow is a filter on this wrapper, so it follows the stepped corners of the box. -->
+		<div class="pointer-events-auto w-full motion-safe:animate-snack-in drop-shadow-[4px_4px_0_rgb(0_0_0/0.45)]" [attr.role]="'error' === message.kind ? 'alert' : 'status'">
+			<div class="pixel-box p-1" [class]="colors[message.kind].border">
+				<div class="pixel-box flex items-center gap-3 bg-black py-3 pr-3 pl-4 font-body text-[0.95rem] leading-snug text-white">
+					<svg class="size-7 shrink-0" [class]="colors[message.kind].icon" [attr.viewBox]="'0 0 ' + grid + ' ' + grid" fill="currentColor" shape-rendering="crispEdges" role="img" [attr.aria-label]="names[message.kind]">
+						<path [attr.d]="icons[message.kind]" />
+					</svg>
+					<p class="min-w-0 flex-1 break-words">{{ message.text }}</p>
+					<button type="button" class="grid size-8 shrink-0 cursor-pointer place-items-center text-slate-400 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="Cerrar mensaje" (click)="snackbar.dismiss({ id: message.id })">
+						<svg class="size-3.5" [attr.viewBox]="'0 0 ' + grid + ' ' + grid" fill="currentColor" shape-rendering="crispEdges" aria-hidden="true">
+							<path [attr.d]="icons.error" />
+						</svg>
+					</button>
+				</div>
+			</div>
 		</div>
 	}
 </div>

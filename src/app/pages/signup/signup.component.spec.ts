@@ -235,7 +235,7 @@ describe('SignupPage', () => {
 
 		expect(session.accessToken()).toBe('access-1');
 		expect(signup.pending()).toBeNull();
-		expect(snackbar.message()?.text).toContain('zoe');
+		expect(snackbar.messages()[0]?.text).toContain('zoe');
 		expect(navigate).toHaveBeenCalledWith('/inicio');
 	});
 
@@ -280,7 +280,7 @@ describe('SignupPage', () => {
 		server.expectOne(COMPLETE).flush({ message: 'Tu sesión de Google expiró. Vuelve a elegir tu cuenta.' }, { status: 401, statusText: 'Unauthorized' });
 
 		expect(signup.pending()).toBeNull();
-		expect(snackbar.message()?.kind).toBe('error');
+		expect(snackbar.messages()[0]?.kind).toBe('error');
 		expect(navigate).toHaveBeenCalledWith('/login');
 	});
 

@@ -6,6 +6,7 @@ import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
 import { MAX_BIO, Profile, UserCreation } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
+import { SnackbarService } from '../../services/snackbar.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { UsersService } from '../../services/middle/users.service';
 import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
@@ -125,6 +126,11 @@ export class ProfilePage implements OnInit {
 	 * Talks to the user API.
 	 */
 	private readonly usersService = inject(UsersService);
+
+	/**
+	 * Tells the user what happened to their photo.
+	 */
+	private readonly snackbar = inject(SnackbarService);
 
 	/**
 	 * Talks to the creations API.
@@ -377,7 +383,10 @@ export class ProfilePage implements OnInit {
 		try {
 			const photo = await photoFromCrop(picture, crop);
 
-			this.save(this.usersService.updatePhoto({ photo }), () => this.cropper()?.nativeElement.close());
+			this.save(this.usersService.updatePhoto({ photo }), () => {
+				this.cropper()?.nativeElement.close();
+				this.snackbar.success('Tu foto de perfil se actualizó.');
+			});
 		}
 
 		catch {
@@ -397,7 +406,7 @@ export class ProfilePage implements OnInit {
 	 * Takes the photo off the profile.
 	 */
 	protected removePhoto (): void {
-		this.save(this.usersService.removePhoto());
+		this.save(this.usersService.removePhoto(), () => this.snackbar.success('Quitaste tu foto de perfil.'));
 	}
 
 	/**
