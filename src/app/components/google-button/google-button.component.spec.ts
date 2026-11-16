@@ -6,7 +6,7 @@ import { Subject } from 'rxjs';
 import { environment } from '@environment';
 import { AuthSession } from '../../services/auth-session.service';
 import { GoogleIdentityService } from '../../services/google-identity.service';
-import { GoogleSignupService } from '../../services/google-signup.service';
+import { SignupService } from '../../services/signup.service';
 import { ThemeService } from '../../services/theme.service';
 import { GoogleButtonComponent } from './google-button.component';
 
@@ -47,7 +47,7 @@ function createButton (options: { enabled?: boolean; returnUrl?: string } = {}) 
 		choose: (idToken: string) => credentials.next(idToken),
 		server: TestBed.inject(HttpTestingController),
 		session: TestBed.inject(AuthSession),
-		signup: TestBed.inject(GoogleSignupService),
+		signup: TestBed.inject(SignupService),
 		element: fixture.nativeElement as HTMLElement,
 	};
 }
@@ -99,8 +99,8 @@ describe('GoogleButtonComponent', () => {
 		server.expectOne(`${environment.apiUrl}/session/google`).flush({ status: 'needsProfile', signupToken: 'signup-1', email: 'gina@gmail.com' });
 
 		expect(session.signedIn()).toBe(false);
-		expect(signup.pending()).toEqual({ signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl: '/editor' });
-		expect(navigate).toHaveBeenCalledWith('/google-signup');
+		expect(signup.pending()).toEqual({ kind: 'google', signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl: '/editor' });
+		expect(navigate).toHaveBeenCalledWith('/signup');
 	});
 
 	it('says why it failed: what the API said, or that the server cannot be reached', () => {

@@ -1,21 +1,9 @@
 <app-auth-shell heading="Crear cuenta" lead="Completa tus datos para empezar a programar el cubo.">
 	<form class="grid gap-4" novalidate [formGroup]="form" (ngSubmit)="submit()">
 		<label class="grid gap-2 text-sm font-bold text-slate-200">
-			Nombre de usuario
-			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('username')" [attr.aria-invalid]="isInvalid('username')" formControlName="username" autocomplete="username" minlength="3" maxlength="50" required />
-			<span class="text-[0.8rem] font-normal" [class]="isInvalid('username') ? 'text-red-200' : 'text-slate-400'">{{ hint('username') }}</span>
-		</label>
-
-		<label class="grid gap-2 text-sm font-bold text-slate-200">
 			Correo electrónico
 			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('email')" [attr.aria-invalid]="isInvalid('email')" type="email" formControlName="email" autocomplete="email" required />
 			<span class="text-[0.8rem] font-normal" [class]="isInvalid('email') ? 'text-red-200' : 'text-slate-400'">{{ hint('email') }}</span>
-		</label>
-
-		<label class="grid gap-2 text-sm font-bold text-slate-200">
-			Edad
-			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('age')" [attr.aria-invalid]="isInvalid('age')" type="number" inputmode="numeric" formControlName="age" min="0" max="150" required />
-			<span class="text-[0.8rem] font-normal" [class]="isInvalid('age') ? 'text-red-200' : 'text-slate-400'">{{ hint('age') }}</span>
 		</label>
 
 		<label class="grid gap-2 text-sm font-bold text-slate-200">
@@ -24,15 +12,21 @@
 			<span class="text-[0.8rem] font-normal" [class]="isInvalid('password') ? 'text-red-200' : 'text-slate-400'">{{ hint('password') }}</span>
 		</label>
 
+		<label class="grid gap-2 text-sm font-bold text-slate-200">
+			Repite la contraseña
+			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('confirmPassword')" [attr.aria-invalid]="isInvalid('confirmPassword')" type="password" formControlName="confirmPassword" autocomplete="new-password" required />
+			<span class="text-[0.8rem] font-normal" [class]="isInvalid('confirmPassword') ? 'text-red-200' : 'text-slate-400'">{{ hint('confirmPassword') }}</span>
+		</label>
+
 		@if (errorMessage()) {
 			<p class="rounded-xl border border-led-red/40 bg-red-500/10 px-4 py-3 text-sm text-red-200" role="alert">{{ errorMessage() }}</p>
 		}
 
 		<button class="mt-2 inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-2xl bg-accent-pink px-5.5 py-3.5 text-base font-extrabold text-on-accent-pink transition duration-150 hover:not-disabled:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
 			@if (isSubmitting()) {
-				Creando cuenta…
+				Comprobando…
 			} @else {
-				Crear cuenta
+				Continuar
 			}
 		</button>
 	</form>

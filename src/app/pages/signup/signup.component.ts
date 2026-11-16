@@ -3,11 +3,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, debounceTime, distinctUntilChanged, filter, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, debounceTime, distinctUntilChanged, filter, map, of, switchMap } from 'rxjs';
 import { AuthShellComponent } from '../../components/auth-shell/auth-shell.component';
+import { TokenResponse } from '../../models';
 import { returnPath } from '../../services/auth.guard';
 import { AuthSession } from '../../services/auth-session.service';
-import { GoogleSignupService } from '../../services/google-signup.service';
+import { PendingSignup, SignupService } from '../../services/signup.service';
 import { SessionService } from '../../services/middle/session.service';
 import { SnackbarService } from '../../services/snackbar.service';
 
@@ -79,25 +80,25 @@ const USERNAME_HINTS: Record<UsernameStatus, string> = {
 };
 
 /**
- * The page that finishes the account of someone who signed in with Google for the first time. It asks for what
- * Google does not tell, one thing per step: the age (on a slider) and then a unique username. It only opens
- * while a Google signup is in progress (`googleSignupGuard`).
+ * The page that finishes every new account, the same way whether it started with Google or with an email and
+ * a password: it asks one thing per step, the age (on a slider) and then a unique username, and then creates the
+ * account. It only opens while a signup is in progress (`signupGuard`).
  */
 @Component({
-	selector: 'app-google-signup',
+	selector: 'app-signup',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
 	imports: [ ReactiveFormsModule, AuthShellComponent ],
-	templateUrl: './google-signup.component.html',
+	templateUrl: './signup.component.html',
 })
-export class GoogleSignupPage {
+export class SignupPage {
 	/**
 	 * Builds the form.
 	 */
 	private readonly formBuilder = inject(FormBuilder);
 
 	/**
-	 * Creates the account and asks whether a username is free.
+	 * Creates the account, signs in and asks whether a username is free.
 	 */
 	private readonly sessionService = inject(SessionService);
 
@@ -109,7 +110,7 @@ export class GoogleSignupPage {
 	/**
 	 * Holds the signup in progress.
 	 */
-	private readonly signup = inject(GoogleSignupService);
+	private readonly signup = inject(SignupService);
 
 	/**
 	 * Goes to the next page.
@@ -120,12 +121,6 @@ export class GoogleSignupPage {
 	 * Welcomes the new user.
 	 */
 	private readonly snackbar = inject(SnackbarService);
-
-	/**
-	 * The email of the Google account being used. It is read once: the signup is forgotten as soon as the
-	 * account is created, while the page is still on screen.
-	 */
-	protected readonly email = this.signup.pending()?.email ?? '';
 
 	/**
 	 * The limits of the slider.
@@ -238,15 +233,19 @@ export class GoogleSignupPage {
 	}
 
 	/**
-	 * Gives up on the signup and goes back to the login page.
+	 * Gives up on the signup and goes back to where it started: the login page for Google, the register page
+	 * for a password.
 	 */
 	protected cancel (): void {
+		const origin = 'password' === this.signup.pending()?.kind ? '/register' : '/login';
+
 		this.signup.clear();
-		void this.router.navigateByUrl('/login');
+		void this.router.navigateByUrl(origin);
 	}
 
 	/**
-	 * Creates the account with the age and username chosen and signs in with it.
+	 * Creates the account with the age and username chosen and signs in with it: through Google's signup
+	 * token, or by registering with the email and password and then logging in with them.
 	 */
 	protected submit (): void {
 		const pending = this.signup.pending();
@@ -257,31 +256,38 @@ export class GoogleSignupPage {
 		this.errorMessage.set('');
 		this.isSubmitting.set(true);
 		const { age, username } = this.form.getRawValue();
-		const { signupToken, returnUrl } = pending;
+		const created: Observable<TokenResponse> = 'google' === pending.kind
+			? this.sessionService.completeGoogle({ signupToken: pending.signupToken, age, username })
+			: this.sessionService.register({ email: pending.email, password: pending.password, age, username }).pipe(
+				switchMap(() => this.sessionService.login({ username: pending.email, password: pending.password })),
+			);
 
-		this.sessionService.completeGoogle({ signupToken, age, username }).subscribe({
+		created.subscribe({
 			next: (tokens) => {
 				this.session.save(tokens);
 				this.signup.clear();
 				this.snackbar.success(`Cuenta creada. ¡Bienvenido, ${username.trim()}!`);
-				void this.router.navigateByUrl(returnPath(returnUrl));
+				void this.router.navigateByUrl(returnPath(pending.returnUrl));
 			},
-			error: (error: HttpErrorResponse) => this.fail(error, username.trim()),
+			error: (error: HttpErrorResponse) => this.fail(error, username.trim(), pending.kind),
 		});
 	}
 
 	/**
-	 * Says what went wrong. A signup that expired (or an account that already exists) cannot go on, so it
-	 * sends the user to log in again.
+	 * Says what went wrong. A Google signup that expired cannot go on, so it sends the user to log in again;
+	 * with a password, a 401 can only come from the login after the account was made, so it sends them to log in
+	 * with it.
 	 */
-	private fail (error: HttpErrorResponse, username: string): void {
+	private fail (error: HttpErrorResponse, username: string, kind: PendingSignup['kind']): void {
 		const message = (error.error as { message?: string } | null)?.message;
 
 		this.isSubmitting.set(false);
 
 		if (401 === error.status) {
 			this.signup.clear();
-			this.snackbar.error(message ?? 'Tu sesión de Google expiró. Vuelve a elegir tu cuenta.');
+			this.snackbar.error('google' === kind
+				? message ?? 'Tu sesión de Google expiró. Vuelve a elegir tu cuenta.'
+				: 'Tu cuenta se creó, pero no pudimos entrar. Inicia sesión con tu correo y contraseña.');
 			void this.router.navigateByUrl('/login');
 			return;
 		}

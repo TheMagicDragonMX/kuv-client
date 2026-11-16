@@ -6,7 +6,7 @@ import { GoogleSessionResponse } from '../../models';
 import { returnPath } from '../../services/auth.guard';
 import { AuthSession } from '../../services/auth-session.service';
 import { GoogleIdentityService } from '../../services/google-identity.service';
-import { GoogleSignupService } from '../../services/google-signup.service';
+import { SignupService } from '../../services/signup.service';
 import { SessionService } from '../../services/middle/session.service';
 import { ThemeService } from '../../services/theme.service';
 
@@ -65,7 +65,7 @@ export class GoogleButtonComponent {
 	/**
 	 * Remembers the signup that goes on in the next page.
 	 */
-	private readonly signup = inject(GoogleSignupService);
+	private readonly signup = inject(SignupService);
 
 	/**
 	 * Goes to the next page.
@@ -129,7 +129,7 @@ export class GoogleButtonComponent {
 			return;
 		}
 
-		this.signup.start({ signupToken: answer.signupToken, email: answer.email, returnUrl: this.returnUrl() });
-		void this.router.navigateByUrl('/google-signup');
+		this.signup.start({ kind: 'google', signupToken: answer.signupToken, email: answer.email, returnUrl: this.returnUrl() });
+		void this.router.navigateByUrl('/signup');
 	}
 }

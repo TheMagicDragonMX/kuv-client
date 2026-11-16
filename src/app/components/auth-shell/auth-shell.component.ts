@@ -45,9 +45,9 @@ export class AuthShellComponent {
 	readonly heading = input.required<string>();
 
 	/**
-	 * The sentence under the title that says what the page is for.
+	 * The sentence under the title that says what the page is for. Nothing is shown while it is empty.
 	 */
-	readonly lead = input.required<string>();
+	readonly lead = input('');
 
 	/**
 	 * The colors of the LEDs of the strip.

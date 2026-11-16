@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '@environment';
-import { GoogleLoginPayload, GoogleSessionResponse, GoogleSignupPayload, LoginPayload, RefreshPayload, RegisterPayload, TokenResponse, UsernameAvailability, UsernameParams } from '../../models';
+import { Availability, EmailParams, GoogleLoginPayload, GoogleSessionResponse, GoogleSignupPayload, LoginPayload, RefreshPayload, RegisterPayload, TokenResponse, UsernameParams } from '../../models';
 
 /**
  * Talks to the API's session endpoints.
@@ -55,9 +55,16 @@ export class SessionHttpService {
 	}
 
 	/**
+	 * Asks whether an email is free.
+	 */
+	emailAvailable (params: EmailParams): Observable<Availability> {
+		return this.http.get<Availability>(`${this.endpoint}/email-available`, { params });
+	}
+
+	/**
 	 * Asks whether a username is free.
 	 */
-	usernameAvailable (params: UsernameParams): Observable<UsernameAvailability> {
-		return this.http.get<UsernameAvailability>(`${this.endpoint}/username-available`, { params });
+	usernameAvailable (params: UsernameParams): Observable<Availability> {
+		return this.http.get<Availability>(`${this.endpoint}/username-available`, { params });
 	}
 }

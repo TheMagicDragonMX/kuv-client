@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { GoogleLoginPayload, GoogleSessionResponse, GoogleSignupPayload, LoginPayload, RefreshPayload, RegisterPayload, TokenResponse, UsernameAvailability, UsernameParams } from '../../models';
+import { Availability, EmailParams, GoogleLoginPayload, GoogleSessionResponse, GoogleSignupPayload, LoginPayload, RefreshPayload, RegisterPayload, TokenResponse, UsernameParams } from '../../models';
 import { SessionHttpService } from '../http/session.http.service';
 
 /**
@@ -50,9 +50,16 @@ export class SessionService {
 	}
 
 	/**
+	 * Asks whether an email is free, ignoring the spaces around it.
+	 */
+	emailAvailable (params: EmailParams): Observable<Availability> {
+		return this.http.emailAvailable({ email: params.email.trim() });
+	}
+
+	/**
 	 * Asks whether a username is free, ignoring the spaces around it.
 	 */
-	usernameAvailable (params: UsernameParams): Observable<UsernameAvailability> {
+	usernameAvailable (params: UsernameParams): Observable<Availability> {
 		return this.http.usernameAvailable({ username: params.username.trim() });
 	}
 }

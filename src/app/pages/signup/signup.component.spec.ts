@@ -4,9 +4,9 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { environment } from '@environment';
 import { AuthSession } from '../../services/auth-session.service';
-import { GoogleSignupService } from '../../services/google-signup.service';
+import { PendingSignup, SignupService } from '../../services/signup.service';
 import { SnackbarService } from '../../services/snackbar.service';
-import { GoogleSignupPage } from './google-signup.component';
+import { SignupPage } from './signup.component';
 
 /**
  * Tokens as the API gives them.
@@ -24,16 +24,26 @@ const AVAILABLE = `${environment.apiUrl}/session/username-available`;
 const COMPLETE = `${environment.apiUrl}/session/google/complete`;
 
 /**
- * Creates the page with a Google signup in progress.
+ * A signup that started with Google.
  */
-function createPage (returnUrl: string | null = null) {
+const GOOGLE: PendingSignup = { kind: 'google', signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl: null };
+
+/**
+ * A signup that started with an email and a password.
+ */
+const PASSWORD: PendingSignup = { kind: 'password', email: 'pablo@example.com', password: 'secret123', returnUrl: null };
+
+/**
+ * Creates the page with a signup in progress (a Google one unless told otherwise).
+ */
+function createPage (pending: PendingSignup | string | null = GOOGLE) {
 	TestBed.configureTestingModule({ providers: [ provideRouter([]), provideHttpClient(), provideHttpClientTesting() ] });
 
-	const signup = TestBed.inject(GoogleSignupService);
-	signup.start({ signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl });
+	const signup = TestBed.inject(SignupService);
+	signup.start('object' === typeof pending && null !== pending ? pending : { ...GOOGLE, returnUrl: pending });
 
 	const navigate = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-	const fixture = TestBed.createComponent(GoogleSignupPage);
+	const fixture = TestBed.createComponent(SignupPage);
 	fixture.detectChanges();
 
 	const element = fixture.nativeElement as HTMLElement;
@@ -102,15 +112,19 @@ afterEach(() => {
 	localStorage.clear();
 });
 
-describe('GoogleSignupPage', () => {
-	it('starts by asking the age on a slider, and says which Google account is being used', () => {
+describe('SignupPage', () => {
+	it('starts by asking the age on a bare slider: no subtitle, no email, no steps and no limits at its ends', () => {
 		const { element, text } = createPage();
 		const slider = element.querySelector('input[type="range"]') as HTMLInputElement;
 
 		expect(text()).toContain('¿Cuántos años tienes?');
-		expect(text()).toContain('Paso 1 de 2');
-		expect(text()).toContain('gina@gmail.com');
+		expect(element.querySelector('h1 + p')).toBeNull();
+		expect(text()).not.toContain('Paso');
+		expect(text()).not.toContain('gina@gmail.com');
+		expect(text()).not.toContain('100');
 		expect(slider.value).toBe('18');
+		expect(slider.min).toBe('3');
+		expect(slider.max).toBe('100');
 		expect(element.querySelector('input[formControlName="username"]')).toBeNull();
 	});
 
@@ -129,7 +143,6 @@ describe('GoogleSignupPage', () => {
 		press('Siguiente');
 
 		expect(text()).toContain('Elige tu nombre');
-		expect(text()).toContain('Paso 2 de 2');
 		expect(element.querySelector('input[type="range"]')).toBeNull();
 
 		press('Atrás');
@@ -271,12 +284,62 @@ describe('GoogleSignupPage', () => {
 		expect(navigate).toHaveBeenCalledWith('/login');
 	});
 
-	it('forgets the signup and goes back to the login page when cancelled', () => {
+	it('forgets a Google signup and goes back to the login page when cancelled', () => {
 		const { press, signup, navigate } = createPage();
 
 		press('Cancelar');
 
 		expect(signup.pending()).toBeNull();
 		expect(navigate).toHaveBeenCalledWith('/login');
+	});
+
+	it('forgets a password signup and goes back to the register page when cancelled', () => {
+		const { press, signup, navigate } = createPage(PASSWORD);
+
+		press('Cancelar');
+
+		expect(signup.pending()).toBeNull();
+		expect(navigate).toHaveBeenCalledWith('/register');
+	});
+
+	it('asks the same two steps for a password signup, then registers and logs in with the email', () => {
+		const { server, type, press, slide, fixture, session, signup, navigate, text } = createPage(PASSWORD);
+
+		expect(text()).toContain('¿Cuántos años tienes?');
+		slide(12);
+		press('Siguiente');
+		expect(text()).toContain('Elige tu nombre');
+		type('pablo');
+		server.expectOne((candidate) => candidate.url === AVAILABLE).flush({ available: true });
+		fixture.detectChanges();
+		press('Crear cuenta');
+
+		const register = server.expectOne(`${environment.apiUrl}/session/register`);
+		expect(register.request.body).toEqual({ email: 'pablo@example.com', password: 'secret123', age: 12, username: 'pablo' });
+		register.flush({ id: 1, username: 'pablo', email: 'pablo@example.com', age: 12 }, { status: 201, statusText: 'Created' });
+
+		const login = server.expectOne(`${environment.apiUrl}/session/login`);
+		expect(login.request.body).toEqual({ username: 'pablo@example.com', password: 'secret123' });
+		login.flush(TOKENS);
+
+		expect(session.accessToken()).toBe('access-1');
+		expect(signup.pending()).toBeNull();
+		expect(navigate).toHaveBeenCalledWith('/inicio');
+	});
+
+	it('says which one was taken when registering with a password fails, and keeps the signup', () => {
+		const { server, type, press, fixture, text, signup, submitButton } = createPage(PASSWORD);
+
+		press('Siguiente');
+		type('pablo');
+		server.expectOne((candidate) => candidate.url === AVAILABLE).flush({ available: true });
+		fixture.detectChanges();
+		press('Crear cuenta');
+		server.expectOne(`${environment.apiUrl}/session/register`).flush({ message: 'Ese nombre de usuario ya está en uso.' }, { status: 409, statusText: 'Conflict' });
+		fixture.detectChanges();
+
+		expect(text()).toContain('Ese nombre de usuario ya está en uso.');
+		expect(submitButton().disabled).toBe(true);
+		expect(signup.pending()).not.toBeNull();
 	});
 });

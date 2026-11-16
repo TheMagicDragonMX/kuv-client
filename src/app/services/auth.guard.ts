@@ -2,7 +2,7 @@ import { inject } from '@angular/core';
 import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthSession } from './auth-session.service';
-import { GoogleSignupService } from './google-signup.service';
+import { SignupService } from './signup.service';
 import { SessionRenewal } from './session-renewal.service';
 
 /**
@@ -38,10 +38,10 @@ export const signedOutGuard: CanActivateFn = () => inject(AuthSession).signedIn(
 	: true;
 
 /**
- * Lets the page that asks for the age and username of a Google user open only while a Google signup is
- * in progress; without one (the page was reloaded or opened by hand) it goes back to the login page.
+ * Lets the page that asks for the age and username open only while a signup is in progress (with Google
+ * or with a password); without one (the page was reloaded or opened by hand) it goes back to the login page.
  */
-export const googleSignupGuard: CanActivateFn = () => inject(GoogleSignupService).pending()
+export const signupGuard: CanActivateFn = () => inject(SignupService).pending()
 	? true
 	: inject(Router).createUrlTree([ '/login' ]);
 

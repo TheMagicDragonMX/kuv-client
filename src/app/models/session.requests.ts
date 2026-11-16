@@ -79,6 +79,16 @@ export type GoogleSignupPayload = {
 };
 
 /**
+ * The query params that ask whether an email is free.
+ */
+export type EmailParams = {
+	/**
+	 * The email to look for.
+	 */
+	email: string;
+};
+
+/**
  * The query params that ask whether a username is free.
  */
 export type UsernameParams = {

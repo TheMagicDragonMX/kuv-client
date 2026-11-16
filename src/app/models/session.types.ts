@@ -60,11 +60,11 @@ export type GoogleNeedsProfile = {
 export type GoogleSessionResponse = GoogleSignedIn | GoogleNeedsProfile;
 
 /**
- * What the API answers when asked whether a username is free.
+ * What the API answers when asked whether a username or an email is free.
  */
-export type UsernameAvailability = {
+export type Availability = {
 	/**
-	 * True when nobody has the username.
+	 * True when nobody has it.
 	 */
 	available: boolean;
 };

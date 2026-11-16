@@ -15,7 +15,9 @@
 			</div>
 
 			<h1 id="auth-title" class="font-display text-[clamp(2rem,7vw,2.75rem)] leading-none font-bold">{{ heading() }}</h1>
-			<p class="mt-2.5 text-base text-slate-300">{{ lead() }}</p>
+			@if (lead()) {
+				<p class="mt-2.5 text-base text-slate-300">{{ lead() }}</p>
+			}
 
 			<div class="mt-6">
 				<ng-content />

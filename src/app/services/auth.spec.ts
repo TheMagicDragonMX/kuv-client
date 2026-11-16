@@ -4,10 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { Observable, firstValueFrom, isObservable } from 'rxjs';
 import { environment } from '@environment';
-import { googleSignupGuard, returnPath, signedInGuard, signedOutGuard } from './auth.guard';
+import { returnPath, signedInGuard, signedOutGuard, signupGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthSession } from './auth-session.service';
-import { GoogleSignupService } from './google-signup.service';
+import { SignupService } from './signup.service';
 
 /**
  * Tokens as the API gives them.
@@ -171,18 +171,22 @@ describe('signedOutGuard', () => {
 	});
 });
 
-describe('googleSignupGuard', () => {
+describe('signupGuard', () => {
 	/**
-	 * Runs the guard for the page of the Google signup.
+	 * Runs the guard for the signup page.
 	 */
 	function guard (): boolean | UrlTree {
-		return TestBed.runInInjectionContext(() => googleSignupGuard({} as ActivatedRouteSnapshot, { url: '/google-signup' } as RouterStateSnapshot)) as boolean | UrlTree;
+		return TestBed.runInInjectionContext(() => signupGuard({} as ActivatedRouteSnapshot, { url: '/signup' } as RouterStateSnapshot)) as boolean | UrlTree;
 	}
 
-	it('opens the page while a Google signup is in progress', () => {
+	it('opens the page while a signup is in progress, with Google or with a password', () => {
 		setup();
-		TestBed.inject(GoogleSignupService).start({ signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl: null });
+		const signup = TestBed.inject(SignupService);
 
+		signup.start({ kind: 'google', signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl: null });
+		expect(guard()).toBe(true);
+
+		signup.start({ kind: 'password', email: 'pablo@example.com', password: 'secret123', returnUrl: null });
 		expect(guard()).toBe(true);
 	});
 
