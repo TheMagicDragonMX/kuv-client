@@ -1,7 +1,7 @@
 /**
  * Turns the picture the user chooses into their profile photo: a square cut from its middle,
- * shrunk to `PHOTO_SIDE` pixels and saved as a JPEG data URL, small enough for the API (which
- * takes up to 400 000 characters). This file has no UI.
+ * shrunk to `PHOTO_SIDE` pixels and saved as a JPEG file, far below the 300 KB the API takes.
+ * This file has no UI.
  */
 
 /**
@@ -44,9 +44,9 @@ export function centerSquare (width: number, height: number): { x: number; y: nu
 }
 
 /**
- * The profile photo made from a file. Throws when the file cannot be read as a picture.
+ * The profile photo made from a file, as a JPEG. Throws when the file cannot be read as a picture.
  */
-export async function photoFromFile (file: Blob): Promise<string> {
+export async function photoFromFile (file: Blob): Promise<Blob> {
 	const picture = await createImageBitmap(file);
 
 	try {
@@ -70,7 +70,11 @@ export async function photoFromFile (file: Blob): Promise<string> {
 		context.imageSmoothingQuality = 'high';
 		context.drawImage(picture, x, y, side, side, 0, 0, PHOTO_SIDE, PHOTO_SIDE);
 
-		return canvas.toDataURL('image/jpeg', QUALITY);
+		return await new Promise<Blob>((resolve, reject) => canvas.toBlob(
+			(photo) => photo ? resolve(photo) : reject(new Error('The photo could not be encoded.')),
+			'image/jpeg',
+			QUALITY,
+		));
 	}
 
 	finally {

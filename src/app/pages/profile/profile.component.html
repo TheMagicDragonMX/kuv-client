@@ -39,12 +39,12 @@
 					}
 
 					@if (editing()) {
-						<form class="mt-1 flex flex-col gap-2" (submit)="$event.preventDefault(); saveDescription()">
+						<form class="mt-1 flex flex-col gap-2" (submit)="$event.preventDefault(); saveBio()">
 							<label class="flex flex-col gap-1.5 text-sm font-bold text-slate-300">
-								Descripción
+								Biografía
 								<textarea
 									class="min-h-24 rounded-xl border border-slate-400/25 bg-(--page) px-3.5 py-2.5 text-base font-normal text-slate-100 focus:outline-2 focus:outline-accent"
-									[attr.maxlength]="maxDescription"
+									[attr.maxlength]="maxBio"
 									[value]="draft()"
 									(input)="draft.set($any($event.target).value)"
 								></textarea>
@@ -52,14 +52,14 @@
 							<div class="flex flex-wrap items-center gap-2">
 								<button type="submit" class="min-h-11 cursor-pointer rounded-xl bg-accent-pink px-5 text-[0.95rem] font-extrabold text-on-accent-pink disabled:opacity-60" [disabled]="saving()">Guardar</button>
 								<button type="button" class="min-h-11 cursor-pointer rounded-xl border border-slate-400/30 px-4 text-[0.95rem] font-bold text-slate-200 hover:bg-slate-400/15" (click)="cancelEdit()">Cancelar</button>
-								<span class="ml-auto text-xs text-slate-400" aria-live="polite">{{ draft().length }} / {{ maxDescription }}</span>
+								<span class="ml-auto text-xs text-slate-400" aria-live="polite">{{ draft().length }} / {{ maxBio }}</span>
 							</div>
 						</form>
-					} @else if (me.description) {
-						<p class="mt-1 max-w-160 text-base whitespace-pre-line text-slate-200">{{ me.description }}</p>
+					} @else if (me.bio) {
+						<p class="mt-1 max-w-160 text-base whitespace-pre-line text-slate-200">{{ me.bio }}</p>
 					} @else {
 						<p class="mt-1 text-base text-slate-400">
-							{{ me.isYou ? 'Aún no escribiste nada sobre ti.' : 'Todavía no ha escrito una descripción.' }}
+							{{ me.isYou ? 'Aún no escribiste nada sobre ti.' : 'Todavía no ha escrito una biografía.' }}
 						</p>
 					}
 

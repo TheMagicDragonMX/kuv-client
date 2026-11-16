@@ -11,7 +11,7 @@ import { centerSquare, photoFileProblem } from './profile-photo';
 /**
  * The signed-in user.
  */
-const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', description: 'Me gustan los cubos.', photo: null, followers: 1, following: 0, followsYou: false, youFollow: false, isYou: true };
+const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: 'Me gustan los cubos.', photo: null, followers: 1, following: 0, followsYou: false, youFollow: false, isYou: true };
 
 /**
  * Creates the page and answers the request for the profile.
@@ -40,14 +40,16 @@ function createPage (profile: Profile | null = ME) {
 		page: fixture.componentInstance as unknown as {
 			edit(): void;
 			draft: { set(value: string): void };
-			saveDescription(): void;
+			saveBio(): void;
+			changePhoto(event: Event): Promise<void>;
+			removePhoto(): void;
 			signOut(): void;
 		},
 	};
 }
 
 describe('ProfilePage', () => {
-	it('shows the name, the email, the description and the counts of the user', () => {
+	it('shows the name, the email, the bio and the counts of the user', () => {
 		const { element } = createPage();
 
 		expect(element.querySelector('h1')?.textContent).toContain('@ana');
@@ -64,20 +66,73 @@ describe('ProfilePage', () => {
 		expect(element.querySelector('section app-avatar')?.textContent?.trim()).toBe('A');
 	});
 
-	it('saves the description that was written, keeping the photo', () => {
+	it('shows the picture from the address the API gives, with the API address in front', () => {
+		const { element } = createPage({ ...ME, photo: '/users/1/photo?v=7' });
+
+		expect(element.querySelector('section app-avatar img')?.getAttribute('src')).toBe(`${environment.apiUrl}/users/1/photo?v=7`);
+	});
+
+	it('saves the bio that was written, and only the bio', () => {
 		const { fixture, server, element, page } = createPage();
 		page.edit();
 		page.draft.set('Hola');
-		page.saveDescription();
+		page.saveBio();
 
 		const save = server.expectOne(`${environment.apiUrl}/users/me`);
 		expect(save.request.method).toBe('PUT');
-		expect(save.request.body).toEqual({ description: 'Hola', photo: null });
-		save.flush({ ...ME, description: 'Hola' });
+		expect(save.request.body).toEqual({ bio: 'Hola' });
+		save.flush({ ...ME, bio: 'Hola' });
 		fixture.detectChanges();
 
 		expect(element.textContent).toContain('Hola');
 		expect(element.querySelector('textarea')).toBeNull();
+	});
+
+	it('uploads the picture the user chose as a square JPEG file, and shows the one the API answers with', async () => {
+		const { fixture, server, element, page } = createPage();
+		const picture = new File([ 'png' ], 'me.png', { type: 'image/png' });
+
+		vi.stubGlobal('createImageBitmap', async () => ({ width: 400, height: 200, close: vi.fn() }));
+		vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ fillRect: vi.fn(), drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+		vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((done) => done(new Blob([ 'jpeg' ], { type: 'image/jpeg' })));
+
+		await page.changePhoto({ target: { files: [ picture ], value: '' } } as unknown as Event);
+
+		const upload = server.expectOne(`${environment.apiUrl}/users/me/photo`);
+		const sent = upload.request.body as FormData;
+		expect(upload.request.method).toBe('PUT');
+		expect((sent.get('photo') as File).type).toBe('image/jpeg');
+		expect((sent.get('photo') as File).name).toBe('photo.jpg');
+		upload.flush({ ...ME, photo: '/users/1/photo?v=8' });
+		fixture.detectChanges();
+
+		expect(element.querySelector('section app-avatar img')?.getAttribute('src')).toBe(`${environment.apiUrl}/users/1/photo?v=8`);
+
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it('does not upload a file that is not a picture', async () => {
+		const { fixture, server, element, page } = createPage();
+
+		await page.changePhoto({ target: { files: [ new File([ 'x' ], 'notes.txt', { type: 'text/plain' }) ], value: '' } } as unknown as Event);
+		fixture.detectChanges();
+
+		server.expectNone(`${environment.apiUrl}/users/me/photo`);
+		expect(element.textContent).toContain('Elige una imagen');
+	});
+
+	it('takes the picture off the profile', () => {
+		const { fixture, server, element, page } = createPage({ ...ME, photo: '/users/1/photo?v=7' });
+
+		page.removePhoto();
+
+		const removal = server.expectOne(`${environment.apiUrl}/users/me/photo`);
+		expect(removal.request.method).toBe('DELETE');
+		removal.flush({ ...ME, photo: null });
+		fixture.detectChanges();
+
+		expect(element.querySelector('section app-avatar')?.textContent?.trim()).toBe('A');
 	});
 
 	it('says so when the profile cannot be loaded, and offers to try again', () => {

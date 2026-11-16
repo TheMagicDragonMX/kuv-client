@@ -84,9 +84,9 @@ const MIN_SEARCH = 2;
 												<span class="truncate font-bold text-slate-100 group-hover:text-accent-pink transition">
 													&#64;{{ user.username }}
 												</span>
-												@if (user.description) {
+												@if (user.bio) {
 													<span class="truncate text-xs text-slate-400 max-w-xs sm:max-w-md">
-														{{ user.description }}
+														{{ user.bio }}
 													</span>
 												}
 												<span class="text-[0.75rem] text-slate-500">

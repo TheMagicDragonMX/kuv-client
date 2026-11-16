@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Observable } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
-import { MAX_DESCRIPTION, Profile, ProfileChanges, UserCreation } from '../../models';
+import { MAX_BIO, Profile, UserCreation } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { UsersService } from '../../services/middle/users.service';
@@ -12,7 +13,7 @@ import { photoFileProblem, photoFromFile } from './profile-photo';
 
 /**
  * The profile of a user (the signed-in user or another creator): their photo, name, email
- * (if viewing own profile) and description, their public or personal cube creations,
+ * (if viewing own profile) and bio, their public or personal cube creations,
  * and below it the followers and followed section.
  */
 @Component({
@@ -24,9 +25,9 @@ import { photoFileProblem, photoFromFile } from './profile-photo';
 })
 export class ProfilePage implements OnInit {
 	/**
-	 * Longest description there can be.
+	 * Longest bio there can be.
 	 */
-	protected readonly maxDescription = MAX_DESCRIPTION;
+	protected readonly maxBio = MAX_BIO;
 
 	/**
 	 * Target user id if viewing another user's profile, or null if viewing own profile.
@@ -44,12 +45,12 @@ export class ProfilePage implements OnInit {
 	protected readonly loadProblem = signal<string | null>(null);
 
 	/**
-	 * True while the description is being written.
+	 * True while the bio is being written.
 	 */
 	protected readonly editing = signal(false);
 
 	/**
-	 * The description being written.
+	 * The bio being written.
 	 */
 	protected readonly draft = signal('');
 
@@ -302,26 +303,26 @@ export class ProfilePage implements OnInit {
 	}
 
 	/**
-	 * Starts writing the description, from the one there is.
+	 * Starts writing the bio, from the one there is.
 	 */
 	protected edit (): void {
-		this.draft.set(this.profile()?.description ?? '');
+		this.draft.set(this.profile()?.bio ?? '');
 		this.saveProblem.set(null);
 		this.editing.set(true);
 	}
 
 	/**
-	 * Stops writing the description without saving it.
+	 * Stops writing the bio without saving it.
 	 */
 	protected cancelEdit (): void {
 		this.editing.set(false);
 	}
 
 	/**
-	 * Saves the description that was written.
+	 * Saves the bio that was written.
 	 */
-	protected saveDescription (): void {
-		this.save({ description: this.draft(), photo: this.profile()?.photo ?? null }, () => this.editing.set(false));
+	protected saveBio (): void {
+		this.save(this.usersService.updateMe({ bio: this.draft() }), () => this.editing.set(false));
 	}
 
 	/**
@@ -345,7 +346,7 @@ export class ProfilePage implements OnInit {
 		try {
 			const photo = await photoFromFile(file);
 
-			this.save({ description: this.profile()?.description ?? null, photo });
+			this.save(this.usersService.updatePhoto({ photo }));
 		}
 
 		catch {
@@ -357,7 +358,7 @@ export class ProfilePage implements OnInit {
 	 * Takes the photo off the profile.
 	 */
 	protected removePhoto (): void {
-		this.save({ description: this.profile()?.description ?? null, photo: null });
+		this.save(this.usersService.removePhoto());
 	}
 
 	/**
@@ -390,12 +391,12 @@ export class ProfilePage implements OnInit {
 	}
 
 	/**
-	 * Sends changes of the profile and shows the profile the API answers with.
+	 * Sends a change of the profile and shows the profile the API answers with.
 	 */
-	private save (changes: ProfileChanges, done?: () => void): void {
+	private save (change: Observable<Profile>, done?: () => void): void {
 		this.saving.set(true);
 		this.saveProblem.set(null);
-		this.usersService.updateMe(changes).subscribe({
+		change.subscribe({
 			next: (profile) => {
 				this.profile.set(profile);
 				this.saving.set(false);

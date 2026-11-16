@@ -20,10 +20,11 @@ export type Profile = {
 	/**
 	 * What they tell about themselves, if anything.
 	 */
-	description: string | null;
+	bio: string | null;
 
 	/**
-	 * Their picture as a data URL, if any.
+	 * Where their picture is, if they have one: the whole address, ready for an image. It changes when the
+	 * picture does.
 	 */
 	photo: string | null;
 
@@ -70,10 +71,10 @@ export type UserSummary = {
 	/**
 	 * What they tell about themselves, if anything.
 	 */
-	description: string | null;
+	bio: string | null;
 
 	/**
-	 * Their picture as a data URL, if any.
+	 * Where their picture is, if they have one: the whole address, ready for an image.
 	 */
 	photo: string | null;
 
@@ -94,6 +95,6 @@ export type UserSummary = {
 };
 
 /**
- * Longest description a profile can have, as the API allows it.
+ * Longest bio a profile can have, as the API allows it.
  */
-export const MAX_DESCRIPTION = 280;
+export const MAX_BIO = 280;

@@ -8,13 +8,13 @@ import { FollowSectionComponent, followLabel, relationOf } from './follow-sectio
 /**
  * The signed-in user.
  */
-const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', description: null, photo: null, followers: 2, following: 1, followsYou: false, youFollow: false, isYou: true };
+const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: null, followers: 2, following: 1, followsYou: false, youFollow: false, isYou: true };
 
 /**
  * A user in a list.
  */
 function user (id: number, username: string, followsYou: boolean, youFollow: boolean): UserSummary {
-	return { id, username, description: null, photo: null, followers: 3, followsYou, youFollow };
+	return { id, username, bio: null, photo: null, followers: 3, followsYou, youFollow };
 }
 
 /**

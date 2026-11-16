@@ -5,12 +5,17 @@ export type ProfileChanges = {
 	/**
 	 * What the user tells about themselves.
 	 */
-	description: string | null;
+	bio: string | null;
+};
 
+/**
+ * The picture to use as one's own profile picture, sent in the body.
+ */
+export type PhotoPayload = {
 	/**
-	 * Their picture as a data URL.
+	 * The image: PNG, JPEG, WebP or GIF, up to 300 KB.
 	 */
-	photo: string | null;
+	photo: Blob;
 };
 
 /**

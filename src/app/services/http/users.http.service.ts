@@ -28,10 +28,24 @@ export class UsersHttpService {
 	}
 
 	/**
-	 * Changes the signed-in user's description and picture.
+	 * Changes the signed-in user's bio.
 	 */
 	updateMe (payload: ProfileChanges): Observable<Profile> {
 		return this.http.put<Profile>(`${this.endpoint}/me`, payload);
+	}
+
+	/**
+	 * Sets the signed-in user's picture, sent as a form with a `photo` file.
+	 */
+	updatePhoto (payload: FormData): Observable<Profile> {
+		return this.http.put<Profile>(`${this.endpoint}/me/photo`, payload);
+	}
+
+	/**
+	 * Removes the signed-in user's picture.
+	 */
+	removePhoto (): Observable<Profile> {
+		return this.http.delete<Profile>(`${this.endpoint}/me/photo`);
 	}
 
 	/**

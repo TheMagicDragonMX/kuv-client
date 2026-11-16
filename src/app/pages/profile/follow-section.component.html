@@ -109,8 +109,8 @@
 
 			<div class="rounded-[1.4rem] border border-slate-400/20 bg-slate-900/80 p-5 sm:p-6">
 				<h4 class="mb-2 text-xs font-extrabold tracking-[0.08em] text-slate-400 uppercase">Sobre &#64;{{ user.username }}</h4>
-				@if (user.description) {
-					<p class="text-base whitespace-pre-line text-slate-200">{{ user.description }}</p>
+				@if (user.bio) {
+					<p class="text-base whitespace-pre-line text-slate-200">{{ user.bio }}</p>
 				} @else {
 					<p class="text-base text-slate-400">Todavía no escribió una descripción.</p>
 				}
