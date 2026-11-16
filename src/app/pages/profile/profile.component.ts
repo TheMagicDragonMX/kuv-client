@@ -9,7 +9,8 @@ import { AuthSession } from '../../services/auth-session.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { UsersService } from '../../services/middle/users.service';
 import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
-import { photoFileProblem, photoFromFile } from './profile-photo';
+import { PhotoCropperComponent } from './photo-cropper.component';
+import { Crop, openPicture, photoFileProblem, photoFromCrop } from './profile-photo';
 
 /**
  * The profile of a user (the signed-in user or another creator): their photo, name, email
@@ -20,7 +21,7 @@ import { photoFileProblem, photoFromFile } from './profile-photo';
 	selector: 'app-profile',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ SiteHeaderComponent, AvatarComponent, FollowSectionComponent, RouterLink ],
+	imports: [ SiteHeaderComponent, AvatarComponent, FollowSectionComponent, PhotoCropperComponent, RouterLink ],
 	templateUrl: './profile.component.html',
 })
 export class ProfilePage implements OnInit {
@@ -63,6 +64,16 @@ export class ProfilePage implements OnInit {
 	 * Why the last change failed, or null.
 	 */
 	protected readonly saveProblem = signal<string | null>(null);
+
+	/**
+	 * The picture being framed in the cropper, or null while it is closed.
+	 */
+	protected readonly cropping = signal<ImageBitmap | null>(null);
+
+	/**
+	 * The popup with the cropper.
+	 */
+	private readonly cropper = viewChild<ElementRef<HTMLDialogElement>>('cropper');
 
 	/**
 	 * True while following or unfollowing the user from the profile header.
@@ -326,7 +337,7 @@ export class ProfilePage implements OnInit {
 	}
 
 	/**
-	 * Turns the picture the user chose into their photo and saves it.
+	 * Opens the picture the user chose in the cropper, so they frame their photo.
 	 */
 	protected async changePhoto (event: Event): Promise<void> {
 		const input = event.target as HTMLInputElement;
@@ -344,14 +355,42 @@ export class ProfilePage implements OnInit {
 			return;
 
 		try {
-			const photo = await photoFromFile(file);
-
-			this.save(this.usersService.updatePhoto({ photo }));
+			this.cropping.set(await openPicture(file));
+			this.cropper()?.nativeElement.showModal();
 		}
 
 		catch {
 			this.saveProblem.set('Esa imagen no se pudo abrir. Prueba con otra.');
 		}
+	}
+
+	/**
+	 * Turns the square the user framed into their photo and saves it, closing the cropper once
+	 * it is saved. If saving fails the cropper stays open, saying why.
+	 */
+	protected async cropPhoto (crop: Crop): Promise<void> {
+		const picture = this.cropping();
+
+		if (!picture)
+			return;
+
+		try {
+			const photo = await photoFromCrop(picture, crop);
+
+			this.save(this.usersService.updatePhoto({ photo }), () => this.cropper()?.nativeElement.close());
+		}
+
+		catch {
+			this.saveProblem.set('Esa imagen no se pudo guardar. Prueba con otra.');
+		}
+	}
+
+	/**
+	 * Lets go of the picture once the cropper closes, whether the photo was saved or not.
+	 */
+	protected cropperClosed (): void {
+		this.cropping()?.close();
+		this.cropping.set(null);
 	}
 
 	/**

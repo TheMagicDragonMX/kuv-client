@@ -6,7 +6,7 @@ import { environment } from '@environment';
 import { AuthSession } from '../../services/auth-session.service';
 import { Profile } from '../../models';
 import { ProfilePage } from './profile.component';
-import { centerSquare, photoFileProblem } from './profile-photo';
+import { MAX_ZOOM, centeredView, clampView, cropOf, photoFileProblem } from './profile-photo';
 
 /**
  * The signed-in user.
@@ -42,6 +42,7 @@ function createPage (profile: Profile | null = ME) {
 			draft: { set(value: string): void };
 			saveBio(): void;
 			changePhoto(event: Event): Promise<void>;
+			cropPhoto(crop: { x: number; y: number; side: number }): Promise<void>;
 			removePhoto(): void;
 			signOut(): void;
 		},
@@ -88,15 +89,30 @@ describe('ProfilePage', () => {
 		expect(element.querySelector('textarea')).toBeNull();
 	});
 
-	it('uploads the picture the user chose as a square JPEG file, and shows the one the API answers with', async () => {
+	it('opens the picture the user chose in the cropper, and uploads the square they framed as a JPEG file', async () => {
 		const { fixture, server, element, page } = createPage();
 		const picture = new File([ 'png' ], 'me.png', { type: 'image/png' });
+		const bitmap = { width: 400, height: 200, close: vi.fn() };
+		const drawImage = vi.fn();
+		const dialog = element.querySelector('dialog') as HTMLDialogElement;
+		const showModal = vi.fn();
 
-		vi.stubGlobal('createImageBitmap', async () => ({ width: 400, height: 200, close: vi.fn() }));
-		vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ fillRect: vi.fn(), drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+		dialog.showModal = showModal;
+		dialog.close = () => dialog.dispatchEvent(new Event('close'));
+		vi.stubGlobal('createImageBitmap', async () => bitmap);
+		vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ fillRect: vi.fn(), drawImage } as unknown as CanvasRenderingContext2D);
 		vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((done) => done(new Blob([ 'jpeg' ], { type: 'image/jpeg' })));
 
 		await page.changePhoto({ target: { files: [ picture ], value: '' } } as unknown as Event);
+		fixture.detectChanges();
+
+		expect(showModal).toHaveBeenCalled();
+		expect(element.querySelector('dialog app-photo-cropper')).not.toBeNull();
+		server.expectNone(`${environment.apiUrl}/users/me/photo`);
+
+		await page.cropPhoto({ x: 150, y: 50, side: 100 });
+
+		expect(drawImage).toHaveBeenLastCalledWith(bitmap, 150, 50, 100, 100, 0, 0, 256, 256);
 
 		const upload = server.expectOne(`${environment.apiUrl}/users/me/photo`);
 		const sent = upload.request.body as FormData;
@@ -107,6 +123,33 @@ describe('ProfilePage', () => {
 		fixture.detectChanges();
 
 		expect(element.querySelector('section app-avatar img')?.getAttribute('src')).toBe(`${environment.apiUrl}/users/1/photo?v=8`);
+		expect(element.querySelector('dialog app-photo-cropper')).toBeNull();
+		expect(bitmap.close).toHaveBeenCalled();
+
+		vi.unstubAllGlobals();
+		vi.restoreAllMocks();
+	});
+
+	it('keeps the cropper open, saying why, when the photo cannot be saved', async () => {
+		const { fixture, server, element, page } = createPage();
+		const dialog = element.querySelector('dialog') as HTMLDialogElement;
+		const close = vi.fn();
+
+		dialog.showModal = vi.fn();
+		dialog.close = close;
+		vi.stubGlobal('createImageBitmap', async () => ({ width: 100, height: 100, close: vi.fn() }));
+		vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ fillRect: vi.fn(), drawImage: vi.fn() } as unknown as CanvasRenderingContext2D);
+		vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((done) => done(new Blob([ 'jpeg' ], { type: 'image/jpeg' })));
+
+		await page.changePhoto({ target: { files: [ new File([ 'png' ], 'me.png', { type: 'image/png' }) ], value: '' } } as unknown as Event);
+		fixture.detectChanges();
+		await page.cropPhoto({ x: 0, y: 0, side: 100 });
+
+		server.expectOne(`${environment.apiUrl}/users/me/photo`).flush({ message: 'La foto pesa demasiado.' }, { status: 400, statusText: 'Bad Request' });
+		fixture.detectChanges();
+
+		expect(close).not.toHaveBeenCalled();
+		expect(element.querySelector('dialog app-photo-cropper [role="alert"]')?.textContent).toContain('La foto pesa demasiado.');
 
 		vi.unstubAllGlobals();
 		vi.restoreAllMocks();
@@ -156,9 +199,29 @@ describe('ProfilePage', () => {
 });
 
 describe('the profile photo', () => {
-	it('takes the square in the middle of the picture', () => {
-		expect(centerSquare(400, 200)).toEqual({ x: 100, y: 0, side: 200 });
-		expect(centerSquare(100, 300)).toEqual({ x: 0, y: 100, side: 100 });
+	it('starts on the square in the middle of the picture', () => {
+		const size = { width: 400, height: 200 };
+
+		expect(cropOf(size, centeredView(size))).toEqual({ x: 100, y: 0, side: 200 });
+		expect(cropOf({ width: 100, height: 300 }, centeredView({ width: 100, height: 300 }))).toEqual({ x: 0, y: 100, side: 100 });
+	});
+
+	it('shows a smaller square the more it zooms in', () => {
+		expect(cropOf({ width: 400, height: 200 }, { zoom: 2, centerX: 200, centerY: 100 })).toEqual({ x: 150, y: 50, side: 100 });
+	});
+
+	it('never zooms out past the picture nor in past the most', () => {
+		const size = { width: 400, height: 200 };
+
+		expect(clampView(size, { zoom: 0.5, centerX: 200, centerY: 100 }).zoom).toBe(1);
+		expect(clampView(size, { zoom: 50, centerX: 200, centerY: 100 }).zoom).toBe(MAX_ZOOM);
+	});
+
+	it('never moves the square off the picture', () => {
+		const size = { width: 400, height: 200 };
+
+		expect(cropOf(size, { zoom: 1, centerX: -500, centerY: 900 })).toEqual({ x: 0, y: 0, side: 200 });
+		expect(cropOf(size, { zoom: 2, centerX: 1000, centerY: -10 })).toEqual({ x: 300, y: 0, side: 100 });
 	});
 
 	it('only takes pictures of up to 10 MB', () => {

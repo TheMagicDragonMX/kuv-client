@@ -288,4 +288,18 @@
 			<p class="text-slate-400" role="status">Cargando perfil…</p>
 		}
 	</main>
+
+	<!-- The popup where the user frames the picture they chose. -->
+	<dialog #cropper class="m-auto w-[min(24rem,calc(100vw-2rem))] rounded-[22px] border border-slate-400/25 bg-slate-900 p-0 text-slate-100 shadow-[0_20px_50px_var(--shadow)] backdrop:bg-black/60" aria-labelledby="cropper-title" (close)="cropperClosed()">
+		<div class="flex max-h-[90vh] flex-col gap-4 overflow-y-auto p-5">
+			<div class="flex items-center justify-between">
+				<h2 id="cropper-title" class="font-display text-xl font-bold">Encuadra tu foto</h2>
+				<button type="button" class="size-11 cursor-pointer rounded-full text-slate-300 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent" aria-label="Cerrar" [disabled]="saving()" (click)="cropper.close()">✕</button>
+			</div>
+
+			@if (cropping(); as picture) {
+				<app-photo-cropper [picture]="picture" [busy]="saving()" [problem]="saveProblem()" (cropped)="cropPhoto($event)" (cancelled)="cropper.close()" />
+			}
+		</div>
+	</dialog>
 </div>

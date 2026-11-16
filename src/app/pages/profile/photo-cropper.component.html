@@ -1,0 +1,54 @@
+<div class="flex flex-col items-center gap-4">
+	<div
+		#frame
+		class="relative aspect-square w-[min(18rem,calc(100vw-5rem))] cursor-grab touch-none overflow-hidden rounded-2xl bg-slate-950 select-none active:cursor-grabbing focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+		tabindex="0"
+		role="group"
+		aria-label="Encuadre de la foto"
+		aria-describedby="cropper-hint"
+		(pointerdown)="grab($event)"
+		(pointermove)="drag($event)"
+		(pointerup)="release($event)"
+		(pointercancel)="release($event)"
+		(wheel)="wheel($event)"
+		(keydown)="key($event)"
+	>
+		<canvas #preview class="size-full" width="576" height="576"></canvas>
+
+		<!-- Darkens what falls outside the circle: the avatar only shows what is inside. -->
+		<div class="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_100vmax_rgb(2_6_23/0.7)] ring-2 ring-white/80"></div>
+	</div>
+
+	<p id="cropper-hint" class="text-center text-sm text-slate-400">Arrastra la imagen para encuadrarla y acerca o aleja con la barra.</p>
+
+	<div class="flex w-full max-w-72 items-center gap-2">
+		<button type="button" class="size-11 shrink-0 cursor-pointer rounded-xl text-xl font-bold text-slate-300 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent" aria-label="Alejar" (click)="zoomOut()">−</button>
+		<input
+			class="h-11 w-full cursor-pointer accent-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+			type="range"
+			min="1"
+			[max]="maxZoom"
+			step="0.01"
+			aria-label="Zoom"
+			[value]="view().zoom"
+			(input)="slide($event)"
+		/>
+		<button type="button" class="size-11 shrink-0 cursor-pointer rounded-xl text-xl font-bold text-slate-300 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent" aria-label="Acercar" (click)="zoomIn()">+</button>
+	</div>
+
+	@if (problem(); as text) {
+		<p class="w-full rounded-xl bg-red-500/10 px-3.5 py-2.5 text-sm text-red-200" role="alert">{{ text }}</p>
+	}
+
+	<div class="flex w-full flex-col gap-2">
+		<button
+			type="button"
+			class="inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-2xl bg-accent-pink px-5.5 py-3.5 text-base font-extrabold text-on-accent-pink transition duration-150 hover:not-disabled:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-70"
+			[disabled]="busy()"
+			(click)="save()"
+		>
+			{{ busy() ? 'Guardando…' : 'Guardar foto' }}
+		</button>
+		<button type="button" class="min-h-11 cursor-pointer rounded-xl text-sm font-bold text-slate-300 transition duration-150 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60" [disabled]="busy()" (click)="cancelled.emit()">Cancelar</button>
+	</div>
+</div>
