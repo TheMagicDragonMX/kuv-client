@@ -15,7 +15,7 @@
 		"target": "esnext",
 		"module": "preserve",
 		"paths": {
-			"@environment": ["./src/app/environments.local.ts"]
+			"@environment": ["./src/app/environments/local.ts"]
 		}
 	},
 	"angularCompilerOptions": {

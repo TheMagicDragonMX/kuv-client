@@ -1,4 +1,4 @@
-import type { AppEnvironment } from './environments.types';
+import type { AppEnvironment } from './types';
 
 /**
  * The settings used by the deployed app.

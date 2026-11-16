@@ -3,7 +3,7 @@
 	"extends": "./tsconfig.app.json",
 	"compilerOptions": {
 		"paths": {
-			"@environment": ["./src/app/environments.prod.ts"]
+			"@environment": ["./src/app/environments/prod.ts"]
 		}
 	}
 }
