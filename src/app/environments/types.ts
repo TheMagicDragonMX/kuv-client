@@ -6,4 +6,10 @@ export type AppEnvironment = {
 	 * Address of the API. Every HTTP request the app makes to the server starts with it.
 	 */
 	apiUrl: string;
+
+	/**
+	 * The OAuth client ID of the Google Cloud project, which lets people sign in with Google. It is not
+	 * a secret. While it is empty, the buttons to sign in with Google do not show.
+	 */
+	googleClientId: string;
 };

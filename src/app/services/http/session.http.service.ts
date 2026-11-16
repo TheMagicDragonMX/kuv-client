@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '@environment';
-import { LoginPayload, RefreshPayload, RegisterPayload, TokenResponse } from '../../models';
+import { GoogleLoginPayload, GoogleSessionResponse, GoogleSignupPayload, LoginPayload, RefreshPayload, RegisterPayload, TokenResponse, UsernameAvailability, UsernameParams } from '../../models';
 
 /**
  * Talks to the API's session endpoints.
@@ -20,7 +20,7 @@ export class SessionHttpService {
 	private readonly endpoint = `${environment.apiUrl}/session`;
 
 	/**
-	 * Logs in with a username and a password.
+	 * Logs in with a username (or an email) and a password.
 	 */
 	login (payload: LoginPayload): Observable<TokenResponse> {
 		return this.http.post<TokenResponse>(`${this.endpoint}/login`, payload);
@@ -38,5 +38,26 @@ export class SessionHttpService {
 	 */
 	refresh (payload: RefreshPayload): Observable<TokenResponse> {
 		return this.http.post<TokenResponse>(`${this.endpoint}/refresh`, payload);
+	}
+
+	/**
+	 * Signs in with the ID token Google gave the browser.
+	 */
+	google (payload: GoogleLoginPayload): Observable<GoogleSessionResponse> {
+		return this.http.post<GoogleSessionResponse>(`${this.endpoint}/google`, payload);
+	}
+
+	/**
+	 * Creates the account of a Google user with the age and the username they chose.
+	 */
+	completeGoogle (payload: GoogleSignupPayload): Observable<TokenResponse> {
+		return this.http.post<TokenResponse>(`${this.endpoint}/google/complete`, payload);
+	}
+
+	/**
+	 * Asks whether a username is free.
+	 */
+	usernameAvailable (params: UsernameParams): Observable<UsernameAvailability> {
+		return this.http.get<UsernameAvailability>(`${this.endpoint}/username-available`, { params });
 	}
 }

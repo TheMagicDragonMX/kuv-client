@@ -17,3 +17,54 @@ export type TokenResponse = {
 	 */
 	expiresIn: number;
 };
+
+/**
+ * What the API answers when a Google account belongs to a user: the session is ready.
+ */
+export type GoogleSignedIn = {
+	/**
+	 * Tells which answer this is.
+	 */
+	status: 'signedIn';
+
+	/**
+	 * The tokens of the new session.
+	 */
+	tokens: TokenResponse;
+};
+
+/**
+ * What the API answers when no user has the Google account yet: the age and the username are
+ * still needed to create it.
+ */
+export type GoogleNeedsProfile = {
+	/**
+	 * Tells which answer this is.
+	 */
+	status: 'needsProfile';
+
+	/**
+	 * The token to send back with the age and the username.
+	 */
+	signupToken: string;
+
+	/**
+	 * The email of the Google account.
+	 */
+	email: string;
+};
+
+/**
+ * What the API answers to a sign in with Google.
+ */
+export type GoogleSessionResponse = GoogleSignedIn | GoogleNeedsProfile;
+
+/**
+ * What the API answers when asked whether a username is free.
+ */
+export type UsernameAvailability = {
+	/**
+	 * True when nobody has the username.
+	 */
+	available: boolean;
+};

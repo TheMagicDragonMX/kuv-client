@@ -3,15 +3,20 @@ import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
 import { TestCubePage } from './pages/test-cube/test-cube.component';
 import { EditorPage } from './pages/editor/editor.component';
-import { signedInGuard, signedOutGuard } from './services/auth.guard';
+import { googleSignupGuard, signedInGuard, signedOutGuard } from './services/auth.guard';
 
 /**
- * The pages of the app and the path of each one. Only the login and register pages open without a
+ * The pages of the app and the path of each one. Only the login, register and Google signup pages open without a
  * session; every other page sits under a parent that checks it on each navigation.
  */
 export const routes: Routes = [
 	{ path: 'login', canActivate: [ signedOutGuard ], component: LoginComponent },
 	{ path: 'register', canActivate: [ signedOutGuard ], component: RegisterComponent },
+	{
+		path: 'google-signup',
+		canActivate: [ signedOutGuard, googleSignupGuard ],
+		loadComponent: () => import('./pages/google-signup/google-signup.component').then((page) => page.GoogleSignupPage),
+	},
 	{
 		path: '',
 		canActivateChild: [ signedInGuard ],

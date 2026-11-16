@@ -4,8 +4,10 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap, tap } from 'rxjs';
 import { AuthShellComponent } from '../../components/auth-shell/auth-shell.component';
+import { GoogleButtonComponent } from '../../components/google-button/google-button.component';
 import { returnPath } from '../../services/auth.guard';
 import { AuthSession } from '../../services/auth-session.service';
+import { GoogleIdentityService } from '../../services/google-identity.service';
 import { SessionService } from '../../services/middle/session.service';
 import { SnackbarService } from '../../services/snackbar.service';
 
@@ -32,7 +34,7 @@ const FIELD_TIPS: Record<RegisterField, string> = {
 @Component({
 	selector: 'app-register',
 	standalone: true,
-	imports: [ ReactiveFormsModule, RouterLink, AuthShellComponent ],
+	imports: [ ReactiveFormsModule, RouterLink, AuthShellComponent, GoogleButtonComponent ],
 	templateUrl: './register.component.html',
 })
 export class RegisterComponent {
@@ -59,7 +61,12 @@ export class RegisterComponent {
 	/**
 	 * The page to go to afterwards, from the address (`?returnUrl=`), or null.
 	 */
-	private readonly returnUrl = inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl');
+	protected readonly returnUrl = inject(ActivatedRoute).snapshot.queryParamMap.get('returnUrl');
+
+	/**
+	 * True when signing in with Google is set up, so its button and the "or" above it are shown.
+	 */
+	protected readonly googleEnabled = inject(GoogleIdentityService).enabled;
 
 	/**
 	 * True while the request is in flight, so the button cannot be pressed twice.

@@ -4,9 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { Observable, firstValueFrom, isObservable } from 'rxjs';
 import { environment } from '@environment';
-import { returnPath, signedInGuard, signedOutGuard } from './auth.guard';
+import { googleSignupGuard, returnPath, signedInGuard, signedOutGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthSession } from './auth-session.service';
+import { GoogleSignupService } from './google-signup.service';
 
 /**
  * Tokens as the API gives them.
@@ -167,6 +168,28 @@ describe('signedOutGuard', () => {
 		session.save(TOKENS);
 
 		expect(router.serializeUrl(guard() as UrlTree)).toBe('/inicio');
+	});
+});
+
+describe('googleSignupGuard', () => {
+	/**
+	 * Runs the guard for the page of the Google signup.
+	 */
+	function guard (): boolean | UrlTree {
+		return TestBed.runInInjectionContext(() => googleSignupGuard({} as ActivatedRouteSnapshot, { url: '/google-signup' } as RouterStateSnapshot)) as boolean | UrlTree;
+	}
+
+	it('opens the page while a Google signup is in progress', () => {
+		setup();
+		TestBed.inject(GoogleSignupService).start({ signupToken: 'signup-1', email: 'gina@gmail.com', returnUrl: null });
+
+		expect(guard()).toBe(true);
+	});
+
+	it('goes to the login page when there is none, as when the page was reloaded', () => {
+		const { router } = setup();
+
+		expect(router.serializeUrl(guard() as UrlTree)).toBe('/login');
 	});
 });
 

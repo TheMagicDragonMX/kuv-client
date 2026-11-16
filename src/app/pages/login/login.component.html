@@ -5,7 +5,7 @@
 
 	<form class="grid gap-4" [formGroup]="form" (ngSubmit)="submit()">
 		<label class="grid gap-2 text-sm font-bold text-slate-200">
-			Nombre de usuario
+			Correo o nombre de usuario
 			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" formControlName="username" autocomplete="username" required />
 		</label>
 
@@ -26,6 +26,16 @@
 			}
 		</button>
 	</form>
+
+	@if (googleEnabled) {
+		<div class="my-5 flex items-center gap-3 text-sm text-slate-400" aria-hidden="true">
+			<span class="h-px flex-1 bg-slate-400/25"></span>
+			o
+			<span class="h-px flex-1 bg-slate-400/25"></span>
+		</div>
+
+		<app-google-button [returnUrl]="returnUrl" (failed)="errorMessage.set($event)" />
+	}
 
 	<p class="mt-6 text-center text-slate-300">¿Aún no tienes cuenta? <a class="rounded font-bold text-accent no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" routerLink="/register" queryParamsHandling="preserve">Crear cuenta</a></p>
 </app-auth-shell>

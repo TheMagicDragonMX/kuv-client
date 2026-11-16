@@ -37,5 +37,15 @@
 		</button>
 	</form>
 
+	@if (googleEnabled) {
+		<div class="my-5 flex items-center gap-3 text-sm text-slate-400" aria-hidden="true">
+			<span class="h-px flex-1 bg-slate-400/25"></span>
+			o
+			<span class="h-px flex-1 bg-slate-400/25"></span>
+		</div>
+
+		<app-google-button [returnUrl]="returnUrl" (failed)="errorMessage.set($event)" />
+	}
+
 	<p class="mt-6 text-center text-slate-300">¿Ya tienes cuenta? <a class="rounded font-bold text-accent no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" routerLink="/login" queryParamsHandling="preserve">Iniciar sesión</a></p>
 </app-auth-shell>
