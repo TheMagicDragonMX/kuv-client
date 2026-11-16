@@ -3,6 +3,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { switchMap, tap } from 'rxjs';
+import { AuthShellComponent } from '../../components/auth-shell/auth-shell.component';
 import { returnPath } from '../../services/auth.guard';
 import { AuthSession } from '../../services/auth-session.service';
 import { SessionService } from '../../services/middle/session.service';
@@ -26,12 +27,12 @@ const FIELD_TIPS: Record<RegisterField, string> = {
 
 /**
  * The register page: asks for the data of a new account, creates it through the API and signs
- * the user in with it, so they land on the page that asked for it (the profile, when none did).
+ * the user in with it, so they land on the page that asked for it (the home page, when none did).
  */
 @Component({
 	selector: 'app-register',
 	standalone: true,
-	imports: [ ReactiveFormsModule, RouterLink ],
+	imports: [ ReactiveFormsModule, RouterLink, AuthShellComponent ],
 	templateUrl: './register.component.html',
 })
 export class RegisterComponent {

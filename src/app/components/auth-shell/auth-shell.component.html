@@ -1,0 +1,25 @@
+<div class="min-h-dvh bg-(--page) font-body text-slate-100">
+	<main class="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center gap-6 px-4 py-12 sm:py-16">
+		<div class="flex items-center gap-3">
+			<app-cube-logo class="size-10" />
+			<span class="font-display text-3xl font-bold tracking-wide">Kü-V</span>
+		</div>
+
+		<section class="rounded-2xl border border-slate-400/20 bg-slate-900/80 p-6 shadow-[0_8px_16px_var(--shadow)] sm:p-8" aria-labelledby="auth-title">
+			<div class="mb-6 rounded-xl border border-slate-400/15 bg-led-panel p-3" aria-hidden="true">
+				<div class="grid grid-cols-12 gap-1.25">
+					@for (led of leds; track $index) {
+						<div class="aspect-square rounded-full motion-safe:animate-led-wave" [class]="led" [style.animation-delay.ms]="$index * ledStep"></div>
+					}
+				</div>
+			</div>
+
+			<h1 id="auth-title" class="font-display text-[clamp(2rem,7vw,2.75rem)] leading-none font-bold">{{ heading() }}</h1>
+			<p class="mt-2.5 text-base text-slate-300">{{ lead() }}</p>
+
+			<div class="mt-6">
+				<ng-content />
+			</div>
+		</section>
+	</main>
+</div>

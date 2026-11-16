@@ -1,52 +1,41 @@
-<div class="block h-screen w-screen bg-(--page) text-slate-100">
-	<main class="relative grid h-full place-items-center bg-(image:--page-gradient) p-8">
-		<nav class="absolute top-[1.1rem] left-[1.1rem] z-10 flex gap-2 rounded-full border border-slate-400/20 bg-(--surface) p-[0.4rem] shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px]" aria-label="Navegación principal">
-			<a routerLink="/inicio" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Inicio</a>
-			<a routerLink="/login" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Login</a>
-			<a routerLink="/register" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 bg-slate-400/15 opacity-100 shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Register</a>
-			<a routerLink="/test-cube" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Cube</a>
-			<a routerLink="/editor" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Editor</a>
-			<a routerLink="/setup" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Setup</a>
-			<a routerLink="/gallery" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Gallery</a>
-			<a routerLink="/cube-chat" class="inline-flex items-center justify-center rounded-full px-[0.9rem] py-2 text-[0.78rem] font-semibold tracking-[0.04em] text-(--nav-text) uppercase no-underline transition duration-150 opacity-80 hover:bg-slate-400/15 hover:opacity-100 hover:shadow-[inset_0_0_0_1px_rgba(148,163,184,0.12)]">Chat</a>
-		</nav>
-		<section class="w-full max-w-105 rounded-3xl border border-slate-400/20 bg-slate-900/80 px-8 py-9 shadow-[0_22px_50px_var(--shadow)]" aria-labelledby="page-title">
-			<p class="mb-4 text-[0.82rem] font-bold tracking-[0.24em] text-blue-300 uppercase">Kuv</p>
-			<h1 id="page-title" class="mb-2 text-[clamp(2rem,4vw,2.6rem)] font-bold">Crear cuenta</h1>
-			<p class="mb-[1.4rem] text-slate-300">Completa tus datos para registrarte.</p>
-			<form class="grid gap-4" novalidate [formGroup]="form" (ngSubmit)="submit()">
-				<label class="grid gap-[0.45rem] text-[0.9rem] text-(--nav-text)">
-					Nombre de usuario
-					<input class="w-full rounded-[0.85rem] border border-slate-400/20 bg-slate-900/90 px-[0.9rem] py-[0.85rem] text-slate-50 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400/60" [class.border-red-400]="isInvalid('username')" [attr.aria-invalid]="isInvalid('username')" formControlName="username" autocomplete="username" minlength="3" maxlength="50" required />
-					<span class="text-[0.78rem]" [class]="isInvalid('username') ? 'text-red-300' : 'text-slate-400'">{{ hint('username') }}</span>
-				</label>
-				<label class="grid gap-[0.45rem] text-[0.9rem] text-(--nav-text)">
-					Correo electrónico
-					<input class="w-full rounded-[0.85rem] border border-slate-400/20 bg-slate-900/90 px-[0.9rem] py-[0.85rem] text-slate-50 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400/60" [class.border-red-400]="isInvalid('email')" [attr.aria-invalid]="isInvalid('email')" type="email" formControlName="email" autocomplete="email" required />
-					<span class="text-[0.78rem]" [class]="isInvalid('email') ? 'text-red-300' : 'text-slate-400'">{{ hint('email') }}</span>
-				</label>
-				<label class="grid gap-[0.45rem] text-[0.9rem] text-(--nav-text)">
-					Edad
-					<input class="w-full rounded-[0.85rem] border border-slate-400/20 bg-slate-900/90 px-[0.9rem] py-[0.85rem] text-slate-50 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400/60" [class.border-red-400]="isInvalid('age')" [attr.aria-invalid]="isInvalid('age')" type="number" formControlName="age" min="0" max="150" required />
-					<span class="text-[0.78rem]" [class]="isInvalid('age') ? 'text-red-300' : 'text-slate-400'">{{ hint('age') }}</span>
-				</label>
-				<label class="grid gap-[0.45rem] text-[0.9rem] text-(--nav-text)">
-					Contraseña
-					<input class="w-full rounded-[0.85rem] border border-slate-400/20 bg-slate-900/90 px-[0.9rem] py-[0.85rem] text-slate-50 focus:outline-2 focus:outline-offset-2 focus:outline-blue-400/60" [class.border-red-400]="isInvalid('password')" [attr.aria-invalid]="isInvalid('password')" type="password" formControlName="password" autocomplete="new-password" minlength="8" required />
-					<span class="text-[0.78rem]" [class]="isInvalid('password') ? 'text-red-300' : 'text-slate-400'">{{ hint('password') }}</span>
-				</label>
-				@if (errorMessage()) {
-					<p class="rounded-xl bg-red-500/10 px-[0.9rem] py-3 text-[0.92rem] text-red-200" role="alert">{{ errorMessage() }}</p>
-				}
-				<button class="mt-[0.4rem] cursor-pointer rounded-full bg-[linear-gradient(135deg,#60a5fa,#a78bfa)] px-[1.2rem] py-[0.9rem] text-[0.95rem] font-bold text-[#08111b] transition duration-150 hover:not-disabled:-translate-y-px hover:not-disabled:shadow-[0_12px_25px_rgba(96,165,250,0.32)] disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
-					@if (isSubmitting()) {
-						Creando cuenta...
-					} @else {
-						Crear cuenta
-					}
-				</button>
-			</form>
-			<p class="mt-[1.2rem] text-slate-300">¿Ya tienes cuenta? <a class="text-blue-300 no-underline" routerLink="/login" queryParamsHandling="preserve">Iniciar sesión</a></p>
-		</section>
-	</main>
-</div>
+<app-auth-shell heading="Crear cuenta" lead="Completa tus datos para empezar a programar el cubo.">
+	<form class="grid gap-4" novalidate [formGroup]="form" (ngSubmit)="submit()">
+		<label class="grid gap-2 text-sm font-bold text-slate-200">
+			Nombre de usuario
+			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('username')" [attr.aria-invalid]="isInvalid('username')" formControlName="username" autocomplete="username" minlength="3" maxlength="50" required />
+			<span class="text-[0.8rem] font-normal" [class]="isInvalid('username') ? 'text-red-200' : 'text-slate-400'">{{ hint('username') }}</span>
+		</label>
+
+		<label class="grid gap-2 text-sm font-bold text-slate-200">
+			Correo electrónico
+			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('email')" [attr.aria-invalid]="isInvalid('email')" type="email" formControlName="email" autocomplete="email" required />
+			<span class="text-[0.8rem] font-normal" [class]="isInvalid('email') ? 'text-red-200' : 'text-slate-400'">{{ hint('email') }}</span>
+		</label>
+
+		<label class="grid gap-2 text-sm font-bold text-slate-200">
+			Edad
+			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('age')" [attr.aria-invalid]="isInvalid('age')" type="number" inputmode="numeric" formControlName="age" min="0" max="150" required />
+			<span class="text-[0.8rem] font-normal" [class]="isInvalid('age') ? 'text-red-200' : 'text-slate-400'">{{ hint('age') }}</span>
+		</label>
+
+		<label class="grid gap-2 text-sm font-bold text-slate-200">
+			Contraseña
+			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" [class.border-led-red]="isInvalid('password')" [attr.aria-invalid]="isInvalid('password')" type="password" formControlName="password" autocomplete="new-password" minlength="8" required />
+			<span class="text-[0.8rem] font-normal" [class]="isInvalid('password') ? 'text-red-200' : 'text-slate-400'">{{ hint('password') }}</span>
+		</label>
+
+		@if (errorMessage()) {
+			<p class="rounded-xl border border-led-red/40 bg-red-500/10 px-4 py-3 text-sm text-red-200" role="alert">{{ errorMessage() }}</p>
+		}
+
+		<button class="mt-2 inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-2xl bg-accent-pink px-5.5 py-3.5 text-base font-extrabold text-on-accent-pink transition duration-150 hover:not-disabled:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
+			@if (isSubmitting()) {
+				Creando cuenta…
+			} @else {
+				Crear cuenta
+			}
+		</button>
+	</form>
+
+	<p class="mt-6 text-center text-slate-300">¿Ya tienes cuenta? <a class="rounded font-bold text-accent no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" routerLink="/login" queryParamsHandling="preserve">Iniciar sesión</a></p>
+</app-auth-shell>

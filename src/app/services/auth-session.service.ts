@@ -25,6 +25,30 @@ function read (key: string): string | null {
 }
 
 /**
+ * Seconds before its real expiry when an access token already counts as expired, so a request
+ * made right after a check does not reach the API with a dead token.
+ */
+const EXPIRY_MARGIN = 10;
+
+/**
+ * True when the access token says it has expired. The token is a JWT: its middle part holds the
+ * moment it expires (`exp`, in seconds). A token that cannot be read does not count as expired,
+ * because the API is the one that decides; it answers 401 and the interceptor renews it then.
+ */
+function expired (token: string): boolean {
+	try {
+		const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+		const { exp } = JSON.parse(atob(payload)) as { exp?: unknown };
+
+		return 'number' === typeof exp && exp - EXPIRY_MARGIN <= Date.now() / 1000;
+	}
+
+	catch {
+		return false;
+	}
+}
+
+/**
  * The session of the user: the tokens the API gave at login, kept in localStorage so the session
  * survives reloading the page. It only stores them; `SessionService` gets them and the auth
  * interceptor sends them.
@@ -46,6 +70,15 @@ export class AuthSession {
 	 */
 	accessToken (): string | null {
 		return this.access();
+	}
+
+	/**
+	 * True when there is an access token and it has expired.
+	 */
+	accessTokenExpired (): boolean {
+		const token = this.access();
+
+		return null !== token && expired(token);
 	}
 
 	/**

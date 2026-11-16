@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { CubeLinkService, LinkState } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
+import { CubeLogoComponent } from '../cube-logo/cube-logo.component';
 import { UserSearchModalComponent } from '../user-search.component';
 
 /**
@@ -55,7 +56,7 @@ const STATUS: Record<LinkState, { label: string; classes: string; dot: string }>
 	selector: 'app-site-header',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ RouterLink, RouterLinkActive, UserSearchModalComponent ],
+	imports: [ RouterLink, RouterLinkActive, CubeLogoComponent, UserSearchModalComponent ],
 	host: { class: 'contents' },
 	templateUrl: './site-header.component.html',
 })
