@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, tap } from 'rxjs';
 import { environment } from '@environment';
 import { CreationFormPayload, CreationParams, CreationVisibilityPayload, UserCreation, UserParams } from '../../models';
 
@@ -24,7 +24,9 @@ export class CreationsHttpService {
 	 * Lists all creations of the signed-in user.
 	 */
 	getMyCreations (): Observable<UserCreation[]> {
-		return this.http.get<UserCreation[]>(`${this.endpoint}/me`);
+		return this.http.get<UserCreation[]>(`${this.endpoint}/me`).pipe(
+			tap((response) => console.log('My creations', response)),
+		);
 	}
 
 	/**
@@ -32,48 +34,62 @@ export class CreationsHttpService {
 	 * If viewing another user, the server only returns their public creations.
 	 */
 	getUserCreations (params: UserParams): Observable<UserCreation[]> {
-		return this.http.get<UserCreation[]>(`${this.endpoint}/user/${params.id}`);
+		return this.http.get<UserCreation[]>(`${this.endpoint}/user/${params.id}`).pipe(
+			tap((response) => console.log('Creations of a user', response)),
+		);
 	}
 
 	/**
 	 * Gets a creation by its id.
 	 */
 	getCreation (params: CreationParams): Observable<UserCreation> {
-		return this.http.get<UserCreation>(`${this.endpoint}/${params.id}`);
+		return this.http.get<UserCreation>(`${this.endpoint}/${params.id}`).pipe(
+			tap((response) => console.log('Creation by id', response)),
+		);
 	}
 
 	/**
 	 * Downloads the video file of a creation.
 	 */
 	getVideoBlob (params: CreationParams): Observable<Blob> {
-		return this.http.get(`${this.endpoint}/${params.id}/video`, { responseType: 'blob' });
+		return this.http.get(`${this.endpoint}/${params.id}/video`, { responseType: 'blob' }).pipe(
+			tap((response) => console.log('Video of a creation', response)),
+		);
 	}
 
 	/**
 	 * Changes whether a creation is public or private.
 	 */
 	setVisibility (params: CreationParams, payload: CreationVisibilityPayload): Observable<UserCreation> {
-		return this.http.patch<UserCreation>(`${this.endpoint}/${params.id}/visibility`, payload);
+		return this.http.patch<UserCreation>(`${this.endpoint}/${params.id}/visibility`, payload).pipe(
+			tap((response) => console.log('Creation visibility changed', response)),
+		);
 	}
 
 	/**
 	 * Creates a creation from form data.
 	 */
 	createCreation (payload: CreationFormPayload): Observable<UserCreation> {
-		return this.http.post<UserCreation>(this.endpoint, payload);
+		return this.http.post<UserCreation>(this.endpoint, payload).pipe(
+			tap((response) => console.log('Creation created', response)),
+		);
 	}
 
 	/**
 	 * Replaces a creation with form data.
 	 */
 	updateCreation (params: CreationParams, payload: CreationFormPayload): Observable<UserCreation> {
-		return this.http.put<UserCreation>(`${this.endpoint}/${params.id}`, payload);
+		return this.http.put<UserCreation>(`${this.endpoint}/${params.id}`, payload).pipe(
+			tap((response) => console.log('Creation updated', response)),
+		);
 	}
 
 	/**
 	 * Deletes a creation.
 	 */
 	deleteCreation (params: CreationParams): Observable<void> {
-		return this.http.delete<void>(`${this.endpoint}/${params.id}`);
+		return this.http.delete<void>(`${this.endpoint}/${params.id}`).pipe(
+			tap((response) => console.log('Creation deleted', response)),
+		);
 	}
 }

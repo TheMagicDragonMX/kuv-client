@@ -200,4 +200,16 @@ else
   - `params`: what is sent in the URL, whether as query params or as a path value like an id (`profile({ id })`).
   - A method with both takes `(params, payload)`. A method with neither takes nothing.
 - Types of what is sent are defined in `src/app/models/*.requests.ts`, and types of what the API returns in `src/app/models/*.types.ts`, where `*` is the section name (`users`, `session`, `creations`). Services import them from the barrel `src/app/models/index.ts`, which exports all of them; add every new file there.
+- Every method of an http service ends its call with a `.pipe(tap(...))` that logs the response to the console: first a few words saying what was made, then the response, as two arguments of one `console.log`. Only http services do this, never the middle ones.
+
+```ts
+// Good
+return this.http.get<UserCreation[]>(`${this.endpoint}/me`).pipe(
+	tap((response) => console.log('My creations', response)),
+);
+
+// Bad
+return this.http.get<UserCreation[]>(`${this.endpoint}/me`);
+```
+
 - Every endpoint and every type is documented, following the rules above.
