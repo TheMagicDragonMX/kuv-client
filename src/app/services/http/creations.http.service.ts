@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '@environment';
-import { CreationFormPayload, CreationParams, CreationVisibilityPayload, UserCreation, UserParams } from '../../models';
+import { CreationFormPayload, CreationParams, CreationVisibilityPayload, UserCreation, UserCreationDetail, UserParams } from '../../models';
 
 /**
  * Talks to the API's creation endpoints. It only makes the calls: building the form data and
@@ -40,10 +40,10 @@ export class CreationsHttpService {
 	}
 
 	/**
-	 * Gets a creation by its id.
+	 * Gets a creation by its id, with its program file.
 	 */
-	getCreation (params: CreationParams): Observable<UserCreation> {
-		return this.http.get<UserCreation>(`${this.endpoint}/${params.id}`).pipe(
+	getCreation (params: CreationParams): Observable<UserCreationDetail> {
+		return this.http.get<UserCreationDetail>(`${this.endpoint}/${params.id}`).pipe(
 			tap((response) => console.log('Creation by id', response)),
 		);
 	}
@@ -69,8 +69,8 @@ export class CreationsHttpService {
 	/**
 	 * Creates a creation from form data.
 	 */
-	createCreation (payload: CreationFormPayload): Observable<UserCreation> {
-		return this.http.post<UserCreation>(this.endpoint, payload).pipe(
+	createCreation (payload: CreationFormPayload): Observable<UserCreationDetail> {
+		return this.http.post<UserCreationDetail>(this.endpoint, payload).pipe(
 			tap((response) => console.log('Creation created', response)),
 		);
 	}
@@ -78,8 +78,8 @@ export class CreationsHttpService {
 	/**
 	 * Replaces a creation with form data.
 	 */
-	updateCreation (params: CreationParams, payload: CreationFormPayload): Observable<UserCreation> {
-		return this.http.put<UserCreation>(`${this.endpoint}/${params.id}`, payload).pipe(
+	updateCreation (params: CreationParams, payload: CreationFormPayload): Observable<UserCreationDetail> {
+		return this.http.put<UserCreationDetail>(`${this.endpoint}/${params.id}`, payload).pipe(
 			tap((response) => console.log('Creation updated', response)),
 		);
 	}

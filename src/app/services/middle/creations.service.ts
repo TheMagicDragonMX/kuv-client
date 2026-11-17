@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '@environment';
-import { Environment, Program } from '../../cube';
+import { createProgramFile, readProgramFile } from '../../cube';
 import {
 	CreationFormPayload,
 	CreationParams,
@@ -9,6 +9,7 @@ import {
 	CreationVisibilityPayload,
 	ParsedUserCreation,
 	UserCreation,
+	UserCreationDetail,
 	UserParams,
 	VideoUrlParams,
 } from '../../models';
@@ -41,9 +42,9 @@ export class CreationsService {
 	}
 
 	/**
-	 * Gets a creation by its id.
+	 * Gets a creation by its id, with its program file.
 	 */
-	getCreation (params: CreationParams): Observable<UserCreation> {
+	getCreation (params: CreationParams): Observable<UserCreationDetail> {
 		return this.http.getCreation(params);
 	}
 
@@ -64,14 +65,14 @@ export class CreationsService {
 	/**
 	 * Creates a creation from what the editor made.
 	 */
-	createCreation (payload: CreationPayload): Observable<UserCreation> {
+	createCreation (payload: CreationPayload): Observable<UserCreationDetail> {
 		return this.http.createCreation(this.form(payload));
 	}
 
 	/**
 	 * Replaces a creation. A missing description or visibility is left as it was.
 	 */
-	updateCreation (params: CreationParams, payload: CreationPayload): Observable<UserCreation> {
+	updateCreation (params: CreationParams, payload: CreationPayload): Observable<UserCreationDetail> {
 		return this.http.updateCreation(params, this.form(payload, true));
 	}
 
@@ -83,14 +84,13 @@ export class CreationsService {
 	}
 
 	/**
-	 * A creation with its program and environment parsed from JSON.
+	 * A creation with its program file checked and its program and environment ready for the
+	 * engine. Throws a ProgramError, saying where, if the program file is not valid.
 	 */
-	parseCreation (creation: UserCreation): ParsedUserCreation {
-		return {
-			...creation,
-			program: JSON.parse(creation.programJson) as Program,
-			environment: creation.environmentJson ? (JSON.parse(creation.environmentJson) as Environment) : undefined,
-		};
+	parseCreation (creation: UserCreationDetail): ParsedUserCreation {
+		const { programFile, ...description } = creation;
+
+		return { ...description, ...readProgramFile(programFile) };
 	}
 
 	/**
@@ -114,10 +114,7 @@ export class CreationsService {
 		if (updating ? undefined !== payload.description : payload.description)
 			formData.append('description', payload.description ?? '');
 
-		formData.append('programJson', JSON.stringify(payload.program));
-
-		if (payload.environment)
-			formData.append('environmentJson', JSON.stringify(payload.environment));
+		formData.append('programFile', JSON.stringify(createProgramFile(payload.program, payload.environment)));
 
 		formData.append('durationSeconds', payload.durationSeconds.toString());
 

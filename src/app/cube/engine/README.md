@@ -52,6 +52,7 @@ environment (pictures on the faces) ──painted onto the world's background by
 | `program/` | `program.ts` | The shape of a program: objects it starts with, scripts, triggers and config (the JSON contract with Blockly and the Pi) |
 | | `names.ts` | Converts readable names (`'FRONT'`, `'#ff0000'`) to engine values |
 | | `validate-program.ts` | Checks that something really is a program, with errors that say where. Reads each block's schema from `blocks/` |
+| `program-file/` | `program-file.ts` | The complete program of a creation as one JSON document (program + environment), the `program.json` the API keeps in the folder of each creation. Writes pictures as `#RRGGBB` lists and reads them back as pixel buffers. Its structure is `Schemas/program-file.schema.json` in the API |
 | `commands/` | `apply-command.ts` | Looks up a command in `blocks/` and applies it to the world |
 | `runtime/` | `interpreter.ts` | Runs the blocks of one script, pausing at `wait` and between loop iterations |
 | | `scheduler.ts` | Decides when each script gets its turn |

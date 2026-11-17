@@ -161,23 +161,19 @@ export class EditorPage implements OnInit {
 							this.exportDescription.set(creation.description ?? '');
 							this.exportDuration.set(creation.durationSeconds || 15);
 							this.exportIsPublic.set(creation.isPublic);
-							if (creation.environmentJson) {
-								try {
-									this.environment.set(JSON.parse(creation.environmentJson));
-								} catch (e) {
-									console.error('Error parsing environment JSON:', e);
-								}
-							}
-							if (creation.programJson) {
-								try {
-									const program = JSON.parse(creation.programJson);
-									setTimeout(() => {
-										this.blocksRef?.loadProgram(program);
-										this.cubeRef?.run(program);
-									}, 100);
-								} catch (e) {
-									console.error('Error parsing program JSON:', e);
-								}
+
+							try {
+								const { program, environment } = this.creationsService.parseCreation(creation);
+
+								if (environment)
+									this.environment.set(environment);
+
+								setTimeout(() => {
+									this.blocksRef?.loadProgram(program);
+									this.cubeRef?.run(program);
+								}, 100);
+							} catch (e) {
+								console.error('Error reading the program file:', e);
 							}
 						},
 						error: async () => {

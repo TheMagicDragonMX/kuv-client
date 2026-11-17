@@ -24,6 +24,8 @@ export { formatColor, parseColor } from './program/names';
 export type { Block, CreateCommand } from './blocks';
 export type { CostumeDefinition, FaceName, HeadingName, Program, ProgramConfig, Script, ShapePixelDefinition, SideName, Trigger } from './program/program';
 export { validateProgram } from './program/validate-program';
+export { createProgramFile, readProgramFile } from './program-file/program-file';
+export type { EnvironmentFile, FaceImagesFile, LoadedProgramFile, NamedBackgroundFile, ProgramFile } from './program-file/program-file';
 export type { ScriptError } from './runtime/scheduler';
 export { CubeState, FACE_RESOLUTION, Face } from './state/cube-state';
 export type { Color } from './state/cube-state';

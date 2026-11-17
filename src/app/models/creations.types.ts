@@ -1,4 +1,4 @@
-import { Environment, Program } from '../cube';
+import { LoadedProgramFile, ProgramFile } from '../cube';
 
 /**
  * A user's creation representation returned from the API.
@@ -23,16 +23,6 @@ export type UserCreation = {
 	 * What the creation is about, if anything.
 	 */
 	description: string | null;
-
-	/**
-	 * The cube program, as JSON text.
-	 */
-	programJson: string;
-
-	/**
-	 * The environment the program runs in, as JSON text.
-	 */
-	environmentJson: string | null;
 
 	/**
 	 * How long the video lasts, in seconds.
@@ -61,16 +51,18 @@ export type UserCreation = {
 };
 
 /**
- * User creation with parsed cube program and environment.
+ * A creation with its program file, as the API returns it when one creation is asked for, created
+ * or updated. The lists only carry `UserCreation`, without the program.
  */
-export type ParsedUserCreation = Omit<UserCreation, 'programJson' | 'environmentJson'> & {
+export type UserCreationDetail = UserCreation & {
 	/**
-	 * The cube program of the creation.
+	 * The complete program of the creation: the program, the environment and the version of the
+	 * format.
 	 */
-	program: Program;
-
-	/**
-	 * The environment of the creation, when it has one.
-	 */
-	environment?: Environment;
+	programFile: ProgramFile;
 };
+
+/**
+ * A creation with the program file checked and ready for the engine.
+ */
+export type ParsedUserCreation = Omit<UserCreationDetail, 'programFile'> & LoadedProgramFile;
