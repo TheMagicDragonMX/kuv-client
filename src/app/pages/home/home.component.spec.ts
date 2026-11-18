@@ -1,7 +1,8 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
+import { vi } from 'vitest';
 import { environment } from '@environment';
 import { FeedCreation } from '../../models';
 import { SnackbarService } from '../../services/snackbar.service';
@@ -122,15 +123,14 @@ describe('HomePage', () => {
 		expect(button().getAttribute('aria-pressed')).toBe('false');
 	});
 
-	it('says an animation cannot be seen yet', () => {
+	it('navigates to the animation details page when clicked to view', () => {
 		const { element } = createPage(CREATIONS);
-		const snackbar = TestBed.inject(SnackbarService);
+		const router = TestBed.inject(Router);
+		const spy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
 		(element.querySelector('app-animation-card button[aria-label^="Visualizar"]') as HTMLButtonElement).click();
 
-		expect(snackbar.messages()[0]?.text).toContain('Corazón que late');
-		expect(snackbar.messages()[0]?.text).toContain('todavía no se puede visualizar');
-		snackbar.clear();
+		expect(spy).toHaveBeenCalledWith([ '/animacion', '7' ]);
 	});
 
 	it('saves an animation and adds it to the favorites, and takes them back', () => {
