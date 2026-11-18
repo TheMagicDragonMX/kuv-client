@@ -167,6 +167,39 @@ describe('ProfilePage', () => {
 		expect(element.textContent).toContain('Elige una imagen');
 	});
 
+	describe('creations without a video', () => {
+		/**
+		 * A creation of the user.
+		 */
+		const creation = (id: number, hasVideo: boolean) => ({ id, userId: 1, title: `Creación ${id}`, description: null, hasVideo, isPublic: true, createdAt: '2026-11-18T10:00:00Z', updatedAt: '2026-11-18T10:00:00Z' });
+
+		it('puts a button to generate the video in the empty square, only on the creations that have none', () => {
+			const { fixture, server, element } = createPage();
+
+			server.expectOne(`${environment.apiUrl}/creations/me`).flush([ creation(1, false), creation(2, true) ]);
+			fixture.detectChanges();
+
+			const buttons = [ ...element.querySelectorAll('button') ].filter((button) => 'Generar video' === button.textContent?.trim());
+
+			expect(buttons).toHaveLength(1);
+			expect(buttons[0].closest('div.aspect-square')?.textContent).toContain('Sin video de vista previa');
+			expect(element.querySelectorAll('video')).toHaveLength(1);
+		});
+
+		it('says so, and asks for nothing, when the browser cannot record', () => {
+			const { fixture, server, element } = createPage();
+			const snackbar = TestBed.inject(SnackbarService);
+
+			server.expectOne(`${environment.apiUrl}/creations/me`).flush([ creation(1, false) ]);
+			fixture.detectChanges();
+			[ ...element.querySelectorAll('button') ].find((button) => 'Generar video' === button.textContent?.trim())?.click();
+
+			expect(snackbar.messages()[0]?.text).toContain('no puede grabar');
+			server.expectNone(`${environment.apiUrl}/creations/1`);
+			snackbar.clear();
+		});
+	});
+
 	it('takes the picture off the profile', () => {
 		const { fixture, server, element, page } = createPage({ ...ME, photo: '/users/1/photo?v=7' });
 

@@ -1,9 +1,10 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { Observable, firstValueFrom } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { MAX_BIO, Profile, UserCreation } from '../../models';
+import { PREVIEW_VIDEO_OPTIONS, RecordProgress, isRecordingSupported, recordCubeVideo } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
 import { SnackbarService } from '../../services/snackbar.service';
 import { CreationsService } from '../../services/middle/creations.service';
@@ -106,6 +107,16 @@ export class ProfilePage implements OnInit {
 	protected readonly videoUrls = signal<Record<number, string>>({});
 
 	/**
+	 * ID of the creation whose video is being generated, or null. Only one is made at a time.
+	 */
+	protected readonly generatingId = signal<number | null>(null);
+
+	/**
+	 * How far the recording of the video being generated has got.
+	 */
+	protected readonly generationProgress = signal<RecordProgress | null>(null);
+
+	/**
 	 * ID of the creation currently being deleted.
 	 */
 	protected readonly deletingId = signal<number | null>(null);
@@ -140,6 +151,11 @@ export class ProfilePage implements OnInit {
 	 * The session, to sign out.
 	 */
 	private readonly session = inject(AuthSession);
+
+	/**
+	 * Where the cube is shown while a video is being recorded.
+	 */
+	private readonly recordingHost = viewChild<ElementRef<HTMLDivElement>>('recordingHost');
 
 	/**
 	 * Routing and current route.
@@ -186,6 +202,62 @@ export class ProfilePage implements OnInit {
 							: 'No se pudo cargar el perfil.',
 			),
 		});
+	}
+
+	/**
+	 * Generates the preview video of one of the user's creations that has none: runs its program on
+	 * the cube, records it with the usual 15 second preset and uploads the video to the creation.
+	 */
+	protected async generateVideo (item: UserCreation): Promise<void> {
+		if (null !== this.generatingId())
+			return;
+
+		if (!isRecordingSupported()) {
+			this.snackbar.show('Este navegador no puede grabar video.');
+			return;
+		}
+
+		this.generatingId.set(item.id);
+		this.generationProgress.set({ currentSecond: 1, totalSeconds: PREVIEW_VIDEO_OPTIONS.durationSeconds, percent: 0 });
+
+		try {
+			const creation = await firstValueFrom(this.creationsService.getCreation({ id: item.id }));
+			const { program, environment } = this.creationsService.parseCreation(creation);
+
+			/**
+			 * Lets the page draw the place for the cube before the recording needs it.
+			 */
+			await new Promise((resolve) => setTimeout(resolve, 50));
+
+			const result = await recordCubeVideo(
+				program,
+				{ ...PREVIEW_VIDEO_OPTIONS, environment, previewHost: this.recordingHost()?.nativeElement },
+				(progress) => this.generationProgress.set(progress),
+			);
+
+			/**
+			 * The title and description go back as they are: the API clears a description that is not sent.
+			 */
+			await firstValueFrom(this.creationsService.updateCreation({ id: item.id }, {
+				title: item.title,
+				description: item.description ?? '',
+				program,
+				environment,
+				videoBlob: result.blob,
+			}));
+
+			this.creations.update((items) => items.map((candidate) => item.id === candidate.id ? { ...candidate, hasVideo: true } : candidate));
+			this.videoUrls.update((urls) => ({ ...urls, [item.id]: this.creationsService.videoUrl({ id: item.id, token: this.session.accessToken() }) }));
+		}
+
+		catch {
+			this.snackbar.show(`No se pudo generar el video de "${item.title}".`);
+		}
+
+		finally {
+			this.generatingId.set(null);
+			this.generationProgress.set(null);
+		}
 	}
 
 	/**

@@ -9,6 +9,7 @@ import {
 	Environment,
 	Face,
 	ObjectMove,
+	PREVIEW_VIDEO_OPTIONS,
 	RecordProgress,
 	recordCubeVideo,
 } from '../../cube';
@@ -140,8 +141,6 @@ export class EditorPage implements OnInit {
 	protected readonly showExportModal = signal(false);
 	protected readonly exportTitle = signal('Mi Creación');
 	protected readonly exportDescription = signal('');
-	protected readonly exportDuration = signal<number>(15);
-	protected readonly exportCameraMode = signal<'orbit' | 'front'>('orbit');
 	protected readonly isExporting = signal(false);
 	protected readonly exportProgress = signal<RecordProgress | null>(null);
 	protected readonly exportSuccess = signal(false);
@@ -236,21 +235,15 @@ export class EditorPage implements OnInit {
 
 		this.isExporting.set(true);
 		this.saveError.set(null);
-		this.exportProgress.set({ currentSecond: 1, totalSeconds: this.exportDuration(), percent: 0 });
+		this.exportProgress.set({ currentSecond: 1, totalSeconds: PREVIEW_VIDEO_OPTIONS.durationSeconds, percent: 0 });
 
 		await new Promise((resolve) => setTimeout(resolve, 50));
 
 		try {
-			const rotations = 'orbit' === this.exportCameraMode() ? 1 : 0;
 			const result = await recordCubeVideo(
 				program,
 				{
-					durationSeconds: this.exportDuration(),
-					fps: 30,
-					width: 480,
-					height: 480,
-					bitrate: 2_500_000,
-					rotations,
+					...PREVIEW_VIDEO_OPTIONS,
 					environment: this.environment(),
 					previewHost: this.exportPreviewHostRef?.nativeElement,
 				},
@@ -285,7 +278,7 @@ export class EditorPage implements OnInit {
 					title: this.exportTitle().trim() || 'Sin título',
 					description: this.exportDescription().trim(),
 					createdAt: Date.now(),
-					durationSeconds: this.exportDuration(),
+					durationSeconds: PREVIEW_VIDEO_OPTIONS.durationSeconds,
 					program,
 					environment: this.environment(),
 					isPublic: this.exportIsPublic(),

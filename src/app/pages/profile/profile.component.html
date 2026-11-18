@@ -188,9 +188,33 @@
 											playsinline
 											class="h-full w-full object-contain"
 										></video>
+									} @else if (generatingId() === item.id) {
+										<!-- The cube is shown here while it is recorded. -->
+										<div #recordingHost class="size-full"></div>
+										@if (generationProgress(); as progress) {
+											<div class="absolute inset-x-3 bottom-3 rounded-lg bg-slate-950/85 p-2 text-[0.7rem] text-slate-200" role="status">
+												<div class="flex justify-between font-semibold">
+													<span>Generando video…</span>
+													<span>{{ progress.percent }}%</span>
+												</div>
+												<div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+													<div class="h-full bg-accent-pink transition-all duration-150 ease-out" [style.width.%]="progress.percent"></div>
+												</div>
+											</div>
+										}
 									} @else {
-										<div class="text-center p-4 text-xs text-slate-500">
+										<div class="flex flex-col items-center gap-3 p-4 text-center text-xs text-slate-500">
 											Sin video de vista previa
+											@if (me.isYou) {
+												<button
+													type="button"
+													class="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-pink px-4 text-xs font-bold text-on-accent-pink transition hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+													[disabled]="null !== generatingId()"
+													(click)="generateVideo(item)"
+												>
+													Generar video
+												</button>
+											}
 										</div>
 									}
 								</div>

@@ -59,6 +59,19 @@ export type RecordCubeOptions = {
 };
 
 /**
+ * How the preview video of a creation is recorded, wherever it is made (the editor, the profile):
+ * 15 seconds, one turn of the camera around the cube.
+ */
+export const PREVIEW_VIDEO_OPTIONS = {
+	durationSeconds: 15,
+	fps: 30,
+	width: 480,
+	height: 480,
+	bitrate: 2_500_000,
+	rotations: 1,
+} satisfies RecordCubeOptions;
+
+/**
  * Progress status reported during recording.
  */
 export type RecordProgress = {
