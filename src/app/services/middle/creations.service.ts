@@ -107,6 +107,16 @@ export class CreationsService {
 	}
 
 	/**
+	 * Address of a creation's thumbnail, with the access token when given so an `<img>` element can
+	 * load it.
+	 */
+	thumbnailUrl (params: Pick<VideoUrlParams, 'id' | 'token'>): string {
+		const query = params.token ? `?${new URLSearchParams({ access_token: params.token })}` : '';
+
+		return `${environment.apiUrl}/creations/${params.id}/thumbnail${query}`;
+	}
+
+	/**
 	 * The form data the API expects for a creation. When updating, a missing description or
 	 * visibility is left as it was.
 	 */
@@ -128,6 +138,8 @@ export class CreationsService {
 		if (payload.videos) {
 			for (const [ field, video ] of [ [ 'videoDark', payload.videos.dark ], [ 'videoLight', payload.videos.light ] ] as const)
 				formData.append(field, video.blob, video.mimeType.startsWith('video/mp4') ? 'preview.mp4' : 'preview.webm');
+
+			formData.append('thumbnail', payload.videos.thumbnail, 'thumbnail.png');
 		}
 
 		return formData;

@@ -24,10 +24,17 @@ describe('CreationsService', () => {
 		expect(service.videoUrl({ id: 7, theme: 'light', token: 'a b' })).toBe(`${environment.apiUrl}/creations/7/video?theme=light&access_token=a+b`);
 	});
 
-	it('sends both videos, each named after the kind of video it is', () => {
+	it('gives the address of the thumbnail, with the token when there is one', () => {
+		const service = TestBed.inject(CreationsService);
+
+		expect(service.thumbnailUrl({ id: 7 })).toBe(`${environment.apiUrl}/creations/7/thumbnail`);
+		expect(service.thumbnailUrl({ id: 7, token: 'a b' })).toBe(`${environment.apiUrl}/creations/7/thumbnail?access_token=a+b`);
+	});
+
+	it('sends both videos, each named after the kind of video it is, and the thumbnail', () => {
 		const service = TestBed.inject(CreationsService);
 		const server = TestBed.inject(HttpTestingController);
-		const videos: PreviewVideos = { dark: recording('video/webm;codecs=vp9'), light: recording('video/mp4') };
+		const videos: PreviewVideos = { dark: recording('video/webm;codecs=vp9'), light: recording('video/mp4'), thumbnail: new Blob([ 'png' ], { type: 'image/png' }) };
 
 		service.updateCreation({ id: 7 }, { title: 'Cometas', program: { version: 1, scripts: [] }, videos }).subscribe();
 
@@ -35,6 +42,7 @@ describe('CreationsService', () => {
 
 		expect((body.get('videoDark') as File).name).toBe('preview.webm');
 		expect((body.get('videoLight') as File).name).toBe('preview.mp4');
+		expect((body.get('thumbnail') as File).name).toBe('thumbnail.png');
 		expect(body.get('video')).toBeNull();
 		server.verify();
 	});

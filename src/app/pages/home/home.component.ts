@@ -66,7 +66,7 @@ export class HomePage {
 	private readonly feed = inject(FeedService);
 
 	/**
-	 * Builds the address of the videos.
+	 * Builds the address of the videos and thumbnails.
 	 */
 	private readonly creations = inject(CreationsService);
 
@@ -117,7 +117,7 @@ export class HomePage {
 
 	/**
 	 * A creation of the feed as the card shows it. There are no likes or categories in the API yet,
-	 * and no thumbnail, so those get a stand-in.
+	 * so those get a stand-in, and so does the thumbnail of a creation that has none (its `art`).
 	 */
 	private toAnimation (creation: FeedCreation): CommunityAnimation {
 		return {
@@ -129,6 +129,7 @@ export class HomePage {
 			 * The dark recording in both themes: the expanded card is a dark screen in both.
 			 */
 			video: creation.hasVideo ? this.creations.videoUrl({ id: creation.id, token: this.session.accessToken(), theme: 'dark' }) : null,
+			thumbnail: creation.hasVideo ? this.creations.thumbnailUrl({ id: creation.id, token: this.session.accessToken() }) : null,
 			likes: 0,
 			createdAt: creation.createdAt.slice(0, 10),
 			category: 'Nueva',

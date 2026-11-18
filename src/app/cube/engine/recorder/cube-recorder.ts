@@ -10,12 +10,15 @@
  *
  * The video has a solid background (not every browser can record transparency), so the preview of
  * a creation is recorded twice in the same pass, once over the background of each theme of the app.
+ * The same pass takes its thumbnail: the face of the cube with the most LEDs on, at the frame where
+ * one had the most.
  */
 
 import type { BufferTarget, CanvasSource, Mp4OutputFormat, Output, VideoCodec, WebMOutputFormat } from 'mediabunny';
 import * as THREE from 'three';
 import { CubeEngine } from '../engine/cube-engine';
 import { Environment } from '../environment/environment';
+import { CubeState, FACE_COUNT, FACE_RESOLUTION, Face } from '../state/cube-state';
 import { Program } from '../program/program';
 import { CubeModel } from '../view/cube-model';
 import { Stage } from '../view/stage';
@@ -86,9 +89,15 @@ export const PREVIEW_BACKGROUNDS: Record<PreviewTheme, string> = {
 };
 
 /**
- * The preview videos of a creation, one per theme.
+ * The preview of a creation: a video per theme and its thumbnail, a 64x64 PNG of the face of the
+ * cube that had the most LEDs on, at the moment it had the most.
  */
-export type PreviewVideos = Record<PreviewTheme, RecordResult>;
+export type PreviewVideos = Record<PreviewTheme, RecordResult> & {
+	/**
+	 * The thumbnail, as a PNG.
+	 */
+	thumbnail: Blob;
+};
 
 /**
  * How the preview video of a creation is recorded, wherever it is made (the editor, the profile):
@@ -165,28 +174,104 @@ export async function recordCubeVideo (
 	options: RecordCubeOptions = {},
 	onProgress?: (progress: RecordProgress) => void,
 ): Promise<RecordResult> {
-	const [ result ] = await recordOverBackgrounds(program, options, [ options.background ?? BACKGROUND ], onProgress);
+	const { results: [ result ] } = await recordOverBackgrounds(program, options, [ options.background ?? BACKGROUND ], onProgress);
 
 	return result;
 }
 
 /**
  * Records the preview videos of a program with `PREVIEW_VIDEO_OPTIONS`: one over the background of
- * each theme, in a single pass, so both show the same frames. The preview host shows the dark one.
+ * each theme, in a single pass, so both show the same frames, and its thumbnail. The preview host
+ * shows the dark one.
  */
 export async function recordPreviewVideos (
 	program: Program,
 	options: Pick<RecordCubeOptions, 'environment' | 'previewHost'> = {},
 	onProgress?: (progress: RecordProgress) => void,
 ): Promise<PreviewVideos> {
-	const [ dark, light ] = await recordOverBackgrounds(
+	const { results: [ dark, light ], thumbnail } = await recordOverBackgrounds(
 		program,
 		{ ...PREVIEW_VIDEO_OPTIONS, ...options },
 		[ PREVIEW_BACKGROUNDS.dark, PREVIEW_BACKGROUNDS.light ],
 		onProgress,
 	);
 
-	return { dark, light };
+	return { dark, light, thumbnail: await toPng(thumbnail) };
+}
+
+/**
+ * How many LEDs of a face are on (any color but black).
+ */
+function litCount (pixels: Uint32Array): number {
+	let count = 0;
+
+	for (const pixel of pixels) {
+		if (0 !== pixel)
+			count += 1;
+	}
+
+	return count;
+}
+
+/**
+ * The LEDs of a face as a PNG of their size, one pixel per LED, the ones that are off black.
+ */
+function toPng (pixels: Uint32Array): Promise<Blob> {
+	const canvas = document.createElement('canvas');
+	canvas.width = FACE_RESOLUTION;
+	canvas.height = FACE_RESOLUTION;
+
+	const context = canvas.getContext('2d');
+
+	if (!context)
+		return Promise.reject(new Error('This browser cannot draw the thumbnail.'));
+
+	const image = context.createImageData(FACE_RESOLUTION, FACE_RESOLUTION);
+
+	pixels.forEach((color, index) => {
+		image.data[index * 4] = color >> 16 & 0xff;
+		image.data[index * 4 + 1] = color >> 8 & 0xff;
+		image.data[index * 4 + 2] = color & 0xff;
+		image.data[index * 4 + 3] = 0xff;
+	});
+
+	context.putImageData(image, 0, 0);
+
+	return new Promise((resolve, reject) => canvas.toBlob(
+		(blob) => blob ? resolve(blob) : reject(new Error('This browser cannot encode the thumbnail.')),
+		'image/png',
+	));
+}
+
+/**
+ * Keeps the LEDs of the face that had the most on so far, frame after frame, for the thumbnail.
+ */
+class ThumbnailPicker {
+	/**
+	 * The LEDs of the chosen face, row after row. Black until a frame lights one.
+	 */
+	pixels = new Uint32Array(FACE_RESOLUTION * FACE_RESOLUTION);
+
+	/**
+	 * How many LEDs the chosen face had on.
+	 */
+	private best = 0;
+
+	/**
+	 * Looks at the faces of a frame and keeps the one with more LEDs on than any face before it.
+	 * On a tie the earlier one stays.
+	 */
+	look (state: CubeState): void {
+		for (let face: Face = 0; face < FACE_COUNT; face += 1) {
+			const pixels = state.facePixels(face);
+			const count = litCount(pixels);
+
+			if (count > this.best) {
+				this.best = count;
+				this.pixels = pixels.slice();
+			}
+		}
+	}
 }
 
 /**
@@ -220,16 +305,31 @@ type Take = {
 };
 
 /**
+ * What one pass records: a video per background and the LEDs of the face for the thumbnail.
+ */
+type Recording = {
+	/**
+	 * The videos, in the order of the backgrounds.
+	 */
+	results: RecordResult[];
+
+	/**
+	 * The LEDs of the face with the most on, row after row.
+	 */
+	thumbnail: Uint32Array;
+};
+
+/**
  * Runs a program once and records it into one video per background. Every frame is drawn on the
  * canvas of each video, so they all show the same moment; only the color behind the cube (and the
- * fog, which fades into it) changes.
+ * fog, which fades into it) changes. Every frame is also looked at for the thumbnail.
  */
 async function recordOverBackgrounds (
 	program: Program,
 	options: RecordCubeOptions,
 	backgrounds: readonly string[],
 	onProgress?: (progress: RecordProgress) => void,
-): Promise<RecordResult[]> {
+): Promise<Recording> {
 	if (!isRecordingSupported())
 		throw new Error('This browser cannot record videos: it has no WebCodecs.');
 
@@ -291,6 +391,7 @@ async function recordOverBackgrounds (
 	const target = new THREE.Vector3(0, 0.6, 0);
 	const radius = 7.5;
 	const phi = SIDE_VIEW_POLAR;
+	const thumbnail = new ThumbnailPicker();
 
 	try {
 		await Promise.all(takes.map((take) => take.output.start()));
@@ -303,6 +404,7 @@ async function recordOverBackgrounds (
 
 			engine.tick(seconds * 1000);
 			model.syncIfChanged();
+			thumbnail.look(engine.state);
 
 			const theta = progress * Math.PI * 2 * rotations;
 			camera.position.set(
@@ -333,11 +435,13 @@ async function recordOverBackgrounds (
 
 		await Promise.all(takes.map((take) => take.output.finalize()));
 
-		return takes.map((take) => {
+		const results = takes.map((take) => {
 			const blob = new Blob([ take.output.target.buffer as ArrayBuffer ], { type: take.output.format.mimeType });
 
 			return { blob, url: URL.createObjectURL(blob), mimeType: blob.type, sizeBytes: blob.size, durationSeconds, width, height };
 		});
+
+		return { results, thumbnail: thumbnail.pixels };
 	}
 
 	catch (error) {

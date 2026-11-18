@@ -70,6 +70,14 @@ describe('HomePage', () => {
 		expect(videos[1]).toBeNull();
 	});
 
+	it('gives the thumbnail only to the animations that have a video, since it is recorded with it', () => {
+		const { element } = createPage(CREATIONS);
+		const thumbnails = [ ...element.querySelectorAll('app-animation-row:first-of-type app-animation-card') ].map((card) => card.querySelector('article img')?.getAttribute('src') ?? null);
+
+		expect(thumbnails[0]).toContain('/creations/7/thumbnail');
+		expect(thumbnails[1]).toBeNull();
+	});
+
 	it('says it is loading until the animations arrive, and then that there are none if there are none', () => {
 		const { fixture, request, element } = createPage();
 		const first = (): string => element.querySelector('app-animation-row app-animation-empty-card')?.textContent ?? '';

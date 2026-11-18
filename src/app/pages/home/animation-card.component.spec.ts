@@ -36,6 +36,30 @@ describe('AnimationCardComponent', () => {
 		expect(picture.querySelectorAll('.bg-led-pink').length).toBeGreaterThan(0);
 	});
 
+	it('shows the thumbnail instead of the drawing when there is one', () => {
+		const fixture = TestBed.createComponent(AnimationCardComponent);
+		fixture.componentRef.setInput('animation', { ...ANIMATION, thumbnail: 'https://api.test/creations/1/thumbnail' });
+		fixture.detectChanges();
+		const element = fixture.nativeElement as HTMLElement;
+		const picture = element.querySelector('article [aria-hidden="true"]') as HTMLElement;
+
+		expect(picture.querySelector('img')?.getAttribute('src')).toBe('https://api.test/creations/1/thumbnail');
+		expect(picture.querySelectorAll('.rounded-full')).toHaveLength(0);
+	});
+
+	it('goes back to the drawing when the thumbnail cannot be loaded', () => {
+		const fixture = TestBed.createComponent(AnimationCardComponent);
+		fixture.componentRef.setInput('animation', { ...ANIMATION, thumbnail: 'https://api.test/creations/1/thumbnail' });
+		fixture.detectChanges();
+		const element = fixture.nativeElement as HTMLElement;
+
+		element.querySelector('article img')?.dispatchEvent(new Event('error'));
+		fixture.detectChanges();
+
+		expect(element.querySelector('article img')).toBeNull();
+		expect(element.querySelector('article [aria-hidden="true"]')?.querySelectorAll('.rounded-full')).toHaveLength(64);
+	});
+
 	it('says whether it is liked, and names the animation on the button', () => {
 		const { element } = createCard(true);
 		const button = element.querySelector('button') as HTMLButtonElement;

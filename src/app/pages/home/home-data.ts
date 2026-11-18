@@ -53,6 +53,12 @@ export type CommunityAnimation = {
 	video?: string | null;
 
 	/**
+	 * Address of its thumbnail: a 64x64 picture of the face of the cube with the most LEDs on during
+	 * its video. Without one (or when it cannot be loaded) the card shows its `art` instead.
+	 */
+	thumbnail?: string | null;
+
+	/**
 	 * How many people liked it.
 	 */
 	likes: number;
