@@ -84,6 +84,14 @@
 	--color-led-off: #1a2330;
 }
 
+/* The background of every page. It lives on the body, not on each page, so the pixel glow can sit
+   behind the content and still show through. */
+/* With no background on `html`, this one covers the whole canvas, under the glow (`-z-10`). */
+body {
+	background: var(--page-gradient) fixed;
+	background-color: var(--page);
+}
+
 /* Dark is the default. Light mode flips the slate scale and a few accent shades, so the
    existing slate-* utilities work in both themes. */
 :root {
