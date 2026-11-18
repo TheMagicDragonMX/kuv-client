@@ -1,10 +1,9 @@
 /**
  * What the home page shows: the animations of the community, as small pictures of LEDs.
  *
- * There is no server for the shared library yet, so the animations are examples. Each one has a
- * picture of 8 × 8 LEDs, drawn here from a rule, and the sections are rankings over the same
- * animations. When the library exists, `COMMUNITY` and `SECTIONS` are what it replaces. This file
- * has no UI.
+ * Each animation has a picture of 8 × 8 LEDs, drawn here from a rule. The sections are the
+ * categories of the feed: the API only has one of them (the newest animations), so the others are
+ * empty until it has their endpoint. This file has no UI.
  */
 
 /**
@@ -42,7 +41,7 @@ export type CommunityAnimation = {
 	author: string;
 
 	/**
-	 * The picture of the author as a data URL, or nothing when they have none (the card then shows
+	 * Address of the picture of the author, or nothing when they have none (the card then shows
 	 * the first letter of their name).
 	 */
 	authorPhoto?: string | null;
@@ -92,6 +91,12 @@ export type HomeSection = {
 	 * The animations of the section, in order.
 	 */
 	animations: CommunityAnimation[];
+
+	/**
+	 * True while the animations are still being fetched, so the row says so instead of saying that
+	 * there are none.
+	 */
+	loading?: boolean;
 };
 
 /**
@@ -215,35 +220,23 @@ export function formatDate (day: string): string {
 }
 
 /**
- * The animations that were shared.
+ * Every picture there is, in a fixed order.
  */
-export const COMMUNITY: CommunityAnimation[] = [
-	{ id: 'corazon', title: 'Corazón que late', author: 'lunapixel', likes: 3200, createdAt: '2026-10-28', category: 'Arte', art: 'heart' },
-	{ id: 'lluvia', title: 'Lluvia de LEDs', author: 'toño_dev', likes: 2700, createdAt: '2026-10-30', category: 'Naturaleza', art: 'rain' },
-	{ id: 'serpiente', title: 'Serpiente que da la vuelta', author: 'mafer.cubo', likes: 11000, createdAt: '2026-09-14', category: 'Juegos', art: 'snake' },
-	{ id: 'fuegos', title: 'Fuegos artificiales', author: 'pixelito', likes: 15000, createdAt: '2026-08-02', category: 'Arte', art: 'fire' },
-	{ id: 'arcoiris', title: 'Arcoíris diagonal', author: 'diego_bloques', likes: 18000, createdAt: '2026-05-19', category: 'Patrones', art: 'rainbow' },
-	{ id: 'fantasma', title: 'Fantasma saltarín', author: 'sofi.led', likes: 12000, createdAt: '2026-07-07', category: 'Personajes', art: 'ghost' },
-	{ id: 'ola', title: 'Ola en las 5 caras', author: 'marea', likes: 2500, createdAt: '2026-10-21', category: 'Naturaleza', art: 'wave' },
-	{ id: 'espiral', title: 'Espiral hipnótica', author: 'ren', likes: 2800, createdAt: '2026-10-11', category: 'Patrones', art: 'spiral' },
-	{ id: 'carita', title: 'Carita feliz', author: 'sofi.led', likes: 9800, createdAt: '2026-06-25', category: 'Personajes', art: 'smile' },
-	{ id: 'estrella', title: 'Estrella fugaz', author: 'lunapixel', likes: 9100, createdAt: '2026-09-30', category: 'Arte', art: 'star' },
-	{ id: 'tablero', title: 'Tablero que parpadea', author: 'ren', likes: 8400, createdAt: '2026-08-18', category: 'Patrones', art: 'checker' },
-	{ id: 'flecha', title: 'Flecha que gira', author: 'toño_dev', likes: 7900, createdAt: '2026-09-03', category: 'Juegos', art: 'arrow' },
-];
+export const ART_NAMES: ArtName[] = [ 'heart', 'smile', 'star', 'arrow', 'ghost', 'rainbow', 'spiral', 'rain', 'wave', 'snake', 'fire', 'checker' ];
 
 /**
- * The animations with these ids, in this order.
+ * The picture that stands for the animation with this id. Animations have no thumbnail yet, so
+ * each one gets a picture from this list, always the same for the same id.
  */
-function pick (ids: string[]): CommunityAnimation[] {
-	return ids.map((id) => COMMUNITY.find((animation) => id === animation.id) as CommunityAnimation);
+export function artFor (id: number): ArtName {
+	return ART_NAMES[id % ART_NAMES.length];
 }
 
 /**
- * The sections of the home page.
+ * The sections of the home page that have no endpoint in the API yet, so they have no animations.
  */
-export const SECTIONS: HomeSection[] = [
-	{ id: 'hoy', title: 'Más gustadas hoy', animations: pick([ 'corazon', 'lluvia', 'serpiente', 'fuegos', 'arcoiris', 'fantasma', 'ola', 'espiral' ]) },
-	{ id: 'semana', title: 'Más gustadas esta semana', animations: pick([ 'carita', 'estrella', 'tablero', 'flecha', 'espiral', 'corazon', 'ola', 'lluvia' ]) },
-	{ id: 'siempre', title: 'Las favoritas de siempre', animations: pick([ 'arcoiris', 'fuegos', 'fantasma', 'serpiente', 'carita', 'estrella', 'tablero', 'flecha' ]) },
+export const EMPTY_SECTIONS: HomeSection[] = [
+	{ id: 'hoy', title: 'Más gustadas hoy', animations: [] },
+	{ id: 'semana', title: 'Más gustadas esta semana', animations: [] },
+	{ id: 'siempre', title: 'Las favoritas de siempre', animations: [] },
 ];

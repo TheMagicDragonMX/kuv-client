@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { AnimationRowComponent } from './animation-row.component';
-import { COMMUNITY } from './home-data';
+import { SAMPLE_ANIMATIONS as COMMUNITY } from './home-fixtures';
 
 /**
  * Creates a row with the first animations.
@@ -26,6 +26,32 @@ describe('AnimationRowComponent', () => {
 
 		expect(region.getAttribute('aria-labelledby')).toBe('row-hoy');
 		expect(element.querySelector('#row-hoy')?.textContent).toContain('Más gustadas hoy');
+		expect(element.querySelectorAll('li')).toHaveLength(3);
+	});
+
+	it('shows one card that says there is nothing, instead of the list, when it has no animations', () => {
+		TestBed.configureTestingModule({ providers: [ provideRouter([]) ] });
+		const fixture = TestBed.createComponent(AnimationRowComponent);
+		fixture.componentRef.setInput('id', 'hoy');
+		fixture.componentRef.setInput('title', 'Más gustadas hoy');
+		fixture.componentRef.setInput('animations', []);
+		fixture.detectChanges();
+		const element = fixture.nativeElement as HTMLElement;
+
+		expect(element.querySelector('ul')).toBeNull();
+		expect(element.querySelectorAll('app-animation-empty-card')).toHaveLength(1);
+		expect(element.querySelector('app-animation-empty-card')?.textContent).toContain('Aún no hay animaciones');
+
+		fixture.componentRef.setInput('loading', true);
+		fixture.detectChanges();
+
+		expect(element.querySelector('app-animation-empty-card')?.textContent).toContain('Cargando');
+		expect(() => (fixture.componentInstance as unknown as { scroll(direction: 1 | -1): void }).scroll(1)).not.toThrow();
+
+		fixture.componentRef.setInput('animations', COMMUNITY);
+		fixture.detectChanges();
+
+		expect(element.querySelector('app-animation-empty-card')).toBeNull();
 		expect(element.querySelectorAll('li')).toHaveLength(3);
 	});
 
