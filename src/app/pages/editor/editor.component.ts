@@ -159,7 +159,6 @@ export class EditorPage implements OnInit {
 							this.currentCreationId.set(creation.id);
 							this.exportTitle.set(creation.title);
 							this.exportDescription.set(creation.description ?? '');
-							this.exportDuration.set(creation.durationSeconds || 15);
 							this.exportIsPublic.set(creation.isPublic);
 
 							try {
@@ -266,7 +265,6 @@ export class EditorPage implements OnInit {
 					description: this.exportDescription().trim(),
 					program,
 					environment: this.environment(),
-					durationSeconds: this.exportDuration(),
 					isPublic: this.exportIsPublic(),
 					videoBlob: result.blob,
 				};

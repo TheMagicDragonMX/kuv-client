@@ -116,8 +116,6 @@ export class CreationsService {
 
 		formData.append('programFile', JSON.stringify(createProgramFile(payload.program, payload.environment)));
 
-		formData.append('durationSeconds', payload.durationSeconds.toString());
-
 		if (updating ? undefined !== payload.isPublic : true)
 			formData.append('isPublic', (payload.isPublic ?? false).toString());
 

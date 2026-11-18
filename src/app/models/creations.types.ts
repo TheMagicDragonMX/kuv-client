@@ -25,11 +25,6 @@ export type UserCreation = {
 	description: string | null;
 
 	/**
-	 * How long the video lasts, in seconds.
-	 */
-	durationSeconds: number;
-
-	/**
 	 * Whether the creation has a recorded video.
 	 */
 	hasVideo: boolean;

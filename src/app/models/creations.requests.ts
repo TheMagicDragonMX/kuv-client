@@ -25,11 +25,6 @@ export type CreationPayload = {
 	environment?: Environment;
 
 	/**
-	 * How long the video lasts, in seconds.
-	 */
-	durationSeconds: number;
-
-	/**
 	 * Whether other users can see it.
 	 */
 	isPublic?: boolean;
