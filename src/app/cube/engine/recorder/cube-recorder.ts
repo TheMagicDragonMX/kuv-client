@@ -2,11 +2,17 @@
  * LAYER: recorder.
  *
  * Records a Program running on a 3D Cube into an MP4/WebM video with a smooth 360-degree orbit.
- * Runs completely client-side using WebGL rendering and MediaRecorder. The video has a solid
- * background (not every browser can record transparency), so the preview of a creation is
- * recorded twice in the same pass, once over the background of each theme of the app.
+ * Runs completely client-side. The recording is offline: the engine is stepped frame by frame at
+ * a fixed rate (it never reads a clock), each frame is drawn with WebGL and encoded with WebCodecs,
+ * and mediabunny writes the frames into the file. So every video has exactly its frames, takes
+ * as long as the computer needs (usually less than the video lasts), and does not depend on the
+ * screen's refresh rate or on the tab being visible.
+ *
+ * The video has a solid background (not every browser can record transparency), so the preview of
+ * a creation is recorded twice in the same pass, once over the background of each theme of the app.
  */
 
+import type { BufferTarget, CanvasSource, Mp4OutputFormat, Output, VideoCodec, WebMOutputFormat } from 'mediabunny';
 import * as THREE from 'three';
 import { CubeEngine } from '../engine/cube-engine';
 import { Environment } from '../environment/environment';
@@ -121,15 +127,34 @@ export type RecordResult = {
 };
 
 /**
- * Checks if the browser supports canvas video recording.
+ * The codecs a video is encoded with, the first one the browser can encode. VP9 and VP8 go in a
+ * WebM file and AVC (H.264) in an MP4.
+ */
+const CODECS: VideoCodec[] = [ 'vp9', 'vp8', 'avc' ];
+
+/**
+ * Checks if the browser can record videos: it needs WebCodecs to encode the frames.
  */
 export function isRecordingSupported (): boolean {
 	return (
 		'undefined' !== typeof window &&
 		'undefined' !== typeof HTMLCanvasElement &&
-		'captureStream' in HTMLCanvasElement.prototype &&
-		'undefined' !== typeof MediaRecorder
+		'undefined' !== typeof VideoEncoder
 	);
+}
+
+/**
+ * Waits for the browser to handle what it has pending (painting the page, events), so a long
+ * recording does not freeze it. It uses a message, not a timer or an animation frame, because
+ * those slow down or stop when the tab is in the background.
+ */
+function yieldToPage (): Promise<void> {
+	return new Promise((resolve) => {
+		const channel = new MessageChannel();
+
+		channel.port1.onmessage = () => resolve();
+		channel.port2.postMessage(null);
+	});
 }
 
 /**
@@ -165,7 +190,7 @@ export async function recordPreviewVideos (
 }
 
 /**
- * One video being recorded: the canvas it is drawn on, its renderer and its recorder.
+ * One video being recorded: the canvas it is drawn on, its renderer and the file it is written to.
  */
 type Take = {
 	/**
@@ -184,14 +209,14 @@ type Take = {
 	renderer: THREE.WebGLRenderer;
 
 	/**
-	 * Records the canvas.
+	 * Encodes what the canvas shows as the next frame of the video.
 	 */
-	recorder: MediaRecorder;
+	source: CanvasSource;
 
 	/**
-	 * The pieces of video recorded so far.
+	 * The video file being written, in memory.
 	 */
-	chunks: Blob[];
+	output: Output<WebMOutputFormat | Mp4OutputFormat, BufferTarget>;
 };
 
 /**
@@ -206,27 +231,25 @@ async function recordOverBackgrounds (
 	onProgress?: (progress: RecordProgress) => void,
 ): Promise<RecordResult[]> {
 	if (!isRecordingSupported())
-		throw new Error('Canvas recording is not supported in this browser environment.');
+		throw new Error('This browser cannot record videos: it has no WebCodecs.');
 
 	const durationSeconds = options.durationSeconds ?? 15;
-	const durationMs = durationSeconds * 1000;
 	const fps = options.fps ?? 30;
 	const width = options.width ?? 480;
 	const height = options.height ?? 480;
 	const bitrate = options.bitrate ?? 2_500_000;
 	const rotations = options.rotations ?? 1;
+	const frameCount = Math.round(durationSeconds * fps);
 
 	/**
-	 * The best type the browser can record.
+	 * Loaded only when a video is recorded: it is big, and most visits never record one.
 	 */
-	const mimeCandidates = [
-		'video/webm;codecs=vp9',
-		'video/webm;codecs=vp8',
-		'video/webm',
-		'video/mp4;codecs=avc1',
-		'video/mp4',
-	];
-	const mimeType = mimeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? '';
+	const { BufferTarget, CanvasSource, Mp4OutputFormat, Output, Quality, WebMOutputFormat, getFirstEncodableVideoCodec } = await import('mediabunny');
+
+	const codec = await getFirstEncodableVideoCodec(CODECS, { width, height, quality: new Quality({ bitrate, bitrateMode: 'variable' }), frameRate: fps });
+
+	if (!codec)
+		throw new Error('This browser cannot encode any of the video codecs (VP9, VP8, H.264).');
 
 	const takes: Take[] = backgrounds.map((background) => {
 		const canvas = document.createElement('canvas');
@@ -240,15 +263,15 @@ async function recordOverBackgrounds (
 		renderer.setSize(width, height, false);
 		renderer.setClearColor(background, 1);
 
-		const recorder = new MediaRecorder(canvas.captureStream(fps), { mimeType, videoBitsPerSecond: bitrate });
-		const chunks: Blob[] = [];
+		const output = new Output({
+			format: 'avc' === codec ? new Mp4OutputFormat({ fastStart: 'in-memory' }) : new WebMOutputFormat(),
+			target: new BufferTarget(),
+		});
+		const source = new CanvasSource(canvas, { codec, quality: new Quality({ bitrate, bitrateMode: 'variable' }) });
 
-		recorder.ondataavailable = (event) => {
-			if (event.data && 0 < event.data.size)
-				chunks.push(event.data);
-		};
+		output.addVideoTrack(source, { frameRate: fps });
 
-		return { background, canvas, renderer, recorder, chunks };
+		return { background, canvas, renderer, source, output };
 	});
 
 	if (options.previewHost)
@@ -269,78 +292,16 @@ async function recordOverBackgrounds (
 	const radius = 7.5;
 	const phi = SIDE_VIEW_POLAR;
 
-	return new Promise<RecordResult[]>((resolve, reject) => {
-		let animationFrameId = 0;
-		let startTime: number | null = null;
-		let aborted = false;
-
-		const cleanup = () => {
-			if (animationFrameId)
-				cancelAnimationFrame(animationFrameId);
-
-			model.dispose();
-			stage.dispose();
-
-			for (const take of takes) {
-				take.renderer.dispose();
-
-				if (!options.previewHost)
-					take.canvas.remove();
-			}
-		};
-
-		const stopped = takes.map((take) => new Promise<RecordResult>((done, fail) => {
-			take.recorder.onerror = (error) => {
-				aborted = true;
-				fail(error);
-			};
-
-			take.recorder.onstop = () => {
-				const blob = new Blob(take.chunks, { type: mimeType });
-
-				done({ blob, url: URL.createObjectURL(blob), mimeType, sizeBytes: blob.size, durationSeconds, width, height });
-			};
-		}));
-
-		Promise.all(stopped).then(
-			(results) => {
-				cleanup();
-				resolve(results);
-			},
-			(error) => {
-				cleanup();
-
-				for (const take of takes) {
-					if ('inactive' !== take.recorder.state)
-						take.recorder.stop();
-				}
-
-				reject(error);
-			},
-		);
+	try {
+		await Promise.all(takes.map((take) => take.output.start()));
 
 		engine.start(0);
 
-		for (const take of takes)
-			take.recorder.start(100);
+		for (let frame = 0; frame < frameCount; frame += 1) {
+			const seconds = frame / fps;
+			const progress = frame / frameCount;
 
-		const renderStep = (now: number) => {
-			if (aborted)
-				return;
-
-			if (null === startTime)
-				startTime = now;
-
-			const elapsed = now - startTime;
-			const progress = Math.min(elapsed / durationMs, 1);
-
-			onProgress?.({
-				currentSecond: Math.min(Math.floor(elapsed / 1000) + 1, durationSeconds),
-				totalSeconds: durationSeconds,
-				percent: Math.round(progress * 100),
-			});
-
-			engine.tick(elapsed);
+			engine.tick(seconds * 1000);
 			model.syncIfChanged();
 
 			const theta = progress * Math.PI * 2 * rotations;
@@ -354,17 +315,46 @@ async function recordOverBackgrounds (
 			for (const take of takes) {
 				stage.setFogColor(take.background);
 				take.renderer.render(stage.scene, camera);
+
+				/**
+				 * Waiting here keeps the encoder from falling behind with frames piling up in memory.
+				 */
+				await take.source.add(seconds, 1 / fps);
 			}
 
-			if (elapsed < durationMs)
-				animationFrameId = requestAnimationFrame(renderStep);
+			onProgress?.({
+				currentSecond: Math.min(Math.floor(seconds) + 1, durationSeconds),
+				totalSeconds: durationSeconds,
+				percent: Math.round((frame + 1) / frameCount * 100),
+			});
 
-			else {
-				for (const take of takes)
-					take.recorder.stop();
-			}
-		};
+			await yieldToPage();
+		}
 
-		animationFrameId = requestAnimationFrame(renderStep);
-	});
+		await Promise.all(takes.map((take) => take.output.finalize()));
+
+		return takes.map((take) => {
+			const blob = new Blob([ take.output.target.buffer as ArrayBuffer ], { type: take.output.format.mimeType });
+
+			return { blob, url: URL.createObjectURL(blob), mimeType: blob.type, sizeBytes: blob.size, durationSeconds, width, height };
+		});
+	}
+
+	catch (error) {
+		await Promise.all(takes.map((take) => take.output.cancel().catch(() => undefined)));
+
+		throw error;
+	}
+
+	finally {
+		model.dispose();
+		stage.dispose();
+
+		for (const take of takes) {
+			take.renderer.dispose();
+
+			if (!options.previewHost)
+				take.canvas.remove();
+		}
+	}
 }
