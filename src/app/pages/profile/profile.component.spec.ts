@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 import { environment } from '@environment';
 import { SnackbarService } from '../../services/snackbar.service';
+import { ThemeService } from '../../services/theme.service';
 import { AuthSession } from '../../services/auth-session.service';
 import { Profile } from '../../models';
 import { ProfilePage } from './profile.component';
@@ -165,6 +166,99 @@ describe('ProfilePage', () => {
 
 		server.expectNone(`${environment.apiUrl}/users/me/photo`);
 		expect(element.textContent).toContain('Elige una imagen');
+	});
+
+	describe('creations without a video', () => {
+		/**
+		 * A creation of the user.
+		 */
+		const creation = (id: number, hasVideo: boolean) => ({ id, userId: 1, title: `Creación ${id}`, description: null, hasVideo, isPublic: true, createdAt: '2026-11-18T10:00:00Z', updatedAt: '2026-11-18T10:00:00Z' });
+
+		it('puts a button to generate the video in the empty square, only on the creations that have none', () => {
+			const { fixture, server, element } = createPage();
+
+			server.expectOne(`${environment.apiUrl}/creations/me`).flush([ creation(1, false), creation(2, true) ]);
+			fixture.detectChanges();
+
+			const buttons = [ ...element.querySelectorAll('button') ].filter((button) => 'Generar video' === button.textContent?.trim());
+
+			expect(buttons).toHaveLength(1);
+			expect(buttons[0].closest('div.aspect-square')?.textContent).toContain('Sin video de vista previa');
+			expect(element.querySelectorAll('video')).toHaveLength(1);
+		});
+
+		it('plays the video recorded for the theme, on a square of the same background, and switches with the theme', () => {
+			const { fixture, server, element } = createPage();
+			const theme = TestBed.inject(ThemeService);
+
+			if ('dark' !== theme.theme())
+				theme.toggle();
+
+			server.expectOne(`${environment.apiUrl}/creations/me`).flush([ creation(2, true) ]);
+			fixture.detectChanges();
+
+			const video = (): HTMLVideoElement => element.querySelector('video') as HTMLVideoElement;
+			const square = (): HTMLElement => video().parentElement as HTMLElement;
+
+			expect(video().getAttribute('src')).toContain('/creations/2/video?theme=dark');
+			expect(square().style.backgroundColor).toBe('rgb(9, 13, 18)');
+
+			theme.toggle();
+			fixture.detectChanges();
+
+			expect(video().getAttribute('src')).toContain('/creations/2/video?theme=light');
+			expect(square().style.backgroundColor).toBe('rgb(238, 242, 247)');
+			theme.toggle();
+		});
+
+		it('offers to regenerate a video that exists from a menu behind three dots, which closes on a click elsewhere', () => {
+			const { fixture, server, element } = createPage();
+			const snackbar = TestBed.inject(SnackbarService);
+
+			server.expectOne(`${environment.apiUrl}/creations/me`).flush([ creation(1, false), creation(2, true) ]);
+			fixture.detectChanges();
+
+			const dots = element.querySelectorAll<HTMLButtonElement>('button[aria-label^="Opciones del video"]');
+			const item = (): HTMLButtonElement | null => element.querySelector('[role="menuitem"]');
+
+			expect(dots).toHaveLength(1);
+			expect(dots[0].getAttribute('aria-label')).toContain('Creación 2');
+			expect(item()).toBeNull();
+
+			dots[0].click();
+			fixture.detectChanges();
+
+			expect(dots[0].getAttribute('aria-expanded')).toBe('true');
+			expect(item()?.textContent).toContain('Regenerar video');
+
+			document.body.click();
+			fixture.detectChanges();
+
+			expect(item()).toBeNull();
+
+			dots[0].click();
+			fixture.detectChanges();
+			item()?.click();
+			fixture.detectChanges();
+
+			expect(item()).toBeNull();
+			expect(snackbar.messages()[0]?.text).toContain('no puede grabar');
+			server.expectNone(`${environment.apiUrl}/creations/2`);
+			snackbar.clear();
+		});
+
+		it('says so, and asks for nothing, when the browser cannot record', () => {
+			const { fixture, server, element } = createPage();
+			const snackbar = TestBed.inject(SnackbarService);
+
+			server.expectOne(`${environment.apiUrl}/creations/me`).flush([ creation(1, false) ]);
+			fixture.detectChanges();
+			[ ...element.querySelectorAll('button') ].find((button) => 'Generar video' === button.textContent?.trim())?.click();
+
+			expect(snackbar.messages()[0]?.text).toContain('no puede grabar');
+			server.expectNone(`${environment.apiUrl}/creations/1`);
+			snackbar.clear();
+		});
 	});
 
 	it('takes the picture off the profile', () => {

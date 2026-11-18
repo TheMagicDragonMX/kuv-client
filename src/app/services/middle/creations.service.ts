@@ -94,13 +94,16 @@ export class CreationsService {
 	}
 
 	/**
-	 * Address of a creation's video, with the access token when given so a `<video>` element can
-	 * load it.
+	 * Address of a creation's video for a theme (dark when not given), with the access token when
+	 * given so a `<video>` element can load it.
 	 */
 	videoUrl (params: VideoUrlParams): string {
-		const base = `${environment.apiUrl}/creations/${params.id}/video`;
+		const query = new URLSearchParams({ theme: params.theme ?? 'dark' });
 
-		return params.token ? `${base}?access_token=${encodeURIComponent(params.token)}` : base;
+		if (params.token)
+			query.set('access_token', params.token);
+
+		return `${environment.apiUrl}/creations/${params.id}/video?${query}`;
 	}
 
 	/**
@@ -119,8 +122,13 @@ export class CreationsService {
 		if (updating ? undefined !== payload.isPublic : true)
 			formData.append('isPublic', (payload.isPublic ?? false).toString());
 
-		if (payload.videoBlob)
-			formData.append('video', payload.videoBlob, 'preview.webm');
+		/**
+		 * The name says what kind of video it is: the API keeps the extension, and Safari records mp4.
+		 */
+		if (payload.videos) {
+			for (const [ field, video ] of [ [ 'videoDark', payload.videos.dark ], [ 'videoLight', payload.videos.light ] ] as const)
+				formData.append(field, video.blob, video.mimeType.startsWith('video/mp4') ? 'preview.mp4' : 'preview.webm');
+		}
 
 		return formData;
 	}

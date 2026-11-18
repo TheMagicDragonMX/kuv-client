@@ -179,7 +179,7 @@
 							</h2>
 							<button
 								type="button"
-								class="cursor-pointer rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+								class="cursor-pointer rounded-full p-1.5 text-slate-400 hover:bg-slate-800 hover:text-slate-50"
 								(click)="closeExportModal()"
 							>
 								✕
@@ -222,55 +222,6 @@
 									(ngModelChange)="exportDescription.set($event)"
 									name="description"
 								></textarea>
-							</div>
-
-							<!-- Duration -->
-							<div>
-								<label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-									Duración de la vista previa
-								</label>
-								<div class="grid grid-cols-3 gap-2">
-									@for (sec of [5, 10, 15]; track sec) {
-										<button
-											type="button"
-											class="cursor-pointer rounded-xl border p-2.5 text-center transition"
-											[class]="exportDuration() === sec ? 'border-blue-500 bg-blue-600/20 text-blue-200 font-bold' : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'"
-											(click)="exportDuration.set(sec)"
-										>
-											<div class="text-xs">{{ sec }} segundos</div>
-											@if (sec === 15) {
-												<div class="text-[0.65rem] text-blue-400 font-normal">Recomendado</div>
-											}
-										</button>
-									}
-								</div>
-							</div>
-
-							<!-- Camera mode -->
-							<div>
-								<label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
-									Movimiento de cámara
-								</label>
-								<div class="grid grid-cols-2 gap-2">
-									<button
-										type="button"
-										class="cursor-pointer rounded-xl border p-2.5 text-left transition"
-										[class]="exportCameraMode() === 'orbit' ? 'border-blue-500 bg-blue-600/20 text-blue-200' : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'"
-										(click)="exportCameraMode.set('orbit')"
-									>
-										<div class="text-xs font-bold">Órbita 360°</div>
-										<div class="text-[0.68rem] opacity-75">Muestra todos los lados y arriba</div>
-									</button>
-									<button
-										type="button"
-										class="cursor-pointer rounded-xl border p-2.5 text-left transition"
-										[class]="exportCameraMode() === 'front' ? 'border-blue-500 bg-blue-600/20 text-blue-200' : 'border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700'"
-										(click)="exportCameraMode.set('front')"
-									>
-										<div class="text-xs font-bold">Estática (Frente)</div>
-										<div class="text-[0.68rem] opacity-75">Se enfoca en la cara frontal</div>
-									</button>
-								</div>
 							</div>
 
 							<!-- Visibility (Public / Private) -->

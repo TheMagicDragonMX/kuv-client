@@ -23,7 +23,7 @@
 					<div class="min-w-0 flex-1">
 					<h3 class="truncate text-[0.76rem] font-bold text-slate-100">{{ object.name }}</h3>
 					<p class="text-[0.7rem] text-slate-400">{{ object.pixels ? object.pixels.length + ' pixels' : 'One pixel' }}</p>
-						<p class="font-mono text-[0.7rem] text-pink-300" [attr.aria-label]="'Position of ' + object.name">{{ object.face }} · x {{ object.x }}, y {{ object.y }}</p>
+						<p class="font-mono text-[0.7rem] text-accent-pink" [attr.aria-label]="'Position of ' + object.name">{{ object.face }} · x {{ object.x }}, y {{ object.y }}</p>
 				</div>
 				<button
 						type="button"

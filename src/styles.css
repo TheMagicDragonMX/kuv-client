@@ -92,8 +92,8 @@ body {
 	background-color: var(--page);
 }
 
-/* Dark is the default. Light mode flips the slate scale and a few accent shades, so the
-   existing slate-* utilities work in both themes. */
+/* Dark is the default. Light mode flips the slate scale (all of it but the middle, 500) and the
+   light accent shades used as text, so the existing utilities work in both themes. */
 :root {
 	--page: #0b0f14;
 	--page-gradient: radial-gradient(circle at top, rgba(96, 165, 250, 0.12), transparent 38%), linear-gradient(180deg, #111922 0%, #090c10 100%);
@@ -132,8 +132,15 @@ body {
 	--color-slate-200: #334155;
 	--color-slate-300: #475569;
 	--color-slate-400: #64748b;
+	--color-slate-600: #94a3b8;
+	--color-slate-700: #cbd5e1;
+	--color-slate-800: #e2e8f0;
 	--color-slate-900: #f8fafc;
+	--color-slate-950: #ffffff;
+	--color-blue-200: #1e40af;
 	--color-blue-300: #1d4ed8;
+	--color-emerald-200: #065f46;
+	--color-emerald-300: #047857;
 	--color-red-200: #991b1b;
 	--color-green-200: #166534;
 	--color-amber-200: #92400e;
