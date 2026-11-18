@@ -2,7 +2,9 @@
  * LAYER: recorder.
  *
  * Records a Program running on a 3D Cube into an MP4/WebM video with a smooth 360-degree orbit.
- * Runs completely client-side using WebGL rendering and MediaRecorder.
+ * Runs completely client-side using WebGL rendering and MediaRecorder. Only the cube is drawn:
+ * the background is transparent, so the video sits on whatever page shows it. Browsers that
+ * cannot record transparency (anything but WebM in Chromium) record it black.
  */
 
 import * as THREE from 'three';
@@ -11,7 +13,7 @@ import { Environment } from '../environment/environment';
 import { Program } from '../program/program';
 import { CubeModel } from '../view/cube-model';
 import { Stage } from '../view/stage';
-import { BACKGROUND, SIDE_VIEW_POLAR } from '../view/view-settings';
+import { SIDE_VIEW_POLAR } from '../view/view-settings';
 
 /**
  * Options for recording a cube animation to video.
@@ -145,13 +147,19 @@ export async function recordCubeVideo (
 	const renderer = new THREE.WebGLRenderer({
 		canvas,
 		antialias: true,
-		alpha: false,
+		alpha: true,
 		preserveDrawingBuffer: true,
 	});
 	renderer.setSize(width, height, false);
-	renderer.setClearColor(BACKGROUND, 1);
+	renderer.setClearColor(0x000000, 0);
 
 	const stage = new Stage();
+
+	/**
+	 * No fog: it would tint the far side of the cube with the color of a background the video
+	 * does not have.
+	 */
+	stage.scene.fog = null;
 	const model = new CubeModel(engine.state);
 	stage.add(model.group);
 

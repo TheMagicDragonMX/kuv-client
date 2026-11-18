@@ -49,6 +49,6 @@
 		>
 			{{ busy() ? 'Guardando…' : 'Guardar foto' }}
 		</button>
-		<button type="button" class="min-h-11 cursor-pointer rounded-xl text-sm font-bold text-slate-300 transition duration-150 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60" [disabled]="busy()" (click)="cancelled.emit()">Cancelar</button>
+		<button type="button" class="min-h-11 cursor-pointer rounded-xl text-sm font-bold text-slate-300 transition duration-150 hover:text-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60" [disabled]="busy()" (click)="cancelled.emit()">Cancelar</button>
 	</div>
 </div>
