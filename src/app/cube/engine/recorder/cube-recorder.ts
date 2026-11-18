@@ -86,14 +86,15 @@ export type PreviewVideos = Record<PreviewTheme, RecordResult>;
 
 /**
  * How the preview video of a creation is recorded, wherever it is made (the editor, the profile):
- * 15 seconds, one turn of the camera around the cube.
+ * 15 seconds at 60 frames per second, one turn of the camera around the cube. The bitrate is
+ * higher than the default because twice the frames share it.
  */
 export const PREVIEW_VIDEO_OPTIONS = {
 	durationSeconds: 15,
-	fps: 30,
+	fps: 60,
 	width: 480,
 	height: 480,
-	bitrate: 2_500_000,
+	bitrate: 5_000_000,
 	rotations: 1,
 } satisfies RecordCubeOptions;
 
