@@ -2,9 +2,9 @@
  * LAYER: recorder.
  *
  * Records a Program running on a 3D Cube into an MP4/WebM video with a smooth 360-degree orbit.
- * Runs completely client-side using WebGL rendering and MediaRecorder. Only the cube is drawn:
- * the background is transparent, so the video sits on whatever page shows it. Browsers that
- * cannot record transparency (anything but WebM in Chromium) record it black.
+ * Runs completely client-side using WebGL rendering and MediaRecorder. The video has a solid
+ * background (not every browser can record transparency), so the preview of a creation is
+ * recorded twice in the same pass, once over the background of each theme of the app.
  */
 
 import * as THREE from 'three';
@@ -13,7 +13,7 @@ import { Environment } from '../environment/environment';
 import { Program } from '../program/program';
 import { CubeModel } from '../view/cube-model';
 import { Stage } from '../view/stage';
-import { SIDE_VIEW_POLAR } from '../view/view-settings';
+import { BACKGROUND, SIDE_VIEW_POLAR } from '../view/view-settings';
 
 /**
  * Options for recording a cube animation to video.
@@ -58,7 +58,31 @@ export type RecordCubeOptions = {
 	 * Optional DOM container to display the live rendering while recording.
 	 */
 	previewHost?: HTMLElement;
+
+	/**
+	 * Color behind the cube, as `#RRGGBB` (default: the dark background of the app).
+	 */
+	background?: string;
 };
+
+/**
+ * The themes of the app a preview video is recorded for.
+ */
+export type PreviewTheme = 'dark' | 'light';
+
+/**
+ * The background each preview video is recorded over: the color behind the cube on the page in
+ * that theme (the `--fog` of styles.css).
+ */
+export const PREVIEW_BACKGROUNDS: Record<PreviewTheme, string> = {
+	dark: BACKGROUND,
+	light: '#eef2f7',
+};
+
+/**
+ * The preview videos of a creation, one per theme.
+ */
+export type PreviewVideos = Record<PreviewTheme, RecordResult>;
 
 /**
  * How the preview video of a creation is recorded, wherever it is made (the editor, the profile):
@@ -115,9 +139,73 @@ export async function recordCubeVideo (
 	options: RecordCubeOptions = {},
 	onProgress?: (progress: RecordProgress) => void,
 ): Promise<RecordResult> {
-	if (!isRecordingSupported()) 
+	const [ result ] = await recordOverBackgrounds(program, options, [ options.background ?? BACKGROUND ], onProgress);
+
+	return result;
+}
+
+/**
+ * Records the preview videos of a program with `PREVIEW_VIDEO_OPTIONS`: one over the background of
+ * each theme, in a single pass, so both show the same frames. The preview host shows the dark one.
+ */
+export async function recordPreviewVideos (
+	program: Program,
+	options: Pick<RecordCubeOptions, 'environment' | 'previewHost'> = {},
+	onProgress?: (progress: RecordProgress) => void,
+): Promise<PreviewVideos> {
+	const [ dark, light ] = await recordOverBackgrounds(
+		program,
+		{ ...PREVIEW_VIDEO_OPTIONS, ...options },
+		[ PREVIEW_BACKGROUNDS.dark, PREVIEW_BACKGROUNDS.light ],
+		onProgress,
+	);
+
+	return { dark, light };
+}
+
+/**
+ * One video being recorded: the canvas it is drawn on, its renderer and its recorder.
+ */
+type Take = {
+	/**
+	 * Color behind the cube.
+	 */
+	background: string;
+
+	/**
+	 * The canvas the frames are drawn on.
+	 */
+	canvas: HTMLCanvasElement;
+
+	/**
+	 * Draws the scene on the canvas.
+	 */
+	renderer: THREE.WebGLRenderer;
+
+	/**
+	 * Records the canvas.
+	 */
+	recorder: MediaRecorder;
+
+	/**
+	 * The pieces of video recorded so far.
+	 */
+	chunks: Blob[];
+};
+
+/**
+ * Runs a program once and records it into one video per background. Every frame is drawn on the
+ * canvas of each video, so they all show the same moment; only the color behind the cube (and the
+ * fog, which fades into it) changes.
+ */
+async function recordOverBackgrounds (
+	program: Program,
+	options: RecordCubeOptions,
+	backgrounds: readonly string[],
+	onProgress?: (progress: RecordProgress) => void,
+): Promise<RecordResult[]> {
+	if (!isRecordingSupported())
 		throw new Error('Canvas recording is not supported in this browser environment.');
-	
 
 	const durationSeconds = options.durationSeconds ?? 15;
 	const durationMs = durationSeconds * 1000;
@@ -127,50 +215,9 @@ export async function recordCubeVideo (
 	const bitrate = options.bitrate ?? 2_500_000;
 	const rotations = options.rotations ?? 1;
 
-	const canvas = document.createElement('canvas');
-	canvas.width = width;
-	canvas.height = height;
-	canvas.style.width = '100%';
-	canvas.style.height = '100%';
-	canvas.style.objectFit = 'contain';
-
-	if (options.previewHost) 
-		options.previewHost.replaceChildren(canvas);
-	
-
-	const engine = new CubeEngine();
-	engine.load(program);
-	if (options.environment) 
-		engine.setEnvironment(options.environment);
-	
-
-	const renderer = new THREE.WebGLRenderer({
-		canvas,
-		antialias: true,
-		alpha: true,
-		preserveDrawingBuffer: true,
-	});
-	renderer.setSize(width, height, false);
-	renderer.setClearColor(0x000000, 0);
-
-	const stage = new Stage();
-
 	/**
-	 * No fog: it would tint the far side of the cube with the color of a background the video
-	 * does not have.
+	 * The best type the browser can record.
 	 */
-	stage.scene.fog = null;
-	const model = new CubeModel(engine.state);
-	stage.add(model.group);
-
-	const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
-	const target = new THREE.Vector3(0, 0.6, 0);
-	const radius = 7.5;
-	const phi = SIDE_VIEW_POLAR;
-
-	const stream = (canvas as HTMLCanvasElement).captureStream(fps);
-
-	// Select best supported MIME type
 	const mimeCandidates = [
 		'video/webm;codecs=vp9',
 		'video/webm;codecs=vp8',
@@ -180,67 +227,108 @@ export async function recordCubeVideo (
 	];
 	const mimeType = mimeCandidates.find((type) => MediaRecorder.isTypeSupported(type)) ?? '';
 
-	const mediaRecorder = new MediaRecorder(stream, {
-		mimeType,
-		videoBitsPerSecond: bitrate,
+	const takes: Take[] = backgrounds.map((background) => {
+		const canvas = document.createElement('canvas');
+		canvas.width = width;
+		canvas.height = height;
+		canvas.style.width = '100%';
+		canvas.style.height = '100%';
+		canvas.style.objectFit = 'contain';
+
+		const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
+		renderer.setSize(width, height, false);
+		renderer.setClearColor(background, 1);
+
+		const recorder = new MediaRecorder(canvas.captureStream(fps), { mimeType, videoBitsPerSecond: bitrate });
+		const chunks: Blob[] = [];
+
+		recorder.ondataavailable = (event) => {
+			if (event.data && 0 < event.data.size)
+				chunks.push(event.data);
+		};
+
+		return { background, canvas, renderer, recorder, chunks };
 	});
 
-	const chunks: Blob[] = [];
-	mediaRecorder.ondataavailable = (event) => {
-		if (event.data && 0 < event.data.size) 
-			chunks.push(event.data);
-		
-	};
+	if (options.previewHost)
+		options.previewHost.replaceChildren(takes[0].canvas);
 
-	return new Promise<RecordResult>((resolve, reject) => {
-		let animationFrameId: number;
+	const engine = new CubeEngine();
+	engine.load(program);
+
+	if (options.environment)
+		engine.setEnvironment(options.environment);
+
+	const stage = new Stage();
+	const model = new CubeModel(engine.state);
+	stage.add(model.group);
+
+	const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+	const target = new THREE.Vector3(0, 0.6, 0);
+	const radius = 7.5;
+	const phi = SIDE_VIEW_POLAR;
+
+	return new Promise<RecordResult[]>((resolve, reject) => {
+		let animationFrameId = 0;
 		let startTime: number | null = null;
 		let aborted = false;
 
 		const cleanup = () => {
-			if (animationFrameId) 
+			if (animationFrameId)
 				cancelAnimationFrame(animationFrameId);
-			
+
 			model.dispose();
 			stage.dispose();
-			renderer.dispose();
-			if (!options.previewHost) 
-				canvas.remove();
-			
+
+			for (const take of takes) {
+				take.renderer.dispose();
+
+				if (!options.previewHost)
+					take.canvas.remove();
+			}
 		};
 
-		mediaRecorder.onerror = (err) => {
-			aborted = true;
-			cleanup();
-			reject(err);
-		};
+		const stopped = takes.map((take) => new Promise<RecordResult>((done, fail) => {
+			take.recorder.onerror = (error) => {
+				aborted = true;
+				fail(error);
+			};
 
-		mediaRecorder.onstop = () => {
-			cleanup();
-			const blob = new Blob(chunks, { type: mimeType });
-			const url = URL.createObjectURL(blob);
-			resolve({
-				blob,
-				url,
-				mimeType,
-				sizeBytes: blob.size,
-				durationSeconds,
-				width,
-				height,
-			});
-		};
+			take.recorder.onstop = () => {
+				const blob = new Blob(take.chunks, { type: mimeType });
 
-		// Start engine & recorder
+				done({ blob, url: URL.createObjectURL(blob), mimeType, sizeBytes: blob.size, durationSeconds, width, height });
+			};
+		}));
+
+		Promise.all(stopped).then(
+			(results) => {
+				cleanup();
+				resolve(results);
+			},
+			(error) => {
+				cleanup();
+
+				for (const take of takes) {
+					if ('inactive' !== take.recorder.state)
+						take.recorder.stop();
+				}
+
+				reject(error);
+			},
+		);
+
 		engine.start(0);
-		mediaRecorder.start(100); // 100ms slices
+
+		for (const take of takes)
+			take.recorder.start(100);
 
 		const renderStep = (now: number) => {
-			if (aborted) 
+			if (aborted)
 				return;
-			
-			if (null === startTime) 
+
+			if (null === startTime)
 				startTime = now;
-			
 
 			const elapsed = now - startTime;
 			const progress = Math.min(elapsed / durationMs, 1);
@@ -251,29 +339,31 @@ export async function recordCubeVideo (
 				percent: Math.round(progress * 100),
 			});
 
-			// Advance simulation
 			engine.tick(elapsed);
 			model.syncIfChanged();
 
-			// Orbit camera 360 degrees
 			const theta = progress * Math.PI * 2 * rotations;
-			const x = target.x + radius * Math.sin(phi) * Math.sin(theta);
-			const y = target.y + radius * Math.cos(phi);
-			const z = target.z + radius * Math.sin(phi) * Math.cos(theta);
-
-			camera.position.set(x, y, z);
+			camera.position.set(
+				target.x + radius * Math.sin(phi) * Math.sin(theta),
+				target.y + radius * Math.cos(phi),
+				target.z + radius * Math.sin(phi) * Math.cos(theta),
+			);
 			camera.lookAt(target);
 
-			renderer.render(stage.scene, camera);
+			for (const take of takes) {
+				stage.setFogColor(take.background);
+				take.renderer.render(stage.scene, camera);
+			}
 
-			if (elapsed < durationMs) 
+			if (elapsed < durationMs)
 				animationFrameId = requestAnimationFrame(renderStep);
-			else 
-				mediaRecorder.stop();
-			
+
+			else {
+				for (const take of takes)
+					take.recorder.stop();
+			}
 		};
 
 		animationFrameId = requestAnimationFrame(renderStep);
 	});
 }
-

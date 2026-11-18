@@ -125,7 +125,10 @@ export class HomePage {
 			title: creation.title,
 			author: creation.authorUsername,
 			authorPhoto: creation.authorPhoto,
-			video: creation.hasVideo ? this.creations.videoUrl({ id: creation.id, token: this.session.accessToken() }) : null,
+			/**
+			 * The dark recording in both themes: the expanded card is a dark screen in both.
+			 */
+			video: creation.hasVideo ? this.creations.videoUrl({ id: creation.id, token: this.session.accessToken(), theme: 'dark' }) : null,
 			likes: 0,
 			createdAt: creation.createdAt.slice(0, 10),
 			category: 'Nueva',

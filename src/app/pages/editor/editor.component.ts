@@ -11,7 +11,7 @@ import {
 	ObjectMove,
 	PREVIEW_VIDEO_OPTIONS,
 	RecordProgress,
-	recordCubeVideo,
+	recordPreviewVideos,
 } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
 import { CreationsService } from '../../services/middle/creations.service';
@@ -240,10 +240,9 @@ export class EditorPage implements OnInit {
 		await new Promise((resolve) => setTimeout(resolve, 50));
 
 		try {
-			const result = await recordCubeVideo(
+			const result = await recordPreviewVideos(
 				program,
 				{
-					...PREVIEW_VIDEO_OPTIONS,
 					environment: this.environment(),
 					previewHost: this.exportPreviewHostRef?.nativeElement,
 				},
@@ -259,7 +258,7 @@ export class EditorPage implements OnInit {
 					program,
 					environment: this.environment(),
 					isPublic: this.exportIsPublic(),
-					videoBlob: result.blob,
+					videos: result,
 				};
 
 				const currentId = this.currentCreationId();
@@ -282,8 +281,8 @@ export class EditorPage implements OnInit {
 					program,
 					environment: this.environment(),
 					isPublic: this.exportIsPublic(),
-					videoBlob: result.blob,
-					videoMimeType: result.mimeType,
+					videoBlob: result.dark.blob,
+					videoMimeType: result.dark.mimeType,
 				});
 			}
 

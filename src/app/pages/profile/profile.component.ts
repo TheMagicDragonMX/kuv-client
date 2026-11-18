@@ -1,12 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { ChangeDetectionStrategy, Component, ElementRef, OnInit, inject, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { MAX_BIO, Profile, UserCreation } from '../../models';
-import { PREVIEW_VIDEO_OPTIONS, RecordProgress, isRecordingSupported, recordCubeVideo } from '../../cube';
+import { PREVIEW_BACKGROUNDS, PREVIEW_VIDEO_OPTIONS, RecordProgress, isRecordingSupported, recordPreviewVideos } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
 import { SnackbarService } from '../../services/snackbar.service';
+import { ThemeService } from '../../services/theme.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { UsersService } from '../../services/middle/users.service';
 import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
@@ -102,14 +103,48 @@ export class ProfilePage implements OnInit {
 	protected readonly creationsProblem = signal<string | null>(null);
 
 	/**
-	 * Map of creation ID to streamable video URL.
+	 * When the video of each creation regenerated on this page was made, by creation ID. It goes at
+	 * the end of the address of the video, or the browser would keep playing the one it had before.
 	 */
-	protected readonly videoUrls = signal<Record<number, string>>({});
+	private readonly videoVersions = signal<Record<number, number>>({});
+
+	/**
+	 * The color behind the videos: the one the video of the current theme was recorded over, so the
+	 * square and the video blend into one.
+	 */
+	protected readonly videoBackground = computed(() => PREVIEW_BACKGROUNDS[this.theme.theme()]);
+
+	/**
+	 * The address of the video of each creation that has one, by creation ID: the recording made
+	 * for the current theme, so the cube is on the same background as the page.
+	 */
+	protected readonly videoUrls = computed(() => {
+		const theme = this.theme.theme();
+		const token = this.session.accessToken();
+		const versions = this.videoVersions();
+		const urls: Record<number, string> = {};
+
+		for (const item of this.creations()) {
+			if (!item.hasVideo)
+				continue;
+
+			const url = this.creationsService.videoUrl({ id: item.id, token, theme });
+
+			urls[item.id] = item.id in versions ? `${url}&v=${versions[item.id]}` : url;
+		}
+
+		return urls;
+	});
 
 	/**
 	 * ID of the creation whose video is being generated, or null. Only one is made at a time.
 	 */
 	protected readonly generatingId = signal<number | null>(null);
+
+	/**
+	 * ID of the creation whose video menu (the three dots) is open, or null.
+	 */
+	protected readonly videoMenuId = signal<number | null>(null);
 
 	/**
 	 * How far the recording of the video being generated has got.
@@ -146,6 +181,11 @@ export class ProfilePage implements OnInit {
 	 * Talks to the creations API.
 	 */
 	private readonly creationsService = inject(CreationsService);
+
+	/**
+	 * The theme of the app, to show the video recorded for it.
+	 */
+	private readonly theme = inject(ThemeService);
 
 	/**
 	 * The session, to sign out.
@@ -205,8 +245,35 @@ export class ProfilePage implements OnInit {
 	}
 
 	/**
-	 * Generates the preview video of one of the user's creations that has none: runs its program on
-	 * the cube, records it with the usual 15 second preset and uploads the video to the creation.
+	 * Opens the menu of a creation's video, or closes it if it was open. The click does not reach
+	 * the page, which closes the menu.
+	 */
+	protected toggleVideoMenu (id: number, event: Event): void {
+		event.stopPropagation();
+		this.videoMenuId.update((open) => id === open ? null : id);
+	}
+
+	/**
+	 * Closes the menu of the videos.
+	 */
+	@HostListener('document:click')
+	protected closeVideoMenu (): void {
+		this.videoMenuId.set(null);
+	}
+
+	/**
+	 * Records the video of a creation that already has one again, replacing it: for example after
+	 * the way videos are recorded changed.
+	 */
+	protected regenerateVideo (item: UserCreation): void {
+		this.closeVideoMenu();
+		void this.generateVideo(item);
+	}
+
+	/**
+	 * Generates the preview video of one of the user's creations, or records it again when it has
+	 * one: runs its program on the cube, records it with the usual 15 second preset and uploads the
+	 * video to the creation, replacing the one it had.
 	 */
 	protected async generateVideo (item: UserCreation): Promise<void> {
 		if (null !== this.generatingId())
@@ -229,9 +296,9 @@ export class ProfilePage implements OnInit {
 			 */
 			await new Promise((resolve) => setTimeout(resolve, 50));
 
-			const result = await recordCubeVideo(
+			const videos = await recordPreviewVideos(
 				program,
-				{ ...PREVIEW_VIDEO_OPTIONS, environment, previewHost: this.recordingHost()?.nativeElement },
+				{ environment, previewHost: this.recordingHost()?.nativeElement },
 				(progress) => this.generationProgress.set(progress),
 			);
 
@@ -243,11 +310,11 @@ export class ProfilePage implements OnInit {
 				description: item.description ?? '',
 				program,
 				environment,
-				videoBlob: result.blob,
+				videos,
 			}));
 
+			this.videoVersions.update((versions) => ({ ...versions, [item.id]: Date.now() }));
 			this.creations.update((items) => items.map((candidate) => item.id === candidate.id ? { ...candidate, hasVideo: true } : candidate));
-			this.videoUrls.update((urls) => ({ ...urls, [item.id]: this.creationsService.videoUrl({ id: item.id, token: this.session.accessToken() }) }));
 		}
 
 		catch {
@@ -275,14 +342,6 @@ export class ProfilePage implements OnInit {
 		request.subscribe({
 			next: (items) => {
 				this.creations.set(items);
-				const token = this.session.accessToken();
-				const urls: Record<number, string> = {};
-				for (const item of items) {
-					if (item.hasVideo) {
-						urls[item.id] = this.creationsService.videoUrl({ id: item.id, token });
-					}
-				}
-				this.videoUrls.set(urls);
 				this.loadingCreations.set(false);
 			},
 			error: (error: HttpErrorResponse) => {

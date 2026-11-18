@@ -178,17 +178,8 @@
 								</div>
 
 								<!-- Video miniatura en bucle -->
-								<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative shadow-inner">
-									@if (videoUrls()[item.id]; as url) {
-										<video
-											[src]="url"
-											autoplay
-											loop
-											muted
-											playsinline
-											class="h-full w-full object-contain"
-										></video>
-									} @else if (generatingId() === item.id) {
+								<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative shadow-inner" [style.background-color]="videoBackground()">
+									@if (generatingId() === item.id) {
 										<!-- The cube is shown here while it is recorded. -->
 										<div #recordingHost class="size-full"></div>
 										@if (generationProgress(); as progress) {
@@ -200,6 +191,45 @@
 												<div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
 													<div class="h-full bg-accent-pink transition-all duration-150 ease-out" [style.width.%]="progress.percent"></div>
 												</div>
+											</div>
+										}
+									} @else if (videoUrls()[item.id]; as url) {
+										<video
+											[src]="url"
+											autoplay
+											loop
+											muted
+											playsinline
+											class="h-full w-full object-contain"
+										></video>
+
+										<!-- The options of the video, behind a button with three dots in the top right corner. With a mouse it only shows while the pointer is over the card (or it has the focus, or its menu is open); on a touch screen it is always there, faint. -->
+										@if (me.isYou) {
+											<div class="absolute top-2 right-2" (keydown.escape)="closeVideoMenu()">
+												<button
+													type="button"
+													class="grid size-8 cursor-pointer place-items-center rounded-full text-slate-300 opacity-70 transition hover:bg-slate-400/20 hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-accent aria-expanded:bg-slate-400/20 aria-expanded:opacity-100 disabled:cursor-not-allowed pointer-fine:opacity-0 pointer-fine:group-hover:opacity-70 pointer-fine:hover:opacity-100 pointer-fine:focus-visible:opacity-100 pointer-fine:aria-expanded:opacity-100 disabled:pointer-fine:group-hover:opacity-30"
+													[attr.aria-label]="'Opciones del video: ' + item.title"
+													aria-haspopup="menu"
+													[attr.aria-expanded]="videoMenuId() === item.id"
+													[disabled]="null !== generatingId()"
+													(click)="toggleVideoMenu(item.id, $event)"
+												>
+													<svg class="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="1.75" /><circle cx="12" cy="12" r="1.75" /><circle cx="12" cy="19" r="1.75" /></svg>
+												</button>
+												@if (videoMenuId() === item.id) {
+													<div class="absolute top-11 right-0 z-10 min-w-44 overflow-hidden rounded-xl border border-slate-400/25 bg-slate-900 py-1 shadow-[0_8px_16px_var(--shadow)]" role="menu" (click)="$event.stopPropagation()">
+														<button
+															type="button"
+															role="menuitem"
+															class="flex w-full cursor-pointer items-center gap-2 px-3.5 py-2.5 text-left text-xs font-semibold text-slate-200 hover:bg-slate-800 focus-visible:bg-slate-800 focus-visible:outline-none"
+															(click)="regenerateVideo(item)"
+														>
+															<svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M5.6 15a7 7 0 0012 2.4M18.4 9A7 7 0 006.4 6.6" /></svg>
+															Regenerar video
+														</button>
+													</div>
+												}
 											</div>
 										}
 									} @else {
