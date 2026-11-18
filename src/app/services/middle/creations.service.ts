@@ -125,10 +125,10 @@ export class CreationsService {
 		/**
 		 * The name says what kind of video it is: the API keeps the extension, and Safari records mp4.
 		 */
-		if (payload.videos) {
+		if (payload.videos) 
 			for (const [ field, video ] of [ [ 'videoDark', payload.videos.dark ], [ 'videoLight', payload.videos.light ] ] as const)
 				formData.append(field, video.blob, video.mimeType.startsWith('video/mp4') ? 'preview.mp4' : 'preview.webm');
-		}
+		
 
 		return formData;
 	}
