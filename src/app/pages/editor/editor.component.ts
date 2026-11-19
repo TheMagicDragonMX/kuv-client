@@ -19,6 +19,7 @@ import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { backgroundsOf } from './backgrounds';
 import { BlocksTabComponent } from './blocks-tab.component';
+import { CubeSendComponent } from './cube-send.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
 
@@ -38,6 +39,7 @@ import { ProgramAreaComponent } from './program-area.component';
 		BackgroundPanelComponent,
 		BlocksTabComponent,
 		ObjectsPanelComponent,
+		CubeSendComponent,
 	],
 	templateUrl: './editor.component.html',
 })

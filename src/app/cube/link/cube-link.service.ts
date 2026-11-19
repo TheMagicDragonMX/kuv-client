@@ -1,7 +1,8 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '@environment';
-import { COMMAND_MESSAGE, CubeMessage, LinkState } from './protocol';
+import { ProgramFile } from '../engine';
+import { COMMAND_MESSAGE, COMMAND_RUN_PROGRAM, COMMAND_STOP_PROGRAM, CubeMessage, LinkState, MAX_MESSAGE_BYTES } from './protocol';
 
 /**
  * Address of the API's WebSocket endpoints, derived from the API address of the current environment.
@@ -12,6 +13,17 @@ const ENDPOINT = `${environment.apiUrl.replace(/^http/, 'ws')}/ws`;
  * Milliseconds to wait before connecting again after the socket drops.
  */
 const RECONNECT_DELAY = 2000;
+
+/**
+ * Bytes left free under `MAX_MESSAGE_BYTES` for what the server adds to a command (its id).
+ */
+const MESSAGE_MARGIN = 1024;
+
+/**
+ * What happened to a program sent to the cube: it left, the socket was not open, or it was too
+ * big for the server to take.
+ */
+export type ProgramSendResult = 'sent' | 'closed' | 'too-large';
 
 /**
  * The live conversation with a cube through the server: sends it commands and streams what it answers. It reconnects by
@@ -82,12 +94,27 @@ export class CubeLinkService implements OnDestroy {
 	 * Sends a command to the cube. Returns false if the socket is not open.
 	 */
 	send (name: string, payload?: Record<string, unknown>): boolean {
-		if (this.socket?.readyState !== WebSocket.OPEN)
-			return false;
+		return this.sendFrame(JSON.stringify({ name, payload } satisfies CubeMessage));
+	}
 
-		this.socket.send(JSON.stringify({ name, payload } satisfies CubeMessage));
+	/**
+	 * Sends a program, with its environment, for the cube to run. A program too big for the
+	 * server is not sent, since the server would drop the connection.
+	 */
+	runProgram (file: ProgramFile): ProgramSendResult {
+		const frame = JSON.stringify({ name: COMMAND_RUN_PROGRAM, payload: file } satisfies CubeMessage);
 
-		return true;
+		if (new TextEncoder().encode(frame).length > MAX_MESSAGE_BYTES - MESSAGE_MARGIN)
+			return 'too-large';
+
+		return this.sendFrame(frame) ? 'sent' : 'closed';
+	}
+
+	/**
+	 * Stops the program the cube runs. Returns false if the socket is not open.
+	 */
+	stopProgram (): boolean {
+		return this.send(COMMAND_STOP_PROGRAM);
 	}
 
 	/**
@@ -102,6 +129,18 @@ export class CubeLinkService implements OnDestroy {
 	 */
 	ngOnDestroy (): void {
 		this.disconnect();
+	}
+
+	/**
+	 * Sends one frame. Returns false if the socket is not open.
+	 */
+	private sendFrame (frame: string): boolean {
+		if (this.socket?.readyState !== WebSocket.OPEN)
+			return false;
+
+		this.socket.send(frame);
+
+		return true;
 	}
 
 	/**
