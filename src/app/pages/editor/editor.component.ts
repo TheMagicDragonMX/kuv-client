@@ -13,13 +13,13 @@ import {
 	RecordProgress,
 	recordPreviewVideos,
 } from '../../cube';
+import { CubeSendComponent } from '../../components/cube-send/cube-send.component';
 import { AuthSession } from '../../services/auth-session.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
 import { backgroundsOf } from './backgrounds';
 import { BlocksTabComponent } from './blocks-tab.component';
-import { CubeSendComponent } from './cube-send.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
 

@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
+import { CubeSendComponent } from '../../components/cube-send/cube-send.component';
 import {
 	CubeComponent,
 	EXAMPLE_PROGRAMS,
@@ -87,6 +88,7 @@ export interface AnimationDetailData {
 		RouterLink,
 		AvatarComponent,
 		CubeComponent,
+		CubeSendComponent,
 	],
 	templateUrl: './animation-detail.component.html',
 })

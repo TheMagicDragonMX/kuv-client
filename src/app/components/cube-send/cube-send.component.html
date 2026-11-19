@@ -48,7 +48,7 @@
 					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="!cubeOnline() || !cubeRunning()" (click)="stop()">Detener</button>
 				</div>
 
-				@if (null === program()) {
+				@if (null === creationId() && null === program()) {
 					<p class="text-slate-400">Termina los bloques para poder enviarlos.</p>
 				}
 			}
