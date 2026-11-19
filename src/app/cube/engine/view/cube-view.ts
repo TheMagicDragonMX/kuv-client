@@ -209,6 +209,7 @@ export class CubeView {
 			const cameraMoved = this.rig.update();
 
 			if (ledsChanged || cameraMoved || this.needsDraw) {
+				this.model.hideFacesAway(this.rig.camera);
 				this.renderer.render(this.stage.scene, this.rig.camera);
 				this.needsDraw = false;
 			}

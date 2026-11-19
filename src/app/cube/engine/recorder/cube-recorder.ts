@@ -413,6 +413,7 @@ async function recordOverBackgrounds (
 				target.z + radius * Math.sin(phi) * Math.cos(theta),
 			);
 			camera.lookAt(target);
+			model.hideFacesAway(camera);
 
 			for (const take of takes) {
 				stage.setFogColor(take.background);

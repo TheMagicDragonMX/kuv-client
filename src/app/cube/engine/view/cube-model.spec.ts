@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { CubeState, FACE_COUNT, FACE_RESOLUTION } from '../state/cube-state';
+import { CubeState, FACE_COUNT, FACE_RESOLUTION, Face } from '../state/cube-state';
 import { CubeModel, createLedGeometry } from './cube-model';
 import { Stage } from './stage';
 import { LED_DEPTH } from './view-settings';
@@ -82,5 +82,41 @@ describe('CubeModel', () => {
 
 		expect(lights.length).toBeGreaterThan(0);
 		expect(lights.every((light) => !light.castShadow)).toBe(true);
+	});
+	describe('hideFacesAway', () => {
+		/**
+		 * Which faces show their LEDs to a camera at a point, looking at the cube.
+		 */
+		function visibleFrom (x: number, y: number, z: number): boolean[] {
+			const camera = new THREE.PerspectiveCamera();
+
+			camera.position.set(x, y, z);
+			camera.lookAt(model.group.position);
+			model.hideFacesAway(camera);
+
+			return matrices.map((leds) => leds.visible);
+		}
+
+		afterEach(() => matrices.forEach((leds) => leds.visible = true));
+
+		it('hides only the back face from the front, a little above, as the editor starts', () => {
+			expect(visibleFrom(0, 2.2, 7.5)).toEqual([ true, true, true, false, true ]);
+		});
+
+		it('keeps every face from above: the borders of the side faces show around the top', () => {
+			expect(visibleFrom(0.5, 9, 0.5)).toEqual([ true, true, true, true, true ]);
+		});
+
+		it('keeps a face seen edge-on and a little past it, whose border LEDs are in the silhouette', () => {
+			expect(visibleFrom(0, 0.4, -7)[Face.FRONT]).toBe(false);
+			expect(visibleFrom(7, 0.4, -1)[Face.FRONT]).toBe(true);
+		});
+
+		it('hides the two faces farthest from a camera on a corner', () => {
+			const visible = visibleFrom(6, 2, 6);
+
+			expect(visible[Face.FRONT] && visible[Face.RIGHT] && visible[Face.TOP]).toBe(true);
+			expect(visible[Face.LEFT] || visible[Face.BACK]).toBe(false);
+		});
 	});
 });

@@ -45,6 +45,12 @@ export interface SelectionFrame {
 }
 
 /**
+ * Room, in scene units, left before hiding the LEDs of a face, so they are only hidden once the
+ * camera is surely past the point where any of them could show. As deep as an LED.
+ */
+const HIDE_MARGIN = LED_DEPTH;
+
+/**
  * Where each face sits and how it is turned, in `Face` order.
  */
 const FACE_PLACEMENTS = [
@@ -144,6 +150,21 @@ export class CubeModel {
 	private readonly outlines: THREE.Group[] = [];
 
 	/**
+	 * The LEDs of each face, indexed by `Face`, to hide the ones the camera cannot see.
+	 */
+	private readonly ledMatrices: THREE.InstancedMesh[] = [];
+
+	/**
+	 * Where the camera is, seen from the face being checked. Kept to not make one every frame.
+	 */
+	private readonly seen = new THREE.Vector3();
+
+	/**
+	 * The inverse of the matrix of the face being checked. Kept to not make one every frame.
+	 */
+	private readonly toFace = new THREE.Matrix4();
+
+	/**
 	 * Builds the faces of the cube.
 	 */
 	constructor (
@@ -162,6 +183,41 @@ export class CubeModel {
 	 */
 	syncIfChanged (): boolean {
 		return this.renderedVersion !== this.state.version && this.syncLeds();
+	}
+
+	/**
+	 * Hides the LEDs of the faces the camera cannot see at all, so the GPU does not process
+	 * their 40960 triangles each, and shows them again when it can. What is drawn looks exactly
+	 * the same. Call it before drawing a frame in which the camera or the cube moved.
+	 *
+	 * Turning away is not enough for a face to be hidden: the LEDs of its border stand out of the
+	 * cube by `LED_DEPTH` and show in the silhouette of each edge until the camera is 135 degrees
+	 * away from the face. Seen from the face (x and y along it, z out of it, its edges at
+	 * `±FACE_SIZE / 2`), its LEDs are hidden when the camera is behind its plane (z < 0) and
+	 * behind the plane at 45 degrees through each of its edges, which is
+	 * `z + max(|x|, |y|) < FACE_SIZE / 2`. Along the bottom of the side faces there is no face
+	 * but the base, and the same plane works the same way.
+	 */
+	hideFacesAway (camera: THREE.Camera): void {
+		const half = FACE_SIZE / 2;
+
+		this.group.updateMatrixWorld();
+
+		for (const leds of this.ledMatrices) {
+			const face = leds.parent;
+
+			if (!face)
+				continue;
+
+			this.toFace.copy(face.matrixWorld).invert();
+			camera.getWorldPosition(this.seen).applyMatrix4(this.toFace);
+
+			const { x, y, z } = this.seen;
+			const behindPlane = z < -HIDE_MARGIN;
+			const behindEdges = z + Math.max(Math.abs(x), Math.abs(y)) - half < -HIDE_MARGIN;
+
+			leds.visible = !(behindPlane && behindEdges);
+		}
 	}
 
 	/**
@@ -376,6 +432,7 @@ export class CubeModel {
 			this.ledColors.push(ledColors);
 			this.shownPixels.push(new Uint32Array(FACE_RESOLUTION * FACE_RESOLUTION));
 			faceGroup.add(ledMatrix);
+			this.ledMatrices.push(ledMatrix);
 
 			const outline = new THREE.Group();
 			faceGroup.add(outline);
