@@ -52,6 +52,12 @@ export type Profile = {
 	 * Whether it is the signed-in user's own profile.
 	 */
 	isYou: boolean;
+
+	/**
+	 * Whether the signed-in user is a super admin, who gets the admin panel. Only ever true on
+	 * their own profile.
+	 */
+	isSuperAdmin: boolean;
 };
 
 /**

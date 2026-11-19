@@ -7,10 +7,26 @@
 		class="flex items-center justify-between gap-3 bg-(--surface) backdrop-blur-[10px] transition-[border-radius,box-shadow,padding,height] duration-200 motion-reduce:transition-none"
 		[class]="scrolled() ? 'h-15 rounded-full border border-slate-400/25 pr-2 pl-4 shadow-[0_12px_32px_var(--shadow)] sm:pl-6' : 'h-full border-b border-slate-400/20 pr-18 pl-4 sm:pl-10'"
 	>
-		<a routerLink="/inicio" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-accent" aria-label="Kü-V, inicio">
-			<app-cube-logo class="size-8.5" />
-			<span class="font-display text-3xl font-bold tracking-wide">Kü-V</span>
-		</a>
+		<div class="flex items-center gap-2 sm:gap-3">
+			<a routerLink="/inicio" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-accent" aria-label="Kü-V, inicio">
+				<app-cube-logo class="size-8.5" />
+				<span class="font-display text-3xl font-bold tracking-wide">Kü-V</span>
+			</a>
+
+			<!-- Only super admins see the way to their panel. -->
+			@if (me()?.isSuperAdmin) {
+				<a
+					routerLink="/admin"
+					routerLinkActive="bg-accent-pink text-on-accent-pink"
+					ariaCurrentWhenActive="page"
+					class="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-accent-pink/50 px-3 text-[0.8rem] font-bold text-accent-pink no-underline transition duration-150 hover:bg-accent-pink/15 focus-visible:outline-2 focus-visible:outline-accent"
+					title="Panel de super administrador"
+				>
+					<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>
+					Admin
+				</a>
+			}
+		</div>
 
 		<nav class="hidden gap-1.5 md:flex" aria-label="Navegación principal">
 			@for (item of items; track item.path) {

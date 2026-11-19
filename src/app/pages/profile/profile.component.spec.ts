@@ -13,7 +13,7 @@ import { MAX_ZOOM, centeredView, clampView, cropOf, photoFileProblem } from './p
 /**
  * The signed-in user.
  */
-const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: 'Me gustan los cubos.', photo: null, followers: 1, following: 0, followsYou: false, youFollow: false, isYou: true };
+const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: 'Me gustan los cubos.', photo: null, followers: 1, following: 0, followsYou: false, youFollow: false, isYou: true, isSuperAdmin: false };
 
 /**
  * Creates the page and answers the request for the profile.

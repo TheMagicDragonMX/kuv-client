@@ -1,0 +1,175 @@
+<main class="mx-auto flex max-w-340 flex-col gap-8 px-4 pt-8 pb-28 sm:px-10 sm:pt-10 md:pb-16">
+	<section class="flex flex-wrap items-end justify-between gap-5" aria-labelledby="admin-title">
+		<div class="flex min-w-0 flex-col gap-2">
+			<p class="text-xs font-extrabold tracking-[0.18em] text-accent-pink uppercase">Super administrador</p>
+			<h1 id="admin-title" class="font-display text-[clamp(2rem,6vw,2.75rem)] leading-[1.05] font-bold">Panel</h1>
+			<p class="max-w-160 text-base text-slate-400">
+				Todas las creaciones de todos los usuarios, públicas y privadas. Desde aquí puedes grabar su video y su miniatura sin entrar con la cuenta de cada quien. La grabación ocurre en esta pestaña: déjala abierta mientras termina.
+			</p>
+		</div>
+
+		@if (creations()) {
+			<div class="flex flex-wrap gap-2">
+				<button
+					type="button"
+					class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl bg-accent-pink px-5 text-[0.95rem] font-extrabold text-on-accent-pink transition hover:opacity-90 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+					[disabled]="0 === counts().missing"
+					(click)="generateMissing()"
+				>
+					Generar las que faltan ({{ counts().missing }})
+				</button>
+				<button
+					type="button"
+					class="inline-flex min-h-11 cursor-pointer items-center rounded-xl border border-slate-400/30 px-4 text-[0.95rem] font-bold text-slate-200 transition hover:bg-slate-400/15 disabled:cursor-not-allowed disabled:opacity-50"
+					[disabled]="0 === counts().all"
+					(click)="regenerateAll()"
+				>
+					Regenerar todas
+				</button>
+			</div>
+		}
+	</section>
+
+	@if (current(); as creation) {
+		<section class="flex flex-wrap items-center gap-5 rounded-3xl border border-accent-pink/40 bg-slate-900/80 p-4 sm:p-5" aria-label="Grabación en curso">
+			<!-- The cube is shown here while it is recorded. -->
+			<div #recordingHost class="size-36 shrink-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 sm:size-44"></div>
+
+			<div class="flex min-w-0 flex-[1_1_16rem] flex-col gap-2.5" role="status" aria-live="polite">
+				<p class="text-xs font-extrabold tracking-wide text-slate-400 uppercase">
+					Grabando {{ batchFinished() + 1 }} de {{ batchSize() }}
+				</p>
+				<p class="truncate text-lg font-bold text-slate-100">{{ creation.title }}</p>
+				<p class="text-sm text-slate-400">de &#64;{{ creation.authorUsername }}</p>
+
+				@if (progress(); as recording) {
+					<div class="flex items-center gap-3">
+						<div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-800">
+							<div class="h-full bg-accent-pink transition-all duration-150 ease-out motion-reduce:transition-none" [style.width.%]="recording.percent"></div>
+						</div>
+						<span class="w-10 text-right text-sm font-bold text-slate-200 tabular-nums">{{ recording.percent }}%</span>
+					</div>
+				}
+
+				<div class="flex flex-wrap items-center gap-3">
+					@if (0 < queue().length) {
+						<button
+							type="button"
+							class="min-h-10 cursor-pointer rounded-xl border border-slate-400/30 px-4 text-sm font-bold text-slate-200 hover:bg-slate-400/15"
+							(click)="stop()"
+						>
+							Detener la cola ({{ queue().length }} en espera)
+						</button>
+					}
+					@if (stopping()) {
+						<span class="text-sm text-slate-400">Se detendrá al terminar esta.</span>
+					}
+				</div>
+			</div>
+		</section>
+	}
+
+	@if (loadProblem(); as problem) {
+		<div class="flex flex-wrap items-center gap-3 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-red-200" role="alert">
+			<span>{{ problem }}</span>
+			<button type="button" class="min-h-10 cursor-pointer rounded-xl border border-red-300/40 px-4 text-sm font-bold hover:bg-red-400/15" (click)="load()">Reintentar</button>
+		</div>
+	} @else if (null === creations()) {
+		<p class="text-slate-400" role="status">Cargando creaciones…</p>
+	} @else {
+		<section class="flex flex-col gap-4" aria-label="Creaciones">
+			<div class="flex flex-wrap gap-1.5" role="tablist" aria-label="Filtrar creaciones">
+				@for (option of filters; track option.value) {
+					<button
+						type="button"
+						role="tab"
+						class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full px-4 text-sm font-bold transition"
+						[class]="filter() === option.value ? 'bg-slate-400/20 text-accent' : 'text-slate-300 hover:bg-slate-400/15'"
+						[attr.aria-selected]="filter() === option.value"
+						(click)="filter.set(option.value)"
+					>
+						{{ option.label }}
+						<span class="rounded-full bg-slate-400/15 px-2 py-0.5 text-xs tabular-nums">{{ counts()[option.value] }}</span>
+					</button>
+				}
+			</div>
+
+			@if (0 === visible().length) {
+				<p class="rounded-2xl border border-slate-400/20 p-6 text-center text-slate-400">No hay creaciones aquí.</p>
+			} @else {
+				<ul class="flex flex-col divide-y divide-slate-400/15 overflow-hidden rounded-2xl border border-slate-400/20 bg-slate-900/60">
+					@for (creation of visible(); track creation.id) {
+						<li class="flex flex-wrap items-center gap-x-4 gap-y-3 p-3 sm:p-4">
+							<div class="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl border border-slate-800 bg-slate-950">
+								@if (creation.hasVideo && !brokenThumbnails().has(creation.id)) {
+									<img
+										class="size-full [image-rendering:pixelated]"
+										[src]="thumbnailOf(creation)"
+										alt=""
+										loading="lazy"
+										(error)="thumbnailFailed(creation.id)"
+									/>
+								} @else {
+									<svg viewBox="0 0 24 24" class="size-6 text-slate-600" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9zM12 12l8-4.5M12 12v9M12 12L4 7.5" /></svg>
+								}
+							</div>
+
+							<div class="flex min-w-0 flex-[1_1_14rem] flex-col gap-1">
+								<p class="truncate font-bold text-slate-100" [title]="creation.title">{{ creation.title }}</p>
+								<p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+									<a class="font-semibold text-slate-300 no-underline hover:text-accent" [routerLink]="[ '/perfil', creation.authorId ]">&#64;{{ creation.authorUsername }}</a>
+									<span aria-hidden="true">·</span>
+									<span>{{ creation.createdAt.slice(0, 10) }}</span>
+									<span aria-hidden="true">·</span>
+									<span>#{{ creation.id }}</span>
+								</p>
+							</div>
+
+							<div class="flex flex-wrap items-center gap-1.5 text-[0.7rem] font-extrabold">
+								<span class="rounded-full border px-2.5 py-1" [class]="creation.isPublic ? 'border-sky-400/30 text-sky-300' : 'border-slate-400/30 text-slate-400'">
+									{{ creation.isPublic ? 'Pública' : 'Privada' }}
+								</span>
+								<span class="rounded-full border px-2.5 py-1" [class]="creation.hasVideo ? 'border-green-400/30 text-green-300' : 'border-amber-400/30 text-amber-300'">
+									{{ creation.hasVideo ? 'Con video' : 'Sin video' }}
+								</span>
+							</div>
+
+							<div class="ml-auto flex min-w-32 items-center justify-end gap-2">
+								@switch (statuses()[creation.id]) {
+									@case ('recording') {
+										<span class="text-sm font-bold text-accent-pink" role="status">Grabando {{ progress()?.percent ?? 0 }}%</span>
+									}
+									@case ('queued') {
+										<span class="text-sm text-slate-400">En espera</span>
+										<button
+											type="button"
+											class="min-h-9 cursor-pointer rounded-lg px-2.5 text-xs font-bold text-slate-400 hover:bg-slate-400/15 hover:text-slate-200"
+											[attr.aria-label]="'Quitar de la cola: ' + creation.title"
+											(click)="unqueue(creation.id)"
+										>Quitar</button>
+									}
+									@default {
+										@if ('done' === statuses()[creation.id]) {
+											<span class="text-xs font-bold text-green-300">Listo</span>
+										} @else if ('failed' === statuses()[creation.id]) {
+											<span class="text-xs font-bold text-red-300">Falló</span>
+										}
+										<button
+											type="button"
+											class="inline-flex min-h-10 cursor-pointer items-center rounded-xl px-4 text-xs font-bold transition active:scale-95"
+											[class]="creation.hasVideo ? 'border border-slate-400/30 text-slate-200 hover:bg-slate-400/15' : 'bg-accent-pink text-on-accent-pink hover:opacity-90'"
+											[attr.aria-label]="(creation.hasVideo ? 'Regenerar el video de ' : 'Generar el video de ') + creation.title"
+											(click)="generate(creation)"
+										>
+											{{ creation.hasVideo ? 'Regenerar' : 'Generar' }}
+										</button>
+									}
+								}
+							</div>
+						</li>
+					}
+				</ul>
+			}
+		</section>
+	}
+</main>

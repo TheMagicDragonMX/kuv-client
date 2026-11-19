@@ -7,12 +7,13 @@ import { environment } from '@environment';
 import { CubeLinkService, LinkState } from '../../cube';
 import { Profile } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
+import { CurrentUser } from '../../services/current-user.service';
 import { SiteHeaderComponent } from './site-header.component';
 
 /**
  * The signed-in user.
  */
-const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: '/users/1/photo?v=3', followers: 0, following: 0, followsYou: false, youFollow: false, isYou: true };
+const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: '/users/1/photo?v=3', followers: 0, following: 0, followsYou: false, youFollow: false, isYou: true, isSuperAdmin: false };
 
 /**
  * Creates the header while the link to the cube is in a state, with someone signed in or not.
@@ -67,6 +68,18 @@ describe('SiteHeaderComponent', () => {
 
 		expect(element.querySelector('a[aria-label="Iniciar sesión o crear cuenta"]')?.getAttribute('href')).toBe('/perfil');
 		expect(element.querySelector('a[aria-label="Kü-V, inicio"]')?.getAttribute('href')).toBe('/inicio');
+	});
+
+	it('leads super admins to their panel, next to the logo, and hides it from everyone else', () => {
+		const { fixture, server, element } = createHeader('closed', true);
+
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(ME);
+		fixture.detectChanges();
+		expect(element.querySelector('a[href="/admin"]')).toBeNull();
+
+		TestBed.inject(CurrentUser).set({ ...ME, isSuperAdmin: true });
+		fixture.detectChanges();
+		expect(element.querySelector('a[aria-label="Kü-V, inicio"] + a')?.getAttribute('href')).toBe('/admin');
 	});
 
 	it('shows the photo of the signed-in user in the account button, asking for it once', () => {

@@ -4,9 +4,11 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { Observable, firstValueFrom, isObservable } from 'rxjs';
 import { environment } from '@environment';
-import { returnPath, signedInGuard, signedOutGuard, signupGuard } from './auth.guard';
+import { Profile } from '../models';
+import { returnPath, signedInGuard, signedOutGuard, signupGuard, superAdminGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthSession } from './auth-session.service';
+import { CurrentUser } from './current-user.service';
 import { SignupService } from './signup.service';
 
 /**
@@ -194,6 +196,63 @@ describe('signupGuard', () => {
 		const { router } = setup();
 
 		expect(router.serializeUrl(guard() as UrlTree)).toBe('/login');
+	});
+});
+
+describe('superAdminGuard', () => {
+	/**
+	 * The signed-in user's profile, a super admin or not.
+	 */
+	function me (isSuperAdmin: boolean): Profile {
+		return { id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: null, followers: 0, following: 0, followsYou: false, youFollow: false, isYou: true, isSuperAdmin };
+	}
+
+	/**
+	 * Runs the guard for the admin panel and waits for its answer.
+	 */
+	function guard (): Promise<boolean | UrlTree> {
+		const answer = TestBed.runInInjectionContext(() => superAdminGuard({} as ActivatedRouteSnapshot, { url: '/admin' } as RouterStateSnapshot));
+
+		return firstValueFrom(answer as Observable<boolean | UrlTree>);
+	}
+
+	it('opens the panel to a super admin whose profile is already known, without asking for it', async () => {
+		const { session, server } = setup();
+		session.save(TOKENS);
+		TestBed.inject(CurrentUser).set(me(true));
+
+		expect(await guard()).toBe(true);
+		server.expectNone(`${environment.apiUrl}/users/me`);
+	});
+
+	it('asks for the profile when it is not known yet', async () => {
+		const { session, server } = setup();
+		session.save(TOKENS);
+
+		const answer = guard();
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(me(true));
+
+		expect(await answer).toBe(true);
+	});
+
+	it('sends everyone else home', async () => {
+		const { session, server, router } = setup();
+		session.save(TOKENS);
+
+		const answer = guard();
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(me(false));
+
+		expect(router.serializeUrl(await answer as UrlTree)).toBe('/inicio');
+	});
+
+	it('sends home when the profile cannot be read', async () => {
+		const { session, server, router } = setup();
+		session.save(TOKENS);
+
+		const answer = guard();
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(null, { status: 500, statusText: 'Server Error' });
+
+		expect(router.serializeUrl(await answer as UrlTree)).toBe('/inicio');
 	});
 });
 

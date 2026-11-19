@@ -33,10 +33,14 @@ function captureScripts (): HTMLScriptElement[] {
  */
 const OPTIONS = { theme: 'outline', width: 320 } as const;
 
-beforeEach(() => environment.googleClientId = 'client-1.apps.googleusercontent.com');
+beforeEach(() => {
+	environment.googleClientId = 'client-1.apps.googleusercontent.com';
+	environment.googleLoginShown = true;
+});
 
 afterEach(() => {
 	environment.googleClientId = '';
+	environment.googleLoginShown = false;
 	delete window.google;
 	vi.restoreAllMocks();
 });
@@ -44,6 +48,12 @@ afterEach(() => {
 describe('GoogleIdentityService', () => {
 	it('is off while the project has no Google client ID', () => {
 		environment.googleClientId = '';
+
+		expect(TestBed.inject(GoogleIdentityService).enabled).toBe(false);
+	});
+
+	it('is off while the login with Google is hidden, even with a client ID', () => {
+		environment.googleLoginShown = false;
 
 		expect(TestBed.inject(GoogleIdentityService).enabled).toBe(false);
 	});

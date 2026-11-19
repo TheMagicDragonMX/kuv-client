@@ -8,7 +8,7 @@ import { UsersService } from './users.service';
 /**
  * A profile as the API gives it, with the picture as a path on the API.
  */
-const PROFILE: Profile = { id: 7, username: 'ana', email: null, bio: null, photo: '/users/7/photo?v=5', followers: 0, following: 0, followsYou: false, youFollow: false, isYou: false };
+const PROFILE: Profile = { id: 7, username: 'ana', email: null, bio: null, photo: '/users/7/photo?v=5', followers: 0, following: 0, followsYou: false, youFollow: false, isYou: false, isSuperAdmin: false };
 
 /**
  * A user in a list as the API gives it.

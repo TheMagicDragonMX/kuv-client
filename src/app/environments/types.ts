@@ -12,4 +12,10 @@ export type AppEnvironment = {
 	 * a secret. While it is empty, the buttons to sign in with Google do not show.
 	 */
 	googleClientId: string;
+
+	/**
+	 * Whether the buttons to sign in with Google show. Turned off while the login with Google is set
+	 * aside: hidden, the button never loads Google's script, so it prints nothing on the console.
+	 */
+	googleLoginShown: boolean;
 };

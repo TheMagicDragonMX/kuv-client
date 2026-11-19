@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '@environment';
-import { createProgramFile, readProgramFile } from '../../cube';
+import { PreviewVideos, createProgramFile, readProgramFile } from '../../cube';
 import {
 	CreationFormPayload,
 	CreationParams,
@@ -132,16 +132,21 @@ export class CreationsService {
 		if (updating ? undefined !== payload.isPublic : true)
 			formData.append('isPublic', (payload.isPublic ?? false).toString());
 
-		/**
-		 * The name says what kind of video it is: the API keeps the extension, and Safari records mp4.
-		 */
-		if (payload.videos) {
-			for (const [ field, video ] of [ [ 'videoDark', payload.videos.dark ], [ 'videoLight', payload.videos.light ] ] as const)
-				formData.append(field, video.blob, video.mimeType.startsWith('video/mp4') ? 'preview.mp4' : 'preview.webm');
-
-			formData.append('thumbnail', payload.videos.thumbnail, 'thumbnail.png');
-		}
+		if (payload.videos)
+			appendPreview(formData, payload.videos);
 
 		return formData;
 	}
+}
+
+/**
+ * Adds the preview of a creation to the form data that saves it: `videoDark`, `videoLight` and
+ * `thumbnail`. The name of each video says what kind it is: the API keeps the extension, and
+ * Safari records mp4.
+ */
+export function appendPreview (formData: FormData, videos: PreviewVideos): void {
+	for (const [ field, video ] of [ [ 'videoDark', videos.dark ], [ 'videoLight', videos.light ] ] as const)
+		formData.append(field, video.blob, video.mimeType.startsWith('video/mp4') ? 'preview.mp4' : 'preview.webm');
+
+	formData.append('thumbnail', videos.thumbnail, 'thumbnail.png');
 }

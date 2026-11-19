@@ -5,7 +5,7 @@ import { TestCubePage } from './pages/test-cube/test-cube.component';
 import { EditorPage } from './pages/editor/editor.component';
 import { VIRTUAL_CUBE } from './components/pixel-glow/pixel-glow.component';
 import { MainLayoutComponent } from './components/main-layout/main-layout.component';
-import { signedInGuard, signedOutGuard, signupGuard } from './services/auth.guard';
+import { signedInGuard, signedOutGuard, signupGuard, superAdminGuard } from './services/auth.guard';
 
 /**
  * The pages of the app and the path of each one. Only the login, register and signup pages open without a
@@ -46,6 +46,11 @@ export const routes: Routes = [
 			 * Lazy: it is only needed next to a cube, and keeps the initial bundle under budget.
 			 */
 			{ path: 'setup', loadComponent: () => import('./pages/setup/setup.component').then((page) => page.SetupPage) },
+
+			/**
+			 * Only for super admins, who are few: lazy, so nobody else downloads it.
+			 */
+			{ path: 'admin', canActivate: [ superAdminGuard ], loadComponent: () => import('./pages/admin/admin.component').then((page) => page.AdminPage) },
 			{ path: 'cube-chat', loadComponent: () => import('./pages/cube-chat/cube-chat.component').then((page) => page.CubeChatPage) },
 			{ path: '', pathMatch: 'full', redirectTo: 'inicio' },
 		],
