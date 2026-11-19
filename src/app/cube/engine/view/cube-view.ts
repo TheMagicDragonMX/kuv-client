@@ -25,6 +25,11 @@ import { Stage } from './stage';
 import { BACKGROUND } from './view-settings';
 
 /**
+ * Milliseconds between two frames while the camera only turns by itself.
+ */
+const SPIN_FRAME_MS = 1000 / 30;
+
+/**
  * Draws the cube in a host element with three.js and lets the user orbit around it.
  */
 export class CubeView {
@@ -178,6 +183,13 @@ export class CubeView {
 		this.model.dispose();
 		this.stage.dispose();
 		this.renderer.dispose();
+
+		/**
+		 * `dispose` frees the buffers but leaves the WebGL context alive until the garbage collector
+		 * takes it, and browsers only keep about 16: opening the editor again and again would make
+		 * the browser drop the oldest one, maybe one still on screen. This frees it now.
+		 */
+		this.renderer.forceContextLoss();
 		this.renderer.domElement.remove();
 	}
 
@@ -201,17 +213,27 @@ export class CubeView {
 	 * draw if either of them (or the size) changed.
 	 */
 	private startRenderLoop (): void {
-		const render = () => {
+		let lastDraw = 0;
+
+		const render = (now: number) => {
 			/**
 			 * Both run every frame, so neither is skipped by the other short-circuiting.
 			 */
 			const ledsChanged = this.model.syncIfChanged();
 			const cameraMoved = this.rig.update();
 
-			if (ledsChanged || cameraMoved || this.needsDraw) {
+			/**
+			 * While the camera only turns by itself it moves so little per frame that 30 frames a
+			 * second look the same as the 60 to 144 of the screen. A frame skipped here is not lost:
+			 * the camera keeps its place and the next frame drawn shows it.
+			 */
+			const cameraDue = cameraMoved && (!this.rig.spinningAlone() || now - lastDraw >= SPIN_FRAME_MS - 1);
+
+			if (ledsChanged || cameraDue || this.needsDraw) {
 				this.model.hideFacesAway(this.rig.camera);
 				this.renderer.render(this.stage.scene, this.rig.camera);
 				this.needsDraw = false;
+				lastDraw = now;
 			}
 
 			this.animationFrameId = requestAnimationFrame(render);

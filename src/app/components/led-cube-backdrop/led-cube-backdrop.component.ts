@@ -312,6 +312,12 @@ export class LedCubeBackdropComponent {
 			ring.geometry.dispose();
 			ringMaterial.dispose();
 			renderer.dispose();
+
+			/**
+			 * Frees the WebGL context now instead of when the garbage collector takes it: browsers
+			 * only keep a few.
+			 */
+			renderer.forceContextLoss();
 		};
 	}
 

@@ -59,6 +59,17 @@ const FACE_NORMALS: readonly THREE.Vector3[] = [
 ];
 
 /**
+ * Milliseconds the camera may keep gliding after the user lets it go.
+ */
+const GLIDE_MS = 1000;
+
+/**
+ * Longest time, in seconds, one update of the controls may account for, so the camera does not
+ * jump after the tab was in the background.
+ */
+const MAX_STEP_S = 0.1;
+
+/**
  * The camera and its controls, which can also be sent to look at a face.
  */
 export class CameraRig {
@@ -78,12 +89,35 @@ export class CameraRig {
 	private transition?: ViewTransition;
 
 	/**
+	 * When the controls were last updated, from `performance.now()`, to turn by time and not by
+	 * frame.
+	 */
+	private lastUpdate = performance.now();
+
+	/**
+	 * True while the user holds the camera (dragging or zooming).
+	 */
+	private held = false;
+
+	/**
+	 * The document the controls put their keyboard listener on, kept to take it off again.
+	 */
+	private readonly root: Node;
+
+	/**
+	 * Until when, from `performance.now()`, the camera may still be gliding after the user let it
+	 * go (the damping of the controls).
+	 */
+	private glidingUntil = 0;
+
+	/**
 	 * @param domElement Element that receives the mouse and touch input (the canvas).
 	 */
 	constructor (domElement: HTMLElement) {
 		this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 100);
 		this.camera.position.set(0, 2.2, 7.5);
 
+		this.root = domElement.getRootNode();
 		this.controls = new OrbitControls(this.camera, domElement);
 		this.controls.enableDamping = true;
 		this.controls.enablePan = false;
@@ -101,7 +135,22 @@ export class CameraRig {
 		 */
 		this.controls.addEventListener('start', () => {
 			this.transition = undefined;
+			this.held = true;
 		});
+
+		this.controls.addEventListener('end', () => {
+			this.held = false;
+			this.glidingUntil = performance.now() + GLIDE_MS;
+		});
+	}
+
+	/**
+	 * True while the only thing moving the camera is the slow automatic rotation: nobody holds it,
+	 * it is not gliding after being let go and it is not turning to a face. The view can then draw
+	 * fewer frames, because the camera moves so little from one to the next.
+	 */
+	spinningAlone (): boolean {
+		return this.controls.autoRotate && !this.transition && !this.held && performance.now() > this.glidingUntil;
 	}
 
 	/**
@@ -185,19 +234,34 @@ export class CameraRig {
 	 * camera (looking at a face, nothing being dragged) returns false.
 	 */
 	update (): boolean {
+		const now = performance.now();
+		const passed = Math.min(MAX_STEP_S, (now - this.lastUpdate) / 1000);
+		this.lastUpdate = now;
 		this.advanceTransition();
 
 		/**
 		 * The controls compare the camera with where it was last time they reported a move, so this
-		 * also catches the moves `advanceTransition` just made.
+		 * also catches the moves `advanceTransition` just made. They get the time that passed, so
+		 * the automatic rotation turns as fast on a 144 Hz screen as on a 60 Hz one.
 		 */
-		return this.controls.update();
+		return this.controls.update(passed);
 	}
 
 	/**
 	 * Removes the input listeners.
+	 *
+	 * The controls find the document for their keyboard listener through the canvas
+	 * (`getRootNode`). Angular takes the canvas off the page before the view is destroyed, so by
+	 * then the canvas leads to itself instead of the document, the listener stays on the document
+	 * and keeps the controls, the camera and the canvas alive after each visit. The canvas is
+	 * pointed back to the document it was on, so the listener comes off.
 	 */
 	dispose (): void {
+		const element = this.controls.domElement;
+
+		if (element && !element.isConnected)
+			element.getRootNode = () => this.root;
+
 		this.controls.dispose();
 	}
 

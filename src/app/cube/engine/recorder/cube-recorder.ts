@@ -101,15 +101,18 @@ export type PreviewVideos = Record<PreviewTheme, RecordResult> & {
 
 /**
  * How the preview video of a creation is recorded, wherever it is made (the editor, the profile):
- * 15 seconds at 60 frames per second, one turn of the camera around the cube. The bitrate is
- * higher than the default because twice the frames share it.
+ * 15 seconds at 30 frames per second, one turn of the camera around the cube. 30 frames are
+ * enough: the LEDs change at most 30 times a second (the tick rate of the engine), and the camera
+ * turns so slowly that the edges of the cube move about 2 pixels from one frame to the next. At
+ * 60, every state of the LEDs was in two frames, and a video cost about 40% more to play and
+ * weighed several times more. The bitrate keeps the data per frame it had at 60 frames and 5 Mbps.
  */
 export const PREVIEW_VIDEO_OPTIONS = {
 	durationSeconds: 15,
-	fps: 60,
+	fps: 30,
 	width: 480,
 	height: 480,
-	bitrate: 5_000_000,
+	bitrate: 2_500_000,
 	rotations: 1,
 } satisfies RecordCubeOptions;
 
@@ -457,6 +460,12 @@ async function recordOverBackgrounds (
 
 		for (const take of takes) {
 			take.renderer.dispose();
+
+			/**
+			 * Frees the WebGL context now: a recording opens one per background, and browsers only
+			 * keep a few.
+			 */
+			take.renderer.forceContextLoss();
 
 			if (!options.previewHost)
 				take.canvas.remove();
