@@ -1,4 +1,4 @@
-import { Environment, Program } from '../cube';
+import { Environment, PreviewTheme, PreviewVideos, Program } from '../cube';
 
 /**
  * What the editor sends to save a creation, in the body.
@@ -25,19 +25,14 @@ export type CreationPayload = {
 	environment?: Environment;
 
 	/**
-	 * How long the video lasts, in seconds.
-	 */
-	durationSeconds: number;
-
-	/**
 	 * Whether other users can see it.
 	 */
 	isPublic?: boolean;
 
 	/**
-	 * The recorded video.
+	 * The recorded preview videos, one per theme. Left as they were when missing.
 	 */
-	videoBlob?: Blob;
+	videos?: PreviewVideos;
 };
 
 /**
@@ -68,6 +63,11 @@ export type VideoUrlParams = {
 	 * Access token to put in the address so a `<video>` element can load it.
 	 */
 	token?: string | null;
+
+	/**
+	 * The theme whose recording is wanted. Dark when left out.
+	 */
+	theme?: PreviewTheme;
 };
 
 

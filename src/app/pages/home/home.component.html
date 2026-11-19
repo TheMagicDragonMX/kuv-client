@@ -12,8 +12,8 @@
 			</a>
 		</div>
 
-		@for (section of sections; track section.id) {
-			<app-animation-row [id]="section.id" [title]="section.title" [animations]="section.animations" [liked]="liked()"
+		@for (section of sections(); track section.id) {
+			<app-animation-row [id]="section.id" [title]="section.title" [animations]="section.animations" [loading]="section.loading ?? false" [liked]="liked()"
 				[saved]="saved()"
 				[favorites]="favorites()"
 				(toggled)="toggle(liked, $event)"

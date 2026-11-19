@@ -173,7 +173,7 @@ export class UserSearchModalComponent {
 
 	protected goToProfile (userId: number): void {
 		this.close.emit();
-		void this.router.navigate([ '/perfil', userId ]);
+		void this.router.navigate([ '/profile', userId ]);
 	}
 
 	protected closeOnBackdrop (event: MouseEvent): void {

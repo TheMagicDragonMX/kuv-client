@@ -4,9 +4,11 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRouteSnapshot, Router, RouterStateSnapshot, UrlTree, provideRouter } from '@angular/router';
 import { Observable, firstValueFrom, isObservable } from 'rxjs';
 import { environment } from '@environment';
-import { returnPath, signedInGuard, signedOutGuard, signupGuard } from './auth.guard';
+import { Profile } from '../models';
+import { returnPath, signedInGuard, signedOutGuard, signupGuard, superAdminGuard } from './auth.guard';
 import { authInterceptor } from './auth.interceptor';
 import { AuthSession } from './auth-session.service';
+import { CurrentUser } from './current-user.service';
 import { SignupService } from './signup.service';
 
 /**
@@ -94,14 +96,14 @@ describe('signedInGuard', () => {
 	it('sends to the login page, with the page to come back to, when nobody is signed in', async () => {
 		const { router } = setup();
 
-		expect(router.serializeUrl(await guard('/perfil') as UrlTree)).toBe('/login?returnUrl=%2Fperfil');
+		expect(router.serializeUrl(await guard('/profile') as UrlTree)).toBe('/login?returnUrl=%2Fprofile');
 	});
 
 	it('lets the page open when the access token is still valid', async () => {
 		const { session, server } = setup();
 		session.save({ ...TOKENS, accessToken: jwt(600) });
 
-		expect(await guard('/perfil')).toBe(true);
+		expect(await guard('/profile')).toBe(true);
 		server.expectNone(`${environment.apiUrl}/session/refresh`);
 	});
 
@@ -109,7 +111,7 @@ describe('signedInGuard', () => {
 		const { session, server } = setup();
 		session.save({ ...TOKENS, accessToken: jwt(-60) });
 
-		const answer = guard('/perfil');
+		const answer = guard('/profile');
 		const refresh = server.expectOne(`${environment.apiUrl}/session/refresh`);
 		expect(refresh.request.body).toEqual({ refreshToken: 'refresh-1' });
 		refresh.flush({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
@@ -122,7 +124,7 @@ describe('signedInGuard', () => {
 		const { session, server } = setup();
 		localStorage.setItem('refreshToken', 'refresh-1');
 
-		const answer = guard('/inicio');
+		const answer = guard('/home');
 		server.expectOne(`${environment.apiUrl}/session/refresh`).flush({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
 
 		expect(await answer).toBe(true);
@@ -142,10 +144,10 @@ describe('signedInGuard', () => {
 	});
 
 	it('only comes back to pages of this app, and goes home otherwise', () => {
-		expect(returnPath('/perfil')).toBe('/perfil');
-		expect(returnPath(null)).toBe('/inicio');
-		expect(returnPath('https://elsewhere.example')).toBe('/inicio');
-		expect(returnPath('//elsewhere.example')).toBe('/inicio');
+		expect(returnPath('/profile')).toBe('/profile');
+		expect(returnPath(null)).toBe('/home');
+		expect(returnPath('https://elsewhere.example')).toBe('/home');
+		expect(returnPath('//elsewhere.example')).toBe('/home');
 	});
 });
 
@@ -167,7 +169,7 @@ describe('signedOutGuard', () => {
 		const { session, router } = setup();
 		session.save(TOKENS);
 
-		expect(router.serializeUrl(guard() as UrlTree)).toBe('/inicio');
+		expect(router.serializeUrl(guard() as UrlTree)).toBe('/home');
 	});
 });
 
@@ -194,6 +196,63 @@ describe('signupGuard', () => {
 		const { router } = setup();
 
 		expect(router.serializeUrl(guard() as UrlTree)).toBe('/login');
+	});
+});
+
+describe('superAdminGuard', () => {
+	/**
+	 * The signed-in user's profile, a super admin or not.
+	 */
+	function me (isSuperAdmin: boolean): Profile {
+		return { id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: null, followers: 0, following: 0, followsYou: false, youFollow: false, isYou: true, isSuperAdmin };
+	}
+
+	/**
+	 * Runs the guard for the admin panel and waits for its answer.
+	 */
+	function guard (): Promise<boolean | UrlTree> {
+		const answer = TestBed.runInInjectionContext(() => superAdminGuard({} as ActivatedRouteSnapshot, { url: '/admin' } as RouterStateSnapshot));
+
+		return firstValueFrom(answer as Observable<boolean | UrlTree>);
+	}
+
+	it('opens the panel to a super admin whose profile is already known, without asking for it', async () => {
+		const { session, server } = setup();
+		session.save(TOKENS);
+		TestBed.inject(CurrentUser).set(me(true));
+
+		expect(await guard()).toBe(true);
+		server.expectNone(`${environment.apiUrl}/users/me`);
+	});
+
+	it('asks for the profile when it is not known yet', async () => {
+		const { session, server } = setup();
+		session.save(TOKENS);
+
+		const answer = guard();
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(me(true));
+
+		expect(await answer).toBe(true);
+	});
+
+	it('sends everyone else home', async () => {
+		const { session, server, router } = setup();
+		session.save(TOKENS);
+
+		const answer = guard();
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(me(false));
+
+		expect(router.serializeUrl(await answer as UrlTree)).toBe('/home');
+	});
+
+	it('sends home when the profile cannot be read', async () => {
+		const { session, server, router } = setup();
+		session.save(TOKENS);
+
+		const answer = guard();
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(null, { status: 500, statusText: 'Server Error' });
+
+		expect(router.serializeUrl(await answer as UrlTree)).toBe('/home');
 	});
 });
 

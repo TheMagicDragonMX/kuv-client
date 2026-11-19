@@ -2,6 +2,8 @@ import { inject } from '@angular/core';
 import { CanActivateChildFn, CanActivateFn, Router } from '@angular/router';
 import { catchError, map, of } from 'rxjs';
 import { AuthSession } from './auth-session.service';
+import { CurrentUser } from './current-user.service';
+import { UsersService } from './middle/users.service';
 import { SignupService } from './signup.service';
 import { SessionRenewal } from './session-renewal.service';
 
@@ -9,7 +11,7 @@ import { SessionRenewal } from './session-renewal.service';
  * Where the app goes after signing in when no page asked for it, and where the login pages send
  * someone who is already signed in.
  */
-const HOME_PATH = '/inicio';
+const HOME_PATH = '/home';
 
 /**
  * Lets a page open only with a valid session. When the access token is missing or expired it
@@ -27,6 +29,22 @@ export const signedInGuard: CanActivateChildFn = (_route, state) => {
 	return renewal.renew().pipe(
 		map(() => true),
 		catchError(() => of(router.createUrlTree([ '/login' ], { queryParams: { returnUrl: state.url } }))),
+	);
+};
+
+/**
+ * Lets the admin panel open only for super admins. It asks for the profile when nobody has yet;
+ * anyone else (or a profile that cannot be read) goes home.
+ */
+export const superAdminGuard: CanActivateFn = () => {
+	const router = inject(Router);
+	const known = inject(CurrentUser).profile();
+	const home = router.createUrlTree([ HOME_PATH ]);
+	const profile = known ? of(known) : inject(UsersService).me();
+
+	return profile.pipe(
+		map((user) => user.isSuperAdmin ? true : home),
+		catchError(() => of(home)),
 	);
 };
 

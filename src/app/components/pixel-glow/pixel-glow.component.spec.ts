@@ -42,7 +42,7 @@ describe('PixelGlowComponent', () => {
 	async function allowedOn (path: string): Promise<boolean> {
 		TestBed.configureTestingModule({
 			providers: [ provideRouter([
-				{ path: 'inicio', component: BlankPage },
+				{ path: 'home', component: BlankPage },
 				{ path: 'editor', component: BlankPage, data: { [VIRTUAL_CUBE]: true } },
 			]) ],
 		});
@@ -55,7 +55,7 @@ describe('PixelGlowComponent', () => {
 	}
 
 	it('glows on pages without the virtual cube', async () => {
-		expect(await allowedOn('/inicio')).toBe(true);
+		expect(await allowedOn('/home')).toBe(true);
 	});
 
 	it('stays out of pages that show the virtual cube', async () => {

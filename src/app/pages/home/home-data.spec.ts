@@ -1,9 +1,9 @@
-import { ART_SIDE, ArtName, COMMUNITY, SECTIONS, artOf, formatDate, formatLikes } from './home-data';
+import { ART_NAMES, ART_SIDE, EMPTY_SECTIONS, artFor, artOf, formatDate, formatLikes } from './home-data';
 
 /**
  * Every picture there is.
  */
-const ARTS = [ ...new Set(COMMUNITY.map((animation) => animation.art)) ] as ArtName[];
+const ARTS = ART_NAMES;
 
 describe('artOf', () => {
 	it('makes a picture of ART_SIDE by ART_SIDE LEDs for every animation', () => {
@@ -49,24 +49,23 @@ describe('formatDate', () => {
 	});
 });
 
-describe('COMMUNITY', () => {
-	it('gives every animation a day it was shared and a category', () => {
-		for (const animation of COMMUNITY) {
-			expect(animation.createdAt, animation.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-			expect(animation.category, animation.id).not.toBe('');
-		}
+describe('artFor', () => {
+	it('gives the same picture to the same id, and a picture that exists to any id', () => {
+		expect(artFor(7)).toBe(artFor(7));
+
+		for (const id of [ 1, 12, 13, 1000 ])
+			expect(ART_NAMES).toContain(artFor(id));
 	});
 });
 
-describe('SECTIONS', () => {
-	it('has sections with their animations, each in its section once', () => {
-		expect(SECTIONS.length).toBeGreaterThan(0);
+describe('EMPTY_SECTIONS', () => {
+	it('has sections with no animations, each with its own id', () => {
+		const ids = EMPTY_SECTIONS.map((section) => section.id);
 
-		for (const section of SECTIONS) {
-			const ids = section.animations.map((animation) => animation.id);
+		expect(ids.length).toBeGreaterThan(0);
+		expect(new Set(ids).size).toBe(ids.length);
 
-			expect(section.animations.length, section.id).toBeGreaterThan(0);
-			expect(new Set(ids).size, section.id).toBe(ids.length);
-		}
+		for (const section of EMPTY_SECTIONS)
+			expect(section.animations, section.id).toEqual([]);
 	});
 });

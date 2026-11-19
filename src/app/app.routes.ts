@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 import { RegisterComponent } from './pages/register/register.component';
 import { VIRTUAL_CUBE } from './components/pixel-glow/pixel-glow.component';
 import { MainLayoutComponent } from './components/main-layout/main-layout.component';
-import { signedInGuard, signedOutGuard, signupGuard } from './services/auth.guard';
+import { signedInGuard, signedOutGuard, signupGuard, superAdminGuard } from './services/auth.guard';
 
 /**
  * The pages of the app and the path of each one. Only the login, register and signup pages open without a
@@ -22,24 +22,50 @@ export const routes: Routes = [
 		loadComponent: () => import('./pages/signup/signup.component').then((page) => page.SignupPage),
 	},
 	{
+		path: 'animation-demo',
+		component: MainLayoutComponent,
+		children: [
+			{ path: '', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+			{ path: ':id', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+		],
+	},
+	{
 		path: '',
 		canActivateChild: [ signedInGuard ],
 		component: MainLayoutComponent,
 		children: [
 			{ path: 'test-cube', loadComponent: () => import('./pages/test-cube/test-cube.component').then((page) => page.TestCubePage), data: { [VIRTUAL_CUBE]: true } },
 			{ path: 'editor', loadComponent: () => import('./pages/editor/editor.component').then((page) => page.EditorPage), data: { [VIRTUAL_CUBE]: true } },
-			{ path: 'inicio', loadComponent: () => import('./pages/home/home.component').then((page) => page.HomePage) },
-			{ path: 'perfil', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
-			{ path: 'perfil/:id', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
+			{ path: 'animation/:id', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+			{ path: 'animation', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+			{ path: 'home', loadComponent: () => import('./pages/home/home.component').then((page) => page.HomePage) },
+			{ path: 'profile', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
+			{ path: 'profile/:id', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
 			{ path: 'gallery', loadComponent: () => import('./pages/gallery/gallery.component').then((page) => page.GalleryPage) },
 
 			/**
 			 * Lazy: it is only needed next to a cube, and keeps the initial bundle under budget.
 			 */
 			{ path: 'setup', loadComponent: () => import('./pages/setup/setup.component').then((page) => page.SetupPage) },
+
+			/**
+			 * Only for super admins, who are few: lazy, so nobody else downloads it.
+			 */
+			{ path: 'admin', canActivate: [ superAdminGuard ], loadComponent: () => import('./pages/admin/admin.component').then((page) => page.AdminPage) },
 			{ path: 'cube-chat', loadComponent: () => import('./pages/cube-chat/cube-chat.component').then((page) => page.CubeChatPage) },
-			{ path: '', pathMatch: 'full', redirectTo: 'inicio' },
+			{ path: '', pathMatch: 'full', redirectTo: 'home' },
 		],
 	},
-	{ path: '**', redirectTo: 'inicio' },
+
+	/**
+	 * The paths the pages had when they were in Spanish, so links shared before still open.
+	 */
+	{ path: 'inicio', redirectTo: 'home' },
+	{ path: 'perfil', redirectTo: 'profile' },
+	{ path: 'perfil/:id', redirectTo: 'profile/:id' },
+	{ path: 'animacion', redirectTo: 'animation' },
+	{ path: 'animacion/:id', redirectTo: 'animation/:id' },
+	{ path: 'demo-animacion', redirectTo: 'animation-demo' },
+	{ path: 'demo-animacion/:id', redirectTo: 'animation-demo/:id' },
+	{ path: '**', redirectTo: 'home' },
 ];

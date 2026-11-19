@@ -1,4 +1,4 @@
-<div class="min-h-[calc(100dvh-var(--header-height))] w-full bg-(image:--cube-gradient) font-[Inter,'Segoe_UI',sans-serif] text-slate-100 pb-20">
+<div class="min-h-[calc(100dvh-var(--header-height))] w-full font-[Inter,'Segoe_UI',sans-serif] text-slate-100 pb-20">
 	<main class="mx-auto max-w-7xl px-6 pt-8 pb-28 space-y-14 md:pb-16">
 		<!-- Título & Call to action -->
 		<section class="text-center pt-2">
@@ -70,7 +70,7 @@
 										class="h-full w-full object-contain"
 									></video>
 
-									<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/85 px-2 py-1 text-[0.68rem] font-mono text-emerald-400 backdrop-blur-sm border border-emerald-500/20">
+									<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/85 px-2 py-1 text-[0.68rem] font-mono text-emerald-300 backdrop-blur-sm border border-emerald-500/20">
 										<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 										{{ project.durationSeconds }}s • {{ formatBytes(project.videoBlob?.size) }}
 									</div>
@@ -156,7 +156,7 @@
 						<button
 							type="button"
 							class="cursor-pointer rounded-lg px-2.5 py-1 text-xs font-bold transition duration-150"
-							[class]="duration() === sec ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-white'"
+							[class]="duration() === sec ? 'bg-blue-600 text-white shadow' : 'text-slate-400 hover:text-slate-50'"
 							(click)="duration.set(sec)"
 							[disabled]="recordingId() !== null"
 						>
@@ -191,7 +191,7 @@
 									class="h-full w-full object-contain"
 								></video>
 
-								<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/80 px-2 py-1 text-[0.68rem] font-mono text-emerald-400 backdrop-blur-sm border border-emerald-500/20">
+								<div class="absolute bottom-2 left-2 flex items-center gap-1.5 rounded-md bg-slate-950/80 px-2 py-1 text-[0.68rem] font-mono text-emerald-300 backdrop-blur-sm border border-emerald-500/20">
 									<span class="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
 									Miniatura activa ({{ formatBytes(thumb.sizeBytes) }})
 								</div>
@@ -297,7 +297,7 @@
 						</div>
 						<button
 							type="button"
-							class="cursor-pointer rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+							class="cursor-pointer rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-50"
 							(click)="showLiveDrawer.set(false)"
 						>
 							✕

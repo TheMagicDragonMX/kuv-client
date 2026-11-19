@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, input, linkedSignal, output, signal, viewChild } from '@angular/core';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
 import { ART_SIDE, CommunityAnimation, Dot, LedColor, artOf, formatDate, formatLikes } from './home-data';
 
@@ -68,7 +68,8 @@ const PANEL_REM = 30;
 const ARROW_ROOM = 48;
 
 /**
- * A card of the home page: the picture of an animation made of LEDs, its name, its author (with
+ * A card of the home page: the picture of an animation (its thumbnail, a face of the cube, or
+ * without one a drawing made of LEDs), its name, its author (with
  * their small picture) and a button to like it. The picture of the LEDs and the one of the author
  * are decoration; the card is described by its text.
  *
@@ -99,11 +100,16 @@ const ARROW_ROOM = 48;
 	template: `
 		<article class="pixel-frame flex h-full flex-col gap-3 bg-slate-900/80 p-3 transition-transform duration-150 ease-[steps(2)] [--frame-color:var(--login-card-line)] [--frame-size:3px] motion-reduce:transition-none hover:-translate-y-1 hover:[--frame-color:var(--accent)] hover:[--frame-extra:0_10px_20px_-6px_var(--login-drop)] focus-within:[--frame-color:var(--accent)]">
 			<div class="pixel-frame bg-led-panel p-4 [--frame-color:rgba(159,176,196,0.16)]" aria-hidden="true">
-				<div class="grid grid-cols-8 gap-1.25">
-					@for (dot of dots(); track $index) {
-						<div class="aspect-square rounded-full" [class]="classOf(dot)"></div>
-					}
-				</div>
+				@if (thumbnail(); as source) {
+					<!-- One pixel per LED, scaled up without blurring them. -->
+					<img class="block aspect-square w-full [image-rendering:pixelated]" [src]="source" alt="" width="64" height="64" loading="lazy" (error)="thumbnailFailed.set(true)" />
+				} @else {
+					<div class="grid grid-cols-8 gap-1.25">
+						@for (dot of dots(); track $index) {
+							<div class="aspect-square rounded-full" [class]="classOf(dot)"></div>
+						}
+					</div>
+				}
 			</div>
 			<div class="flex flex-col gap-1 px-1 pb-1">
 				<h3 class="truncate text-base font-extrabold" [title]="animation().title">{{ animation().title }}</h3>
@@ -291,6 +297,17 @@ export class AnimationCardComponent {
 	 * The pixel heart of the like button.
 	 */
 	protected readonly heart = HEART;
+
+	/**
+	 * True when the thumbnail could not be loaded, so the card shows the drawing instead. It starts
+	 * over when the animation gets another thumbnail.
+	 */
+	protected readonly thumbnailFailed = linkedSignal({ source: () => this.animation().thumbnail, computation: () => false });
+
+	/**
+	 * The address of the thumbnail to show, or null to show the drawing.
+	 */
+	protected readonly thumbnail = computed(() => this.thumbnailFailed() ? null : this.animation().thumbnail ?? null);
 
 	/**
 	 * The LEDs of the picture, row after row.

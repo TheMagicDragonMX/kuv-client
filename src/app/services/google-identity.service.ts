@@ -83,9 +83,10 @@ export class GoogleIdentityService {
 	private ready: Promise<GoogleAccountsId> | null = null;
 
 	/**
-	 * True when the project has a Google client ID. Without it nothing about Google is shown.
+	 * True when the login with Google is turned on and the project has a Google client ID. Otherwise
+	 * nothing about Google is shown.
 	 */
-	readonly enabled = '' !== environment.googleClientId;
+	readonly enabled = environment.googleLoginShown && '' !== environment.googleClientId;
 
 	/**
 	 * The ID tokens of the accounts the user chooses.

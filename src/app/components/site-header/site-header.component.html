@@ -8,10 +8,26 @@
 		class="relative flex items-center justify-between gap-3 bg-(--surface) backdrop-blur-[10px]"
 		[class]="scrolled() ? 'pixel-frame h-15 pr-2 pl-4 [--frame-color:var(--login-card-line)] [--frame-extra:0_12px_32px_var(--shadow)] [--frame-size:3px] sm:pl-6' : 'h-full pr-18 pl-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-[repeating-linear-gradient(90deg,var(--login-card-line)_0_4px,transparent_4px_8px)] sm:pl-10'"
 	>
-		<a appWipeLink="/inicio" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed" aria-label="Kü-V, inicio">
-			<app-cube-logo class="size-8.5" />
-			<span class="pixel-outline font-display text-3xl font-bold tracking-wide [--outline-color:var(--login-outline)] [--outline-extra:3px_3px_0_var(--login-outline)]">Kü-V</span>
-		</a>
+		<div class="flex items-center gap-2 sm:gap-3">
+			<a appWipeLink="/home" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed" aria-label="Kü-V, inicio">
+				<app-cube-logo class="size-8.5" />
+				<span class="pixel-outline font-display text-3xl font-bold tracking-wide [--outline-color:var(--login-outline)] [--outline-extra:3px_3px_0_var(--login-outline)]">Kü-V</span>
+			</a>
+
+			<!-- Only super admins see the way to their panel. -->
+			@if (me()?.isSuperAdmin) {
+				<a
+					appWipeLink="/admin"
+					[attr.aria-current]="isActive('/admin') ? 'page' : null"
+					class="pixel-frame inline-flex min-h-9 items-center gap-1.5 px-3 font-display text-[0.9rem] font-semibold no-underline transition-colors duration-150 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none"
+					[class]="isActive('/admin') ? 'bg-accent-pink text-on-accent-pink [--frame-color:var(--accent-pink)]' : 'text-accent-pink [--frame-color:color-mix(in_srgb,var(--accent-pink)_50%,transparent)] hover:bg-accent-pink/15'"
+					title="Panel de super administrador"
+				>
+					<svg viewBox="0 0 24 24" class="size-4" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.4 8.2-8 9-4.6-.8-8-4.5-8-9V6z" /><path d="M9 12l2 2 4-4" /></svg>
+					Admin
+				</a>
+			}
+		</div>
 
 		<!-- The page that is open has a pixel border and the arrow of the login menu pointing at it. -->
 		<nav class="hidden items-center gap-2 md:flex" aria-label="Navegación principal">
@@ -56,10 +72,10 @@
 				<span class="sr-only sm:not-sr-only">{{ status().label }}</span>
 			</a>
 			<a
-				appWipeLink="/perfil"
-				[attr.aria-current]="isActive('/perfil') ? 'page' : null"
+				appWipeLink="/profile"
+				[attr.aria-current]="isActive('/profile') ? 'page' : null"
 				class="pixel-frame grid size-11 place-items-center overflow-hidden bg-accent-pink text-on-accent-pink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed"
-				[class]="isActive('/perfil') ? '[--frame-color:var(--accent)] [--frame-extra:0_0_12px_var(--accent)]' : '[--frame-color:var(--login-card-line)]'"
+				[class]="isActive('/profile') ? '[--frame-color:var(--accent)] [--frame-extra:0_0_12px_var(--accent)]' : '[--frame-color:var(--login-card-line)]'"
 				[attr.aria-label]="signedIn() ? 'Tu perfil' : 'Iniciar sesión o crear cuenta'"
 				[title]="signedIn() ? 'Tu perfil' : 'Iniciar sesión o crear cuenta'"
 			>

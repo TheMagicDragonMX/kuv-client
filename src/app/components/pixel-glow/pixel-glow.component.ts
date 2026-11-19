@@ -6,11 +6,6 @@ import { ThemeService } from '../../services/theme.service';
 import { CELL, glowCells } from './pixel-glow';
 
 /**
- * How fast the glow catches up with the mouse: the part of the way it moves each frame.
- */
-const FOLLOW = 0.16;
-
-/**
  * How fast the glow fades in and out: the part of the way to its target brightness each frame.
  */
 const FADE = 0.08;
@@ -43,7 +38,7 @@ function showsCube (route: ActivatedRouteSnapshot): boolean {
 
 /**
  * A faint pixelated glow that follows the mouse over the page, a decoration in the colors of the
- * LEDs. It lies over everything without catching the mouse, and stays out of pages that show the
+ * LEDs. It lies behind all the content, as part of the background, without catching the mouse, and stays out of pages that show the
  * virtual cube, of touch screens and of people who ask for less motion. It goes once in the root
  * component.
  */
@@ -51,7 +46,7 @@ function showsCube (route: ActivatedRouteSnapshot): boolean {
 	selector: 'app-pixel-glow',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	host: { class: 'pointer-events-none fixed inset-0 z-40', 'aria-hidden': 'true' },
+	host: { class: 'pointer-events-none fixed inset-0 -z-10', 'aria-hidden': 'true' },
 	templateUrl: './pixel-glow.component.html',
 })
 export class PixelGlowComponent {
@@ -79,12 +74,13 @@ export class PixelGlowComponent {
 	), { initialValue: false });
 
 	/**
-	 * Where the glow is, in CSS pixels, or null before the mouse has moved.
+	 * Where the glow is, in CSS pixels, or null before the mouse has moved. It is always the
+	 * mouse position, except after the mouse leaves, when it stays where it was while it fades.
 	 */
 	private position: { x: number; y: number } | null = null;
 
 	/**
-	 * Where the mouse is, which the glow moves toward.
+	 * Where the mouse is.
 	 */
 	private target = { x: 0, y: 0 };
 
@@ -183,20 +179,13 @@ export class PixelGlowComponent {
 	private step (): void {
 		this.frame = null;
 
-		const position = this.position;
-
-		if (position) {
-			position.x += (this.target.x - position.x) * FOLLOW;
-			position.y += (this.target.y - position.y) * FOLLOW;
-		}
+		// The glow sits exactly on the mouse, without lagging behind it.
+		this.position = this.wanted ? { ...this.target } : this.position;
 
 		this.brightness += (this.wanted - this.brightness) * FADE;
 		this.draw();
 
-		const moving = position && 0.5 < Math.hypot(this.target.x - position.x, this.target.y - position.y);
-		const fading = 0.01 < Math.abs(this.wanted - this.brightness);
-
-		if (moving || fading)
+		if (0.01 < Math.abs(this.wanted - this.brightness))
 			this.wake();
 
 		else
