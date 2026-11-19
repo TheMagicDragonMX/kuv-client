@@ -205,11 +205,11 @@ export class ProfilePage implements OnInit {
 				this.creations.set(items);
 				const token = this.session.accessToken();
 				const urls: Record<number, string> = {};
-				for (const item of items) {
-					if (item.hasVideo) {
+				for (const item of items) 
+					if (item.hasVideo) 
 						urls[item.id] = this.creationsService.videoUrl({ id: item.id, token });
-					}
-				}
+					
+				
 				this.videoUrls.set(urls);
 				this.loadingCreations.set(false);
 			},
@@ -254,7 +254,7 @@ export class ProfilePage implements OnInit {
 	 * Opens a creation in the cube editor.
 	 */
 	protected openInEditor (creation: UserCreation): void {
-		void this.router.navigate(['/editor'], { queryParams: { project: creation.id } });
+		void this.router.navigate([ '/editor' ], { queryParams: { project: creation.id } });
 	}
 
 	/**
@@ -284,9 +284,9 @@ export class ProfilePage implements OnInit {
 	 */
 	protected deleteCreation (creation: UserCreation, event: MouseEvent): void {
 		event.stopPropagation();
-		if (!confirm(`¿Estás seguro de eliminar "${creation.title}"? Esta acción no se puede deshacer.`)) {
+		if (!confirm(`¿Estás seguro de eliminar "${creation.title}"? Esta acción no se puede deshacer.`)) 
 			return;
-		}
+		
 
 		this.deletingId.set(creation.id);
 		this.creationsService.deleteCreation({ id: creation.id }).subscribe({

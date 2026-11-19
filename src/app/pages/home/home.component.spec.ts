@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { CurrentUser } from '../../services/current-user.service';
 import { SnackbarService } from '../../services/snackbar.service';
 import { SECTIONS } from './home-data';
 import { HomePage } from './home.component';
@@ -29,6 +30,18 @@ describe('HomePage', () => {
 		const link = [ ...element.querySelectorAll('main a') ].find((anchor) => anchor.textContent?.includes('Crear animación'));
 
 		expect(link?.getAttribute('href')).toBe('/editor');
+	});
+
+	it('has the mascot greet the user by name once the profile is known', () => {
+		const { fixture, element } = createPage();
+		const bubble = (): string => element.querySelector('app-mascot-says')?.textContent ?? '';
+
+		expect(bubble()).toContain('¡Hola!');
+
+		TestBed.inject(CurrentUser).set({ id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: null, followers: 0, following: 0, followsYou: false, youFollow: false, isYou: true });
+		fixture.detectChanges();
+
+		expect(bubble()).toContain('¡Hola, ana!');
 	});
 
 	it('brings no header of its own: the layout around it has it', () => {

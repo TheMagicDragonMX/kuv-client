@@ -3,35 +3,43 @@
 	class="sticky top-0 z-30 h-(--header-height) transition-[padding] duration-200 motion-reduce:transition-none"
 	[class]="scrolled() ? 'pt-2 pr-18 pl-3 sm:pl-6' : 'p-0'"
 >
+	<!-- At the top it is a bar with a dotted pixel line under it; once the page scrolls it is a box with a pixel border, like the card of the login. -->
 	<header
-		class="flex items-center justify-between gap-3 bg-(--surface) backdrop-blur-[10px] transition-[border-radius,box-shadow,padding,height] duration-200 motion-reduce:transition-none"
-		[class]="scrolled() ? 'h-15 rounded-full border border-slate-400/25 pr-2 pl-4 shadow-[0_12px_32px_var(--shadow)] sm:pl-6' : 'h-full border-b border-slate-400/20 pr-18 pl-4 sm:pl-10'"
+		class="relative flex items-center justify-between gap-3 bg-(--surface) backdrop-blur-[10px]"
+		[class]="scrolled() ? 'pixel-frame h-15 pr-2 pl-4 [--frame-color:var(--login-card-line)] [--frame-extra:0_12px_32px_var(--shadow)] [--frame-size:3px] sm:pl-6' : 'h-full pr-18 pl-4 after:pointer-events-none after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-[repeating-linear-gradient(90deg,var(--login-card-line)_0_4px,transparent_4px_8px)] sm:pl-10'"
 	>
-		<a routerLink="/inicio" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-accent" aria-label="Kü-V, inicio">
+		<a appWipeLink="/inicio" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed" aria-label="Kü-V, inicio">
 			<app-cube-logo class="size-8.5" />
-			<span class="font-display text-3xl font-bold tracking-wide">Kü-V</span>
+			<span class="pixel-outline font-display text-3xl font-bold tracking-wide [--outline-color:var(--login-outline)] [--outline-extra:3px_3px_0_var(--login-outline)]">Kü-V</span>
 		</a>
 
-		<nav class="hidden gap-1.5 md:flex" aria-label="Navegación principal">
+		<!-- The page that is open has a pixel border and the arrow of the login menu pointing at it. -->
+		<nav class="hidden items-center gap-2 md:flex" aria-label="Navegación principal">
 			@for (item of items; track item.path) {
 				<a
-					[routerLink]="item.path"
-					routerLinkActive="bg-slate-400/15 text-accent"
-					ariaCurrentWhenActive="page"
-					class="inline-flex min-h-11 items-center rounded-full px-4 text-[0.95rem] font-bold text-slate-300 no-underline transition duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent"
-				>{{ item.label }}</a>
+					[appWipeLink]="item.path"
+					[attr.aria-current]="isActive(item.path) ? 'page' : null"
+					class="inline-flex min-h-11 items-center gap-2 px-3.5 font-display text-[1.05rem] font-semibold no-underline transition-colors duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none"
+					[class]="isActive(item.path) ? 'pixel-frame bg-accent/10 text-accent [--frame-color:var(--accent)]' : 'text-slate-300 hover:text-slate-100'"
+				>
+					@if (isActive(item.path)) {
+						<svg class="h-3 w-2.5 motion-safe:animate-[login-sway_0.8s_linear_infinite]" viewBox="0 0 6 7" shape-rendering="crispEdges" aria-hidden="true">
+							<rect x="0" y="0" width="1" height="7" fill="currentColor" /><rect x="1" y="1" width="2" height="5" fill="currentColor" /><rect x="3" y="2" width="2" height="3" fill="currentColor" /><rect x="5" y="3" width="1" height="1" fill="currentColor" />
+						</svg>
+					}
+					{{ item.label }}
+				</a>
 			}
 		</nav>
 
 		<div class="flex items-center gap-2.5 sm:gap-3">
-			<!-- Botón de búsqueda de usuarios -->
 			@if (signedIn()) {
 				<button
 					type="button"
-					class="grid size-11 place-items-center rounded-full border border-slate-400/25 bg-slate-400/10 text-slate-300 transition hover:bg-slate-400/20 hover:text-white focus-visible:outline-2 focus-visible:outline-accent cursor-pointer"
+					class="pixel-frame grid size-11 cursor-pointer place-items-center bg-slate-400/10 text-slate-300 transition-colors duration-150 [--frame-color:var(--login-card-line)] hover:bg-slate-400/20 hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none"
 					aria-label="Buscar creadores"
 					title="Buscar usuarios y creadores"
-					(click)="searchOpen.set(true)"
+					(click)="openSearch()"
 				>
 					<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<circle cx="11" cy="11" r="8" />
@@ -40,20 +48,23 @@
 				</button>
 			}
 
-			<a routerLink="/setup" class="inline-flex min-h-11 items-center gap-2 rounded-full border px-3 text-[0.8rem] font-bold focus-visible:outline-2 focus-visible:outline-accent sm:px-3.5" [class]="status().classes">
-				<span class="size-2 rounded-full" [class]="status().dot" aria-hidden="true"></span>
+			<!-- On phones the header has no room for it; the choice made elsewhere still holds. -->
+			<button appSoundToggle class="pixel-frame hidden size-11 cursor-pointer place-items-center bg-slate-400/10 text-slate-300 transition-colors duration-150 [--frame-color:var(--login-card-line)] hover:bg-slate-400/20 hover:text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none sm:grid"></button>
+
+			<a appWipeLink="/setup" class="pixel-frame inline-flex min-h-11 items-center gap-2 px-3 text-[0.8rem] font-bold no-underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed sm:px-3.5" [class]="status().classes">
+				<span class="size-2" [class]="status().dot" aria-hidden="true"></span>
 				<span class="sr-only sm:not-sr-only">{{ status().label }}</span>
 			</a>
 			<a
-				routerLink="/perfil"
-				routerLinkActive="ring-2 ring-accent ring-offset-2 ring-offset-(--page)"
-				ariaCurrentWhenActive="page"
-				class="grid size-11 place-items-center overflow-hidden rounded-full border-2 border-white/40 bg-accent-pink text-on-accent-pink focus-visible:outline-2 focus-visible:outline-accent"
+				appWipeLink="/perfil"
+				[attr.aria-current]="isActive('/perfil') ? 'page' : null"
+				class="pixel-frame grid size-11 place-items-center overflow-hidden bg-accent-pink text-on-accent-pink focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed"
+				[class]="isActive('/perfil') ? '[--frame-color:var(--accent)] [--frame-extra:0_0_12px_var(--accent)]' : '[--frame-color:var(--login-card-line)]'"
 				[attr.aria-label]="signedIn() ? 'Tu perfil' : 'Iniciar sesión o crear cuenta'"
 				[title]="signedIn() ? 'Tu perfil' : 'Iniciar sesión o crear cuenta'"
 			>
 				@if (me(); as user) {
-					<app-avatar class="size-full text-lg" [name]="user.username" [photo]="user.photo" />
+					<app-avatar class="size-full rounded-none! text-lg" [name]="user.username" [photo]="user.photo" />
 				} @else {
 					<svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4.5 4-6 8-6s7 1.5 8 6" /></svg>
 				}
@@ -66,14 +77,18 @@
 	<app-user-search (close)="searchOpen.set(false)" />
 }
 
-<nav class="fixed inset-x-0 bottom-0 z-30 flex justify-around border-t border-slate-400/20 bg-(--surface) px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-[10px] md:hidden" aria-label="Navegación principal">
+<!-- The bar of phones, with the same dotted pixel line on top; the page that is open lights a small LED over its icon. -->
+<nav class="fixed inset-x-0 bottom-0 z-30 flex justify-around bg-(--surface) px-2 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-[10px] before:pointer-events-none before:absolute before:inset-x-0 before:top-0 before:h-0.5 before:bg-[repeating-linear-gradient(90deg,var(--login-card-line)_0_4px,transparent_4px_8px)] md:hidden" aria-label="Navegación principal">
 	@for (item of items; track item.path) {
 		<a
-			[routerLink]="item.path"
-			routerLinkActive="text-accent"
-			ariaCurrentWhenActive="page"
-			class="flex min-h-14 min-w-16 flex-col items-center justify-center gap-0.5 rounded-xl px-2 text-[0.72rem] font-bold text-slate-300 no-underline focus-visible:outline-2 focus-visible:outline-accent"
+			[appWipeLink]="item.path"
+			[attr.aria-current]="isActive(item.path) ? 'page' : null"
+			class="relative flex min-h-14 min-w-16 flex-col items-center justify-center gap-0.5 px-2 font-display text-[0.78rem] font-semibold no-underline focus-visible:outline-2 focus-visible:outline-(--login-focus) focus-visible:outline-dashed"
+			[class]="isActive(item.path) ? 'text-accent' : 'text-slate-300'"
 		>
+			@if (isActive(item.path)) {
+				<span class="absolute top-1 size-1.5 bg-accent shadow-[0_0_6px_var(--accent)]" aria-hidden="true"></span>
+			}
 			<svg viewBox="0 0 24 24" class="size-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path [attr.d]="item.icon" /></svg>
 			{{ item.label }}
 		</a>

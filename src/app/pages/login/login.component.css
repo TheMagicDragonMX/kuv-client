@@ -1,0 +1,179 @@
+:host {
+	display: block;
+}
+
+/**
+ * The logo has no plate: a soft shade that fades into the cube and a pixel outline around the
+ * letters keep it readable over any face.
+ */
+.brand {
+	position: relative;
+	isolation: isolate;
+}
+
+.brand::before {
+	content: "";
+	position: absolute;
+	inset: -26px -40px -26px -30px;
+	z-index: -1;
+	background: radial-gradient(ellipse closest-side, var(--login-halo) 0%, var(--login-halo) 45%, transparent 100%);
+	pointer-events: none;
+}
+
+.brand-logo {
+	filter: drop-shadow(2px 0 0 var(--login-outline)) drop-shadow(-2px 0 0 var(--login-outline)) drop-shadow(0 2px 0 var(--login-outline)) drop-shadow(0 -2px 0 var(--login-outline));
+}
+
+.brand-name,
+.brand-slogan {
+	--outline-color: var(--login-outline);
+	--outline-extra: 0 0 10px var(--login-halo);
+}
+
+.brand-name {
+	--outline-size: 2px;
+	--outline-extra: 3px 4px 0 var(--login-outline), 0 0 14px var(--login-halo);
+}
+
+/**
+ * The boxes have pixel borders (`pixel-frame`); here go their sizes, colors and extra shadows.
+ */
+.card {
+	--frame-size: 3px;
+	--frame-color: var(--login-card-line);
+	--frame-extra: 0 24px 48px -16px var(--login-drop);
+
+	background: var(--login-card);
+	backdrop-filter: blur(7px) saturate(1.1);
+}
+
+.or::before,
+.or::after {
+	content: "";
+	flex: 1;
+	height: 2px;
+	background: repeating-linear-gradient(90deg, var(--login-card-line) 0 4px, transparent 4px 8px);
+}
+
+.frame {
+	--frame-color: var(--login-field-line);
+
+	display: flex;
+	align-items: center;
+	height: 44px;
+	background: var(--login-field);
+}
+
+.frame:focus-within {
+	--frame-color: var(--login-focus);
+	--frame-extra: 0 0 0 5px color-mix(in srgb, var(--login-focus) 18%, transparent);
+
+	background: var(--login-field-focus);
+}
+
+.frame.invalid {
+	--frame-color: var(--login-error);
+}
+
+.problem {
+	color: var(--login-error);
+	background: var(--login-error-bg);
+	box-shadow: inset 3px 0 0 0 var(--login-error);
+}
+
+.problem.warning {
+	color: var(--login-warning);
+	background: var(--login-warning-bg);
+	box-shadow: inset 3px 0 0 0 var(--login-warning);
+}
+
+/**
+ * The main button is a `pixel-button`; here go its spacing and its states while it sends the form
+ * and once it is done.
+ */
+.submit {
+	letter-spacing: 0.3px;
+}
+
+.submit:disabled {
+	cursor: progress;
+}
+
+.submit.done {
+	--edge: var(--login-done-edge);
+
+	background: var(--login-done);
+}
+
+.leds {
+	display: inline-flex;
+	gap: 4px;
+}
+
+.leds i {
+	width: 7px;
+	height: 7px;
+	background: rgba(27, 33, 66, 0.22);
+	animation: login-led 0.9s steps(1) infinite;
+}
+
+/**
+ * The arrow of the menu: it jumps to the option chosen, slides in from the left and sways; when an
+ * option is blocked it shakes from side to side.
+ */
+.cursor {
+	position: absolute;
+	top: 0;
+	left: 9px;
+	width: 12px;
+	height: 14px;
+	pointer-events: none;
+	opacity: 0;
+	color: var(--login-focus);
+	filter: drop-shadow(1px 1px 0 rgba(0, 0, 0, 0.45));
+	transform: translateY(calc(var(--cy, 0px) - 7px));
+	transition: transform 0.12s steps(3), opacity 0.1s steps(1);
+}
+
+.cursor.on {
+	opacity: 1;
+}
+
+.cursor .enter {
+	animation: login-cursor-in 0.2s steps(4) both, login-sway 0.8s linear 0.2s infinite;
+}
+
+.cursor .denied {
+	animation: login-deny 0.44s linear both, login-sway 0.8s linear 0.44s infinite;
+}
+
+@media (max-width: 420px) {
+	.cursor {
+		left: 4px;
+	}
+}
+
+/**
+ * A wrong password: the card glitches like a corrupted cartridge.
+ */
+.card.glitch {
+	animation: login-glitch 0.52s linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.cursor,
+	.submit {
+		transition: none;
+	}
+
+	.cursor .enter,
+	.cursor .denied,
+	.card.glitch,
+	.leds i {
+		animation: none;
+	}
+
+	.leds i {
+		background: var(--login-button-ink);
+	}
+}

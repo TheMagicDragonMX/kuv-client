@@ -1,12 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
 import { environment } from '@environment';
 import { CubeLinkService, LinkState } from '../../cube';
 import { Profile } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
+import { PixelWipeService } from '../../services/pixel-wipe.service';
 import { SiteHeaderComponent } from './site-header.component';
 
 /**
@@ -15,12 +16,17 @@ import { SiteHeaderComponent } from './site-header.component';
 const ME: Profile = { id: 1, username: 'ana', email: 'ana@example.com', bio: null, photo: '/users/1/photo?v=3', followers: 0, following: 0, followsYou: false, youFollow: false, isYou: true };
 
 /**
+ * Every address leads to an empty page, so the header can be checked on any of them.
+ */
+const ROUTES = [ { path: '**', children: [] } ];
+
+/**
  * Creates the header while the link to the cube is in a state, with someone signed in or not.
  */
 function createHeader (state: LinkState, signedIn = false) {
 	const link = new BehaviorSubject<LinkState>(state);
 
-	TestBed.configureTestingModule({ providers: [ provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: CubeLinkService, useValue: { state$: link } } ] });
+	TestBed.configureTestingModule({ providers: [ provideRouter(ROUTES), provideHttpClient(), provideHttpClientTesting(), { provide: CubeLinkService, useValue: { state$: link } } ] });
 
 	if (signedIn)
 		TestBed.inject(AuthSession).save({ accessToken: 'a', refreshToken: 'r', expiresIn: 900 });
@@ -87,20 +93,48 @@ describe('SiteHeaderComponent', () => {
 		expect(element.querySelector('a[href="/perfil"] svg')).not.toBeNull();
 	});
 
-	it('turns into a floating bubble once the page scrolls, and back into a bar at the top', () => {
+	it('turns into a floating box with a pixel border once the page scrolls, and back into a bar at the top', () => {
 		const { fixture, element } = createHeader('closed');
 		const header = (): HTMLElement => element.querySelector('header') as HTMLElement;
 
-		expect(header().classList).not.toContain('rounded-full');
+		expect(header().classList).not.toContain('pixel-frame');
 
 		Object.defineProperty(window, 'scrollY', { value: 200, configurable: true });
 		window.dispatchEvent(new Event('scroll'));
 		fixture.detectChanges();
-		expect(header().classList).toContain('rounded-full');
+		expect(header().classList).toContain('pixel-frame');
 
 		Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
 		window.dispatchEvent(new Event('scroll'));
 		fixture.detectChanges();
-		expect(header().classList).not.toContain('rounded-full');
+		expect(header().classList).not.toContain('pixel-frame');
+	});
+
+	it('marks the page that is open in both navigations, with the arrow of the menu on large screens', async () => {
+		const { fixture, element } = createHeader('closed');
+
+		await TestBed.inject(Router).navigateByUrl('/editor?id=3');
+		fixture.detectChanges();
+
+		const current = [ ...element.querySelectorAll('nav a[aria-current="page"]') ];
+
+		expect(current.map((link) => link.getAttribute('href'))).toEqual([ '/editor', '/editor' ]);
+		expect(current[0].querySelector('svg')).not.toBeNull();
+	});
+
+	it('changes page behind the pixel wipe on a plain click, and leaves other clicks to the browser', () => {
+		const { element } = createHeader('closed');
+		const wipe = TestBed.inject(PixelWipeService);
+		const run = vi.spyOn(wipe, 'run').mockResolvedValue();
+		const link = element.querySelector('nav a[href="/gallery"]') as HTMLAnchorElement;
+		const plain = new MouseEvent('click', { button: 0, bubbles: true, cancelable: true });
+		const newTab = new MouseEvent('click', { button: 0, ctrlKey: true, bubbles: true, cancelable: true });
+
+		link.dispatchEvent(plain);
+		link.dispatchEvent(newTab);
+
+		expect(plain.defaultPrevented).toBe(true);
+		expect(newTab.defaultPrevented).toBe(false);
+		expect(run).toHaveBeenCalledTimes(1);
 	});
 });

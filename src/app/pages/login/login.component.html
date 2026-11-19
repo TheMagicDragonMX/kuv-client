@@ -1,41 +1,99 @@
-<app-auth-shell heading="Iniciar sesión" lead="Entra con tu nombre de usuario y contraseña.">
-	@if (returnUrl) {
-		<p class="mb-5 rounded-xl border border-slate-400/20 bg-slate-400/10 px-4 py-3 text-sm text-slate-200" role="status">Inicia sesión o crea una cuenta para continuar.</p>
-	}
+<div class="relative min-h-dvh overflow-x-hidden bg-(--page) font-body text-slate-100">
+	<app-led-cube-backdrop [pace]="cubePace()" [zoom]="cubeZoom()" />
 
-	<form class="grid gap-4" [formGroup]="form" (ngSubmit)="submit()">
-		<label class="grid gap-2 text-sm font-bold text-slate-200">
-			Correo o nombre de usuario
-			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" formControlName="username" autocomplete="username" required />
-		</label>
+	<div class="relative z-10 grid min-h-dvh grid-rows-[auto_1fr]">
+		<header class="flex items-center justify-between gap-3 py-4 pr-[calc(4.5rem+env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))]">
+			<div class="brand flex items-center gap-3">
+				<app-cube-logo class="brand-logo size-10 max-sm:size-8" />
+				<span class="grid">
+					<span class="brand-name pixel-outline font-display text-3xl leading-none font-bold tracking-wide max-sm:text-2xl">Kü-V</span>
+					<span class="brand-slogan pixel-outline mt-1 text-[0.8125rem] font-bold max-sm:text-xs">Aprende un pixel a la vez</span>
+				</span>
+			</div>
 
-		<label class="grid gap-2 text-sm font-bold text-slate-200">
-			Contraseña
-			<input class="min-h-12 w-full rounded-xl border border-slate-400/25 bg-(--page) px-4 text-base font-normal text-slate-50 transition duration-150 focus-visible:border-accent focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-accent" type="password" formControlName="password" autocomplete="current-password" required />
-		</label>
+			<button appSoundToggle class="fixed top-4 right-[calc(4.5rem+env(safe-area-inset-right))] z-50 grid size-11 cursor-pointer place-items-center rounded-full border border-slate-400/20 bg-(--surface) text-slate-100 shadow-[0_10px_30px_var(--shadow)] backdrop-blur-[6px] transition duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--login-focus)"></button>
+		</header>
 
-		@if (errorMessage()) {
-			<p class="rounded-xl border border-led-red/40 bg-red-500/10 px-4 py-3 text-sm text-red-200" role="alert">{{ errorMessage() }}</p>
-		}
+		<main class="flex items-center justify-center py-6 pr-[max(1rem,env(safe-area-inset-right))] pl-[max(1rem,env(safe-area-inset-left))]">
+			<div class="grid w-full max-w-105 gap-5.5">
+				<app-mascot-says [mood]="mood()">
+					<h1 class="font-display text-xl leading-snug font-semibold text-balance max-[420px]:text-[1.0625rem]">Hola de nuevo :D</h1>
+				</app-mascot-says>
 
-		<button class="mt-2 inline-flex min-h-12 w-full cursor-pointer items-center justify-center rounded-2xl bg-accent-pink px-5.5 py-3.5 text-base font-extrabold text-on-accent-pink transition duration-150 hover:not-disabled:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-70" type="submit" [disabled]="isSubmitting()">
-			@if (isSubmitting()) {
-				Entrando…
-			} @else {
-				Iniciar sesión
-			}
-		</button>
-	</form>
+				<section #card class="card pixel-frame relative w-full px-7.5 pt-7 pb-6 max-[420px]:px-5.5 max-[420px]:pt-5" aria-labelledby="login-title" (focusin)="focused($event)" (focusout)="blurred($event)" (keydown)="walk($event)">
+					<h2 id="login-title" class="sr-only">Iniciar sesión</h2>
 
-	@if (googleEnabled) {
-		<div class="my-5 flex items-center gap-3 text-sm text-slate-400" aria-hidden="true">
-			<span class="h-px flex-1 bg-slate-400/25"></span>
-			o
-			<span class="h-px flex-1 bg-slate-400/25"></span>
-		</div>
+					<span #cursor class="cursor" aria-hidden="true">
+						<svg #arrow class="block size-full" viewBox="0 0 6 7" shape-rendering="crispEdges">
+							<rect x="0" y="0" width="1" height="7" fill="currentColor" /><rect x="1" y="1" width="2" height="5" fill="currentColor" /><rect x="3" y="2" width="2" height="3" fill="currentColor" /><rect x="5" y="3" width="1" height="1" fill="currentColor" />
+						</svg>
+					</span>
 
-		<app-google-button [returnUrl]="returnUrl" (failed)="errorMessage.set($event)" />
-	}
+					@if (returnUrl) {
+						<p class="-mt-1 bg-slate-400/8 shadow-[inset_3px_0_0_0_var(--login-link)] mb-3.5 flex items-center gap-2.5 px-3 py-2.5 text-[0.84rem] font-bold" role="status">Inicia sesión o crea una cuenta para continuar.</p>
+					}
 
-	<p class="mt-6 text-center text-slate-300">¿Aún no tienes cuenta? <a class="rounded font-bold text-accent no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent" routerLink="/register" queryParamsHandling="preserve">Crear cuenta</a></p>
-</app-auth-shell>
+					@if (googleEnabled) {
+						<app-google-button class="block [color-scheme:light]" [returnUrl]="returnUrl" (failed)="googleFailed($event)" />
+
+						<div class="or my-4 flex items-center gap-3 text-[0.8rem] font-bold tracking-[2px] text-slate-400 uppercase" aria-hidden="true">o</div>
+					}
+
+					<form class="grid gap-3.5" [formGroup]="form" novalidate (ngSubmit)="submit()">
+						<div class="grid gap-1.5">
+							<label class="sr-only" for="login-username">Correo o nombre de usuario</label>
+							<div class="frame pixel-frame" data-cursor [class.invalid]="usernameError() || rejected()">
+								<input id="login-username" class="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-[0.97rem] outline-none placeholder:text-slate-400" formControlName="username" autocomplete="username" placeholder="Correo o nombre de usuario" [attr.aria-invalid]="!!usernameError() || rejected()" [attr.aria-describedby]="usernameError() ? 'login-username-error' : null" (input)="typed('username')" />
+							</div>
+
+							@if (usernameError()) {
+								<p id="login-username-error" class="text-[0.78rem] font-bold text-(--login-error)">! {{ usernameError() }}</p>
+							}
+						</div>
+
+						<div class="grid gap-1.5">
+							<label class="sr-only" for="login-password">Contraseña</label>
+							<div #passwordFrame class="frame pixel-frame" data-cursor [class.invalid]="passwordError() || rejected()">
+								<input id="login-password" class="h-full min-w-0 flex-1 border-0 bg-transparent px-3 text-[0.97rem] outline-none placeholder:text-slate-400" formControlName="password" autocomplete="current-password" placeholder="Contraseña" [type]="showPassword() ? 'text' : 'password'" [attr.aria-invalid]="!!passwordError() || rejected()" [attr.aria-describedby]="passwordError() ? 'login-password-error' : null" (input)="typed('password')" />
+								<button class="grid h-full w-11 shrink-0 cursor-pointer place-items-center text-slate-400 hover:text-slate-100 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-(--login-focus)" type="button" [attr.aria-pressed]="showPassword()" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'" (click)="togglePassword()">
+									@if (showPassword()) {
+										<svg class="h-3.5 w-5" viewBox="0 0 10 7" shape-rendering="crispEdges" aria-hidden="true"><rect x="0" y="2" width="1" height="1" fill="currentColor" /><rect x="1" y="3" width="2" height="1" fill="currentColor" /><rect x="3" y="4" width="4" height="1" fill="currentColor" /><rect x="7" y="3" width="2" height="1" fill="currentColor" /><rect x="9" y="2" width="1" height="1" fill="currentColor" /><rect x="2" y="5" width="1" height="2" fill="currentColor" /><rect x="5" y="5" width="1" height="2" fill="currentColor" /><rect x="7" y="5" width="1" height="2" fill="currentColor" /></svg>
+									} @else {
+										<svg class="h-3.5 w-5" viewBox="0 0 10 7" shape-rendering="crispEdges" aria-hidden="true"><rect x="3" y="0" width="4" height="1" fill="currentColor" /><rect x="1" y="1" width="2" height="1" fill="currentColor" /><rect x="7" y="1" width="2" height="1" fill="currentColor" /><rect x="0" y="2" width="1" height="3" fill="currentColor" /><rect x="9" y="2" width="1" height="3" fill="currentColor" /><rect x="1" y="5" width="2" height="1" fill="currentColor" /><rect x="7" y="5" width="2" height="1" fill="currentColor" /><rect x="3" y="6" width="4" height="1" fill="currentColor" /><rect x="4" y="2" width="2" height="3" fill="currentColor" /></svg>
+									}
+								</button>
+							</div>
+
+							@if (passwordError()) {
+								<p id="login-password-error" class="text-[0.78rem] font-bold text-(--login-error)">! {{ passwordError() }}</p>
+							}
+						</div>
+
+						<button class="text-(--login-link) no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--login-focus) -mt-1.5 cursor-pointer justify-self-end text-[0.78rem] font-bold" type="button" (click)="forgot()">¿Olvidaste tu contraseña?</button>
+
+						@if (problem(); as shown) {
+							<p class="problem px-3 py-2.5 text-[0.84rem] leading-snug font-bold" [class.warning]="'warning' === shown.kind" role="alert">{{ shown.text }}</p>
+						}
+
+						<button #submitButton class="submit pixel-frame pixel-button mt-1 flex h-12 w-full cursor-pointer items-center justify-center gap-2.5 font-display text-[1.2rem] font-bold" type="submit" data-cursor [class.loading]="'loading' === stage()" [class.done]="'done' === stage()" [disabled]="'idle' !== stage()" [attr.aria-busy]="'loading' === stage()">
+							@switch (stage()) {
+								@case ('loading') {
+									<span class="leds" aria-hidden="true"><i></i><i style="animation-delay: 0.15s"></i><i style="animation-delay: 0.3s"></i><i style="animation-delay: 0.45s"></i></span>
+									Entrando…
+								}
+								@case ('done') {
+									¡Listo!
+								}
+								@default {
+									Iniciar sesión
+								}
+							}
+						</button>
+					</form>
+
+					<p class="mt-4 text-center text-sm text-slate-300">¿Aún no tienes cuenta? <a class="text-(--login-link) no-underline hover:underline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-(--login-focus) font-extrabold" routerLink="/register" queryParamsHandling="preserve">Crear cuenta</a></p>
+				</section>
+			</div>
+		</main>
+	</div>
+</div>

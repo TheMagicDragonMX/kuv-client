@@ -121,7 +121,7 @@ describe('AnimationRowComponent', () => {
 		expect(next.disabled).toBe(true);
 	});
 
-	it('puts the arrows at the sides of the row as tall rounded buttons in the middle, with a pixel-art chevron, hidden until the pointer is over it, and hides the scroll bar', () => {
+	it('puts the arrows at the sides of the row as tall buttons with a pixel border in the middle, with a pixel-art chevron, hidden until the pointer is over it, and hides the scroll bar', () => {
 		const { element } = createRow();
 		const list = element.querySelector('ul') as HTMLElement;
 		const arrows = [ ...(list.parentElement as HTMLElement).querySelectorAll(':scope > button') ] as HTMLButtonElement[];
@@ -141,11 +141,11 @@ describe('AnimationRowComponent', () => {
 			expect(arrow.classList.contains('disabled:invisible')).toBe(false);
 		}
 
-		expect(arrows[0].classList.contains('left-0.5')).toBe(true);
-		expect(arrows[1].classList.contains('right-0.5')).toBe(true);
+		expect(arrows[0].classList.contains('left-1.5')).toBe(true);
+		expect(arrows[1].classList.contains('right-1.5')).toBe(true);
 
 		for (const arrow of arrows)
-			expect([ 'top-1/2', '-translate-y-1/2', 'h-16', 'w-9', 'rounded-full', 'border' ].every((name) => arrow.classList.contains(name)), arrow.className).toBe(true);
+			expect([ 'top-1/2', '-translate-y-1/2', 'h-16', 'w-9', 'pixel-frame' ].every((name) => arrow.classList.contains(name)), arrow.className).toBe(true);
 
 		for (const arrow of arrows) {
 			const icon = arrow.querySelector('svg') as SVGElement;

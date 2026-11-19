@@ -1,13 +1,17 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter, map } from 'rxjs';
 import { CubeLinkService, LinkState } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
 import { CurrentUser } from '../../services/current-user.service';
+import { MenuSoundService } from '../../services/menu-sound.service';
 import { UsersService } from '../../services/middle/users.service';
 import { AvatarComponent } from '../avatar/avatar.component';
 import { CubeLogoComponent } from '../cube-logo/cube-logo.component';
+import { SoundToggleComponent } from '../sound-toggle/sound-toggle.component';
 import { UserSearchModalComponent } from '../user-search.component';
+import { WipeLinkDirective } from '../wipe-link.directive';
 
 /**
  * A place the main navigation leads to.
@@ -41,13 +45,14 @@ const ITEMS: NavItem[] = [
 ];
 
 /**
- * How the state of the link to the cube is told to the user, and in which colors. The classes are
- * written in full so Tailwind finds them.
+ * How the state of the link to the cube is told to the user, and in which colors: the pixel border
+ * and the background of the badge, and its square LED. The classes are written in full so Tailwind
+ * finds them.
  */
 const STATUS: Record<LinkState, { label: string; classes: string; dot: string }> = {
-	open: { label: 'Cubo conectado', classes: 'border-green-400/30 bg-green-500/10 text-green-200', dot: 'bg-led-green shadow-[0_0_8px_var(--color-led-green)]' },
-	connecting: { label: 'Conectando…', classes: 'border-amber-400/30 bg-amber-500/10 text-amber-200', dot: 'bg-led-yellow animate-pulse motion-reduce:animate-none' },
-	closed: { label: 'Sin cubo', classes: 'border-slate-400/25 bg-slate-400/10 text-slate-300', dot: 'bg-slate-400' },
+	open: { label: 'Cubo conectado', classes: 'bg-green-500/10 text-green-200 [--frame-color:color-mix(in_srgb,var(--color-green-400)_35%,transparent)]', dot: 'bg-led-green shadow-[0_0_8px_var(--color-led-green)]' },
+	connecting: { label: 'Conectando…', classes: 'bg-amber-500/10 text-amber-200 [--frame-color:color-mix(in_srgb,var(--color-amber-400)_35%,transparent)]', dot: 'bg-led-yellow animate-pulse motion-reduce:animate-none' },
+	closed: { label: 'Sin cubo', classes: 'bg-slate-400/10 text-slate-300 [--frame-color:var(--login-card-line)]', dot: 'bg-slate-400' },
 };
 
 /**
@@ -56,20 +61,23 @@ const STATUS: Record<LinkState, { label: string; classes: string; dot: string }>
 const BUBBLE_AFTER = 8;
 
 /**
- * The top of the main pages: the logo, the navigation, whether a cube is connected and the way to
- * the account, with the user's photo. On a phone the navigation moves to a bar at the bottom of
- * the screen, where the thumb reaches it. The theme button floats at the top right of every page,
- * so the header leaves room for it.
+ * The top of the main pages: the logo, the navigation, the sounds of the menus, whether a cube is
+ * connected and the way to the account, with the user's photo. On a phone the navigation moves to
+ * a bar at the bottom of the screen, where the thumb reaches it. The theme button floats at the top
+ * right of every page, so the header leaves room for it.
+ *
+ * It looks like the menu of the login: pixel borders, the pixel font, and the arrow of the menu
+ * pointing at the page that is open. Its links change page behind the pixel wipe, with a sound.
  *
  * At the top of the page the header is a see-through bar across it; once the page scrolls it
- * becomes a rounded bubble floating over the content. It always takes the same height
+ * becomes a box with a pixel border floating over the content. It always takes the same height
  * (`--header-height`), so the page does not jump when it changes.
  */
 @Component({
 	selector: 'app-site-header',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ RouterLink, RouterLinkActive, AvatarComponent, CubeLogoComponent, UserSearchModalComponent ],
+	imports: [ AvatarComponent, CubeLogoComponent, SoundToggleComponent, UserSearchModalComponent, WipeLinkDirective ],
 	host: { class: 'contents', '(window:scroll)': 'onScroll()' },
 	templateUrl: './site-header.component.html',
 })
@@ -114,6 +122,27 @@ export class SiteHeaderComponent {
 	 */
 	private readonly usersService = inject(UsersService);
 
+	/**
+	 * The sounds of the menus.
+	 */
+	private readonly sound = inject(MenuSoundService);
+
+	/**
+	 * Knows which page is open.
+	 */
+	private readonly router = inject(Router);
+
+	/**
+	 * The address of the page that is open, without its query or fragment.
+	 */
+	private readonly path = toSignal(
+		this.router.events.pipe(
+			filter((event) => event instanceof NavigationEnd),
+			map(() => this.cleanPath()),
+		),
+		{ initialValue: this.cleanPath() },
+	);
+
 	constructor () {
 
 		/**
@@ -124,6 +153,24 @@ export class SiteHeaderComponent {
 			if (this.signedIn() && !this.me())
 				untracked(() => this.usersService.me().subscribe({ error: () => undefined }));
 		});
+	}
+
+	/**
+	 * True when the page that is open is the one of the path, or one inside it (another user's
+	 * profile counts as the profile).
+	 */
+	protected isActive (path: string): boolean {
+		const open = this.path();
+
+		return path === open || open.startsWith(`${path}/`);
+	}
+
+	/**
+	 * Opens the search of users, with the sound of the menu.
+	 */
+	protected openSearch (): void {
+		this.sound.move();
+		this.searchOpen.set(true);
 	}
 
 	/**
@@ -138,5 +185,12 @@ export class SiteHeaderComponent {
 	 */
 	private scrollTop (): number {
 		return 'undefined' === typeof window ? 0 : window.scrollY;
+	}
+
+	/**
+	 * The address the router is on, without its query or fragment.
+	 */
+	private cleanPath (): string {
+		return this.router.url.split(/[?#]/)[0];
 	}
 }

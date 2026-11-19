@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, afterNextRender, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, HostListener, afterNextRender, inject, input, output, signal, viewChild } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { MenuSoundService } from '../../services/menu-sound.service';
 import { AnimationCardComponent } from './animation-card.component';
 import { CommunityAnimation } from './home-data';
 
@@ -24,17 +25,17 @@ const PAGE_SHARE = 0.8;
 	template: `
 		<section class="flex flex-col gap-2" [attr.aria-labelledby]="'row-' + id()">
 			<div class="flex items-center justify-between gap-4">
-				<h2 class="font-display text-2xl font-semibold sm:text-[1.75rem]" [id]="'row-' + id()">{{ title() }}</h2>
-				<a routerLink="/gallery" class="inline-flex min-h-11 items-center rounded-full px-3 text-sm font-bold text-accent hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent">
+				<h2 class="pixel-outline font-display text-2xl font-semibold [--outline-color:var(--login-outline)] [--outline-extra:2px_3px_0_var(--login-outline)] sm:text-[1.75rem]" [id]="'row-' + id()">{{ title() }}</h2>
+				<a routerLink="/gallery" class="inline-flex min-h-11 items-center px-3 font-display text-base font-semibold text-(--login-link) no-underline hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--login-focus) focus-visible:outline-dashed">
 					Ver todo<span class="sr-only">: {{ title() }}</span>
 				</a>
 			</div>
 
-			<!-- The arrows are tall rounded buttons at the sides of the row, in the middle of its height, with a pixel-art chevron (drawn on a 6 by 9 grid, 3 pixels a square, strokes 2 squares thick), and fade in when the pointer is over the row (or one has the keyboard focus), and fade out when it leaves or when there is nothing more in that direction. They are not drawn on touch screens, where the row is swiped. -->
+			<!-- The arrows are tall buttons with a pixel border at the sides of the row, in the middle of its height, with a pixel-art chevron (drawn on a 6 by 9 grid, 3 pixels a square, strokes 2 squares thick), and fade in when the pointer is over the row (or one has the keyboard focus), and fade out when it leaves or when there is nothing more in that direction. They are not drawn on touch screens, where the row is swiped. -->
 			<div class="group/row relative -mx-4 sm:-mx-10">
 				<button
 					type="button"
-					class="absolute top-1/2 left-0.5 z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-slate-400/30 bg-slate-900/60 text-slate-100 opacity-0 transition-[opacity,background-color] duration-300 ease-in-out group-focus-within/row:enabled:opacity-100 group-hover/row:enabled:opacity-100 hover:bg-slate-900/80 focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none motion-reduce:transition-none pointer-fine:grid"
+					class="pixel-frame absolute top-1/2 left-1.5 z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer place-items-center bg-slate-900/70 text-slate-100 opacity-0 transition-[opacity,background-color] duration-300 ease-in-out [--frame-color:var(--login-card-line)] [--frame-size:3px] group-focus-within/row:enabled:opacity-100 group-hover/row:enabled:opacity-100 hover:bg-slate-900/90 hover:[--frame-color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed disabled:pointer-events-none motion-reduce:transition-none pointer-fine:grid"
 					[attr.aria-label]="'Anteriores: ' + title()"
 					[disabled]="atStart()"
 					(click)="scroll(-1)"
@@ -43,7 +44,7 @@ const PAGE_SHARE = 0.8;
 				</button>
 				<button
 					type="button"
-					class="absolute top-1/2 right-0.5 z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full border border-slate-400/30 bg-slate-900/60 text-slate-100 opacity-0 transition-[opacity,background-color] duration-300 ease-in-out group-focus-within/row:enabled:opacity-100 group-hover/row:enabled:opacity-100 hover:bg-slate-900/80 focus-visible:outline-2 focus-visible:outline-accent disabled:pointer-events-none motion-reduce:transition-none pointer-fine:grid"
+					class="pixel-frame absolute top-1/2 right-1.5 z-10 hidden h-16 w-9 -translate-y-1/2 cursor-pointer place-items-center bg-slate-900/70 text-slate-100 opacity-0 transition-[opacity,background-color] duration-300 ease-in-out [--frame-color:var(--login-card-line)] [--frame-size:3px] group-focus-within/row:enabled:opacity-100 group-hover/row:enabled:opacity-100 hover:bg-slate-900/90 hover:[--frame-color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed disabled:pointer-events-none motion-reduce:transition-none pointer-fine:grid"
 					[attr.aria-label]="'Siguientes: ' + title()"
 					[disabled]="atEnd()"
 					(click)="scroll(1)"
@@ -142,6 +143,11 @@ export class AnimationRowComponent {
 	private readonly scroller = viewChild.required<ElementRef<HTMLElement>>('scroller');
 
 	/**
+	 * The sounds of the menus.
+	 */
+	private readonly sound = inject(MenuSoundService);
+
+	/**
 	 * Works out which arrow buttons can be used once the row is on screen.
 	 */
 	constructor () {
@@ -167,12 +173,14 @@ export class AnimationRowComponent {
 	}
 
 	/**
-	 * Scrolls the row by most of its visible width, to the right (1) or to the left (-1). It does
-	 * not animate for users who asked for less motion.
+	 * Scrolls the row by most of its visible width, to the right (1) or to the left (-1), with the
+	 * sound of the menu. It does not animate for users who asked for less motion.
 	 */
 	protected scroll (direction: 1 | -1): void {
 		const list = this.scroller().nativeElement;
 		const calm = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+		this.sound.move();
 
 		list.scrollBy({ left: direction * list.clientWidth * PAGE_SHARE, behavior: calm ? 'auto' : 'smooth' });
 	}

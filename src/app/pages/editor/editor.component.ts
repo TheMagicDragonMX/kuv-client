@@ -16,7 +16,7 @@ import { AuthSession } from '../../services/auth-session.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { ProjectStorageService } from '../../services/project-storage.service';
 import { BackgroundPanelComponent } from './background-panel.component';
-import { backgroundsOf, normalizeBackgrounds } from './backgrounds';
+import { backgroundsOf } from './backgrounds';
 import { BlocksTabComponent } from './blocks-tab.component';
 import { ObjectsPanelComponent } from './objects-panel.component';
 import { ProgramAreaComponent } from './program-area.component';
@@ -111,7 +111,7 @@ export class EditorPage implements OnInit {
 	 * The cube stops its slow rotation while the user works on the blocks or the objects, so the
 	 * face being edited does not turn away. The Spin button brings the rotation back.
 	 */
-	protected holdCube(cube: CubeComponent): void {
+	protected holdCube (cube: CubeComponent): void {
 		if ('blocks' === this.tab() || 'objects' === this.tab())
 			cube.holdStill();
 	}
@@ -119,7 +119,7 @@ export class EditorPage implements OnInit {
 	/**
 	 * The user dragged an object on the cube: its starting place is now the cell it was dropped on.
 	 */
-	protected moveObject(move: ObjectMove): void {
+	protected moveObject (move: ObjectMove): void {
 		this.objects.update((objects) => objects.map((object) => object.name === move.name
 			? { ...object, face: move.face, x: move.x, y: move.y }
 			: object));
@@ -148,9 +148,9 @@ export class EditorPage implements OnInit {
 	protected readonly saveError = signal<string | null>(null);
 	protected readonly exportIsPublic = signal(true);
 
-	async ngOnInit(): Promise<void> {
+	async ngOnInit (): Promise<void> {
 		const projectId = this.route.snapshot.queryParamMap.get('project');
-		if (projectId) {
+		if (projectId) 
 			try {
 				const numericId = parseInt(projectId, 10);
 				if (!isNaN(numericId) && this.signedIn()) {
@@ -211,24 +211,24 @@ export class EditorPage implements OnInit {
 			catch (err) {
 				console.error('Error loading project into editor:', err);
 			}
-		}
+		
 	}
 
-	protected openExportModal(): void {
+	protected openExportModal (): void {
 		this.exportSuccess.set(false);
 		this.exportProgress.set(null);
 		this.saveError.set(null);
 		this.showExportModal.set(true);
 	}
 
-	protected closeExportModal(): void {
-		if (this.isExporting()) {
+	protected closeExportModal (): void {
+		if (this.isExporting()) 
 			return;
-		}
+		
 		this.showExportModal.set(false);
 	}
 
-	protected async startExport(): Promise<void> {
+	protected async startExport (): Promise<void> {
 		const program = this.blocksRef?.program();
 		if (!program) {
 			alert('El programa aún no está listo para exportar.');
@@ -305,13 +305,13 @@ export class EditorPage implements OnInit {
 		}
 	}
 
-	protected goToProfile(): void {
+	protected goToProfile (): void {
 		this.showExportModal.set(false);
-		void this.router.navigate(['/perfil']);
+		void this.router.navigate([ '/perfil' ]);
 	}
 
-	protected goToGallery(): void {
+	protected goToGallery (): void {
 		this.showExportModal.set(false);
-		this.router.navigate(['/gallery']);
+		this.router.navigate([ '/gallery' ]);
 	}
 }

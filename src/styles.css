@@ -47,6 +47,252 @@
 	}
 }
 
+/* The mascot floats up and down in two steps, like a sprite. */
+@theme {
+	--animate-mascot-float: mascot-float 1.6s linear infinite;
+
+	@keyframes mascot-float {
+		0%, 49% {
+			transform: translateY(0);
+		}
+
+		50%, 100% {
+			transform: translateY(-3px);
+		}
+	}
+}
+
+/* Animations of the login page, kept here so its own stylesheet stays small: the LEDs of the
+   button while it loads, the arrow of the menu sliding in, swaying and shaking, and the glitch of
+   the card after a wrong password. */
+@keyframes login-led {
+	0%, 40% {
+		background: var(--login-button-ink);
+	}
+
+	41%, 100% {
+		background: rgba(27, 33, 66, 0.22);
+	}
+}
+
+@keyframes login-cursor-in {
+	from {
+		transform: translateX(-18px);
+		opacity: 0;
+	}
+
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+@keyframes login-sway {
+	0%, 49% {
+		transform: translateX(0);
+	}
+
+	50%, 100% {
+		transform: translateX(3px);
+	}
+}
+
+@keyframes login-deny {
+	0% {
+		transform: translateX(0);
+		animation-timing-function: steps(1);
+	}
+
+	12% {
+		transform: translateX(-5px);
+		animation-timing-function: steps(1);
+	}
+
+	24% {
+		transform: translateX(3px);
+		animation-timing-function: steps(1);
+	}
+
+	36% {
+		transform: translateX(-4px);
+		animation-timing-function: steps(1);
+	}
+
+	48% {
+		transform: translateX(4px);
+		animation-timing-function: steps(1);
+	}
+
+	60% {
+		transform: translateX(-2px);
+		animation-timing-function: steps(1);
+	}
+
+	72% {
+		transform: translateX(2px);
+		animation-timing-function: steps(1);
+	}
+
+	84%, 100% {
+		transform: translateX(0);
+	}
+}
+
+@keyframes login-glitch {
+	0% {
+		transform: translate(0);
+		clip-path: inset(0);
+	}
+
+	8% {
+		transform: translate(-7px, 0);
+		clip-path: inset(8% 0 62% 0);
+		animation-timing-function: steps(1);
+	}
+
+	16% {
+		transform: translate(6px, 0);
+		clip-path: inset(38% 0 30% 0);
+		animation-timing-function: steps(1);
+	}
+
+	24% {
+		transform: translate(-3px, 1px);
+		clip-path: inset(70% 0 4% 0);
+		animation-timing-function: steps(1);
+	}
+
+	32% {
+		transform: translate(5px, 0);
+		clip-path: inset(0 0 82% 0);
+		animation-timing-function: steps(1);
+	}
+
+	40% {
+		transform: translate(-4px, 0);
+		clip-path: inset(22% 0 48% 0);
+		animation-timing-function: steps(1);
+	}
+
+	48% {
+		transform: translate(2px, 0);
+		clip-path: inset(55% 0 20% 0);
+		animation-timing-function: steps(1);
+	}
+
+	56%, 100% {
+		transform: translate(0);
+		clip-path: inset(0);
+	}
+}
+
+/* Colors of the login page. The card and the fields are see-through so the cube shows behind
+   them; the buttons and the marks of the focus share a soft lavender that does not shout over
+   the scenes of the cube. */
+:root {
+	--login-card: rgba(12, 18, 26, 0.36);
+	--login-card-line: rgba(159, 176, 196, 0.24);
+	--login-drop: rgba(0, 0, 0, 0.45);
+	--login-field: rgba(5, 8, 12, 0.44);
+	--login-field-focus: rgba(5, 8, 12, 0.6);
+	--login-field-line: rgba(159, 176, 196, 0.32);
+	--login-focus: #a3afe4;
+	--login-link: #5be3f5;
+	--login-error: #ff8a95;
+	--login-error-bg: rgba(255, 92, 108, 0.12);
+	--login-warning: #ffb86b;
+	--login-warning-bg: rgba(255, 159, 69, 0.12);
+	--login-button: #a3afe4;
+	--login-button-ink: #1b2142;
+	--login-button-edge: #7c88c2;
+	--login-button-line: #2a3160;
+	--login-done: #9ed9b3;
+	--login-done-edge: #6fb48a;
+	--login-bubble: #f5f7fa;
+	--login-bubble-ink: #1b2433;
+	--login-bubble-line: #9fb0c4;
+	--login-outline: #0b0f1e;
+	--login-halo: rgba(7, 11, 34, 0.62);
+}
+
+:root.light {
+	--login-card: rgba(255, 255, 255, 0.4);
+	--login-card-line: rgba(27, 36, 51, 0.2);
+	--login-drop: rgba(30, 41, 59, 0.2);
+	--login-field: rgba(255, 255, 255, 0.58);
+	--login-field-focus: rgba(255, 255, 255, 0.85);
+	--login-field-line: rgba(27, 36, 51, 0.28);
+	--login-focus: #5b67b0;
+	--login-link: #0e7490;
+	--login-error: #b91c1c;
+	--login-error-bg: rgba(185, 28, 28, 0.08);
+	--login-warning: #b45309;
+	--login-warning-bg: rgba(180, 83, 9, 0.09);
+	--login-outline: #ffffff;
+	--login-halo: rgba(255, 255, 255, 0.7);
+}
+
+/* A pixel border made of four shadows, one per side, that leave the corners empty like a sprite.
+   `--frame-size` sets its width (2px), `--frame-color` its color, and `--frame-extra` adds more
+   shadows after it (a drop shadow, the depth of a button). */
+@utility pixel-frame {
+	box-shadow:
+		0 calc(var(--frame-size, 2px) * -1) 0 0 var(--frame-color, currentColor),
+		0 var(--frame-size, 2px) 0 0 var(--frame-color, currentColor),
+		calc(var(--frame-size, 2px) * -1) 0 0 0 var(--frame-color, currentColor),
+		var(--frame-size, 2px) 0 0 0 var(--frame-color, currentColor),
+		var(--frame-extra, 0 0 #0000);
+}
+
+/* The main button of the game-like screens, in 3D, to go with `pixel-frame`: the dark edge is the
+   outline, the strip at the bottom is its depth, and hovering presses it down. Its colors are the
+   lavender of the login, and `--edge` can be changed to show another state (like done). */
+@utility pixel-button {
+	--edge: var(--login-button-edge);
+	--frame-size: 3px;
+	--frame-color: var(--login-button-line);
+	--frame-extra: inset 0 -6px 0 0 var(--edge), inset 0 3px 0 0 rgba(255, 255, 255, 0.45);
+
+	background: var(--login-button);
+	color: var(--login-button-ink);
+	border: 0;
+	text-decoration: none;
+	transition: transform 0.08s steps(2), box-shadow 0.08s steps(2);
+
+	&:hover:not(:disabled) {
+		--frame-extra: inset 0 -3px 0 0 var(--edge), inset 0 3px 0 0 rgba(255, 255, 255, 0.3);
+
+		transform: translateY(3px);
+	}
+
+	&:active:not(:disabled) {
+		--frame-extra: inset 0 3px 0 0 var(--edge);
+
+		transform: translateY(5px);
+	}
+
+	&:focus-visible {
+		outline: 2px dashed var(--login-focus);
+		outline-offset: 6px;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		transition: none;
+	}
+}
+
+/* A pixel outline around text, in the eight directions. `--outline-size` sets its width (1px),
+   `--outline-color` its color, and `--outline-extra` adds more shadows after it (a glow). */
+@utility pixel-outline {
+	--o: var(--outline-size, 1px);
+	--c: var(--outline-color, #000);
+
+	text-shadow:
+		var(--o) 0 0 var(--c), calc(var(--o) * -1) 0 0 var(--c), 0 var(--o) 0 var(--c), 0 calc(var(--o) * -1) 0 var(--c),
+		var(--o) var(--o) 0 var(--c), calc(var(--o) * -1) var(--o) 0 var(--c), var(--o) calc(var(--o) * -1) 0 var(--c), calc(var(--o) * -1) calc(var(--o) * -1) 0 var(--c),
+		var(--outline-extra, 0 0 #0000);
+}
+
 /* A box with its corners cut in steps of 4 pixels, like a sprite. The snackbar draws two, one
    inside the other, so the outer one shows as a 4px border. */
 @utility pixel-box {

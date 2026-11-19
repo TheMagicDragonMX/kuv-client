@@ -46,9 +46,9 @@ const ICONS = {
 
 /**
  * The look of an action button that is off, over the video: dark and see-through, so the
- * animation shows around it.
+ * animation shows around it, with a faint pixel border.
  */
-const ACTION_OFF = 'border-white/20 bg-black/45 text-white/85 hover:bg-black/65 hover:text-white';
+const ACTION_OFF = 'bg-black/45 text-white/85 [--frame-color:rgba(255,255,255,0.25)] hover:bg-black/65 hover:text-white';
 
 /**
  * Milliseconds between the LEDs of two neighbouring diagonals in the wave that plays when there is
@@ -97,8 +97,8 @@ const ARROW_ROOM = 48;
 		'(focusout)': 'leave($event)',
 	},
 	template: `
-		<article class="flex h-full flex-col gap-3 rounded-2xl border border-slate-400/20 bg-slate-900/80 p-3 transition duration-200 motion-reduce:transition-none hover:-translate-y-1 hover:border-accent hover:shadow-[0_8px_16px_var(--shadow)] focus-within:border-accent">
-			<div class="rounded-xl border border-slate-400/15 bg-led-panel p-4" aria-hidden="true">
+		<article class="pixel-frame flex h-full flex-col gap-3 bg-slate-900/80 p-3 transition-transform duration-150 ease-[steps(2)] [--frame-color:var(--login-card-line)] [--frame-size:3px] motion-reduce:transition-none hover:-translate-y-1 hover:[--frame-color:var(--accent)] hover:[--frame-extra:0_10px_20px_-6px_var(--login-drop)] focus-within:[--frame-color:var(--accent)]">
+			<div class="pixel-frame bg-led-panel p-4 [--frame-color:rgba(159,176,196,0.16)]" aria-hidden="true">
 				<div class="grid grid-cols-8 gap-1.25">
 					@for (dot of dots(); track $index) {
 						<div class="aspect-square rounded-full" [class]="classOf(dot)"></div>
@@ -114,7 +114,7 @@ const ARROW_ROOM = 48;
 					</span>
 					<button
 						type="button"
-						class="-my-2 -mr-2 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-full px-3 font-bold transition duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-accent"
+						class="-my-2 -mr-2 inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 px-3 font-bold transition duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--login-focus) focus-visible:outline-dashed"
 						[class]="liked() ? 'text-like' : 'text-slate-400'"
 						[attr.aria-pressed]="liked()"
 						[attr.aria-label]="'Me gusta: ' + animation().title"
@@ -128,7 +128,7 @@ const ARROW_ROOM = 48;
 
 		<!-- The expanded card. It is hidden until the pointer rests on the card (or a button of it has the keyboard focus), and grows from the width of the card, as tall as it. It is dark in both themes: it is a screen showing the animation. -->
 		<div
-			class="invisible absolute top-0 z-20 h-full w-full overflow-hidden rounded-2xl border border-accent bg-[#05070a] opacity-0 shadow-[0_8px_16px_var(--shadow)] transition-[width,opacity,visibility,translate] duration-200 ease-out motion-reduce:transition-none group-hover/card:visible group-hover/card:w-[30rem] group-hover/card:-translate-y-1 group-hover/card:opacity-100 group-hover/card:delay-300 group-has-[:focus-visible]/card:visible group-has-[:focus-visible]/card:w-[30rem] group-has-[:focus-visible]/card:-translate-y-1 group-has-[:focus-visible]/card:opacity-100"
+			class="pixel-frame invisible absolute top-0 z-20 h-full w-full overflow-hidden bg-[#05070a] opacity-0 [--frame-color:var(--accent)] [--frame-extra:0_12px_24px_-6px_var(--login-drop)] [--frame-size:3px] transition-[width,opacity,visibility,translate] duration-200 ease-out motion-reduce:transition-none group-hover/card:visible group-hover/card:w-[30rem] group-hover/card:-translate-y-1 group-hover/card:opacity-100 group-hover/card:delay-300 group-has-[:focus-visible]/card:visible group-has-[:focus-visible]/card:w-[30rem] group-has-[:focus-visible]/card:-translate-y-1 group-has-[:focus-visible]/card:opacity-100"
 			[class]="toLeft() ? 'right-0' : 'left-0'"
 			role="group"
 			[attr.aria-label]="animation().title"
@@ -136,7 +136,7 @@ const ARROW_ROOM = 48;
 			<!-- The background: the animation playing. It fades in once the card has opened. Pressing it opens the animation. -->
 			<button
 				type="button"
-				class="absolute inset-0 block size-full cursor-pointer overflow-hidden bg-led-panel opacity-0 transition-opacity duration-700 ease-out group-hover/card:opacity-100 group-hover/card:delay-500 group-has-[:focus-visible]/card:opacity-100 focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-accent motion-reduce:transition-none"
+				class="absolute inset-0 block size-full cursor-pointer overflow-hidden bg-led-panel opacity-0 transition-opacity duration-700 ease-out group-hover/card:opacity-100 group-hover/card:delay-500 group-has-[:focus-visible]/card:opacity-100 focus-visible:outline-2 focus-visible:-outline-offset-6 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none"
 				[attr.aria-label]="'Visualizar: ' + animation().title"
 				title="Visualizar"
 				(click)="viewed.emit()"
@@ -174,17 +174,17 @@ const ARROW_ROOM = 48;
 					<dt class="sr-only">Creado</dt>
 					<dd><time class="font-semibold text-white/85" [attr.datetime]="animation().createdAt">{{ createdAt() }}</time></dd>
 					<dt class="sr-only">Categoría</dt>
-					<dd class="rounded-full bg-white/15 px-2 py-0.5 font-bold text-white">{{ animation().category }}</dd>
+					<dd class="bg-white/15 px-2 py-0.5 font-bold text-white">{{ animation().category }}</dd>
 				</dl>
 			</div>
 
-			<!-- The actions, in the bottom right corner, as large pixel icons. The ones that are on light up in the color of their LED. -->
+			<!-- The actions, in the bottom right corner, as large pixel icons in boxes with a pixel border. The ones that are on light up in the color of their LED. -->
 			<div class="absolute right-3 bottom-3 flex items-center gap-1.5" role="group" aria-label="Acciones">
 				<button
 					type="button"
 					tabindex="-1"
-					class="inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 rounded-xl border px-3 text-sm font-bold transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-					[class]="liked() ? 'border-led-pink/50 bg-led-pink/25 text-led-pink' : actionOff"
+					class="inline-flex h-11 min-w-11 cursor-pointer items-center justify-center gap-1.5 pixel-frame px-3 text-sm font-bold transition duration-150 ease-[steps(2)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:outline-dashed motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+					[class]="liked() ? 'bg-led-pink/25 text-led-pink [--frame-color:color-mix(in_srgb,var(--color-led-pink)_60%,transparent)]' : actionOff"
 					[attr.aria-pressed]="liked()"
 					[attr.aria-label]="'Me gusta: ' + animation().title"
 					[title]="liked() ? 'Te gusta' : 'Me gusta'"
@@ -195,8 +195,8 @@ const ARROW_ROOM = 48;
 				</button>
 				<button
 					type="button"
-					class="grid h-11 min-w-11 cursor-pointer place-items-center rounded-xl border transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-					[class]="saved() ? 'border-led-cyan/50 bg-led-cyan/25 text-led-cyan' : actionOff"
+					class="grid h-11 min-w-11 cursor-pointer place-items-center pixel-frame transition duration-150 ease-[steps(2)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:outline-dashed motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+					[class]="saved() ? 'bg-led-cyan/25 text-led-cyan [--frame-color:color-mix(in_srgb,var(--color-led-cyan)_60%,transparent)]' : actionOff"
 					[attr.aria-label]="'Guardar: ' + animation().title"
 					[attr.aria-pressed]="saved()"
 					[title]="saved() ? 'Guardado' : 'Guardar'"
@@ -206,8 +206,8 @@ const ARROW_ROOM = 48;
 				</button>
 				<button
 					type="button"
-					class="grid h-11 min-w-11 cursor-pointer place-items-center rounded-xl border transition duration-150 hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-accent motion-reduce:transition-none motion-reduce:hover:translate-y-0"
-					[class]="favorite() ? 'border-led-yellow/50 bg-led-yellow/25 text-led-yellow' : actionOff"
+					class="grid h-11 min-w-11 cursor-pointer place-items-center pixel-frame transition duration-150 ease-[steps(2)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white focus-visible:outline-dashed motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+					[class]="favorite() ? 'bg-led-yellow/25 text-led-yellow [--frame-color:color-mix(in_srgb,var(--color-led-yellow)_60%,transparent)]' : actionOff"
 					[attr.aria-label]="'Favorito: ' + animation().title"
 					[attr.aria-pressed]="favorite()"
 					[title]="favorite() ? 'En favoritos' : 'Agregar a favoritos'"
