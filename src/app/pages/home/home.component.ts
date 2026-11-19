@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, WritableSignal, computed, inject, signal } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FeedCreation } from '../../models';
 import { AuthSession } from '../../services/auth-session.service';
 import { FeedService } from '../../services/middle/feed.service';
@@ -41,24 +41,29 @@ export class HomePage {
 	]);
 
 	/**
-	 * The ids of the animations the user liked. It is only kept while the page is open.
+	 * The animations the user liked, by their ID.
 	 */
 	protected readonly liked = signal<ReadonlySet<string>>(new Set());
 
 	/**
-	 * The ids of the animations the user saved. It is only kept while the page is open.
+	 * The animations the user saved for later, by their ID.
 	 */
 	protected readonly saved = signal<ReadonlySet<string>>(new Set());
 
 	/**
-	 * The ids of the user's favorite animations. It is only kept while the page is open.
+	 * The animations the user put into their favorites, by their ID.
 	 */
 	protected readonly favorites = signal<ReadonlySet<string>>(new Set());
 
 	/**
-	 * Shows short messages at the bottom of the screen.
+	 * Shows the user a short message.
 	 */
 	private readonly snackbar = inject(SnackbarService);
+
+	/**
+	 * Router for navigating to the animation details page.
+	 */
+	private readonly router = inject(Router);
 
 	/**
 	 * Reads the categories of the feed.
@@ -91,13 +96,10 @@ export class HomePage {
 	}
 
 	/**
-	 * The user asked to see an animation. There is no page to play someone else's animation yet,
-	 * so it says so instead of pretending to show one.
+	 * Navigates to the detail and visualizer page for the chosen animation.
 	 */
 	protected view (id: string): void {
-		const animation = this.newest()?.find((candidate) => id === candidate.id);
-
-		this.snackbar.show(`"${animation?.title ?? id}" todavía no se puede visualizar: aún no hay una página para ver las animaciones de otras personas.`);
+		this.router.navigate([ '/animacion', id ]);
 	}
 
 	/**
@@ -120,6 +122,8 @@ export class HomePage {
 	 * so those get a stand-in, and so does the thumbnail of a creation that has none (its `art`).
 	 */
 	private toAnimation (creation: FeedCreation): CommunityAnimation {
+		const token = this.session.accessToken();
+
 		return {
 			id: String(creation.id),
 			title: creation.title,
@@ -128,11 +132,11 @@ export class HomePage {
 			/**
 			 * The dark recording in both themes: the expanded card is a dark screen in both.
 			 */
-			video: creation.hasVideo ? this.creations.videoUrl({ id: creation.id, token: this.session.accessToken(), theme: 'dark' }) : null,
-			thumbnail: creation.hasVideo ? this.creations.thumbnailUrl({ id: creation.id, token: this.session.accessToken() }) : null,
+			video: creation.hasVideo ? this.creations.videoUrl({ id: creation.id, token, theme: 'dark' }) : null,
+			thumbnail: creation.hasVideo ? this.creations.thumbnailUrl({ id: creation.id, token }) : null,
 			likes: 0,
 			createdAt: creation.createdAt.slice(0, 10),
-			category: 'Nueva',
+			category: 'Nuevas',
 			art: artFor(creation.id),
 		};
 	}

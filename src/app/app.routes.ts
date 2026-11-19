@@ -21,12 +21,22 @@ export const routes: Routes = [
 		loadComponent: () => import('./pages/signup/signup.component').then((page) => page.SignupPage),
 	},
 	{
+		path: 'demo-animacion',
+		component: MainLayoutComponent,
+		children: [
+			{ path: '', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+			{ path: ':id', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+		],
+	},
+	{
 		path: '',
 		canActivateChild: [ signedInGuard ],
 		component: MainLayoutComponent,
 		children: [
 			{ path: 'test-cube', component: TestCubePage, data: { [VIRTUAL_CUBE]: true } },
 			{ path: 'editor', component: EditorPage, data: { [VIRTUAL_CUBE]: true } },
+			{ path: 'animacion/:id', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
+			{ path: 'animacion', loadComponent: () => import('./pages/animation-detail/animation-detail.component').then((page) => page.AnimationDetailPage), data: { [VIRTUAL_CUBE]: true } },
 			{ path: 'inicio', loadComponent: () => import('./pages/home/home.component').then((page) => page.HomePage) },
 			{ path: 'perfil', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },
 			{ path: 'perfil/:id', loadComponent: () => import('./pages/profile/profile.component').then((page) => page.ProfilePage) },

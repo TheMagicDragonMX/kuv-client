@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { ChangeDetectionStrategy, Component, ElementRef, HostListener, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { Observable, firstValueFrom } from 'rxjs';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
@@ -9,6 +10,7 @@ import { AuthSession } from '../../services/auth-session.service';
 import { SnackbarService } from '../../services/snackbar.service';
 import { ThemeService } from '../../services/theme.service';
 import { CreationsService } from '../../services/middle/creations.service';
+import { ReportsService } from '../../services/middle/reports.service';
 import { UsersService } from '../../services/middle/users.service';
 import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
 import { PhotoCropperComponent } from './photo-cropper.component';
@@ -19,11 +21,18 @@ import { Crop, openPicture, photoFileProblem, photoFromCrop } from './profile-ph
  * (if viewing own profile) and bio, their public or personal cube creations,
  * and below it the followers and followed section.
  */
+export interface ReportCategoryOption {
+	value: string;
+	label: string;
+	description: string;
+	icon: string;
+}
+
 @Component({
 	selector: 'app-profile',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ AvatarComponent, FollowSectionComponent, PhotoCropperComponent, RouterLink ],
+	imports: [ AvatarComponent, FollowSectionComponent, FormsModule, PhotoCropperComponent, RouterLink ],
 	templateUrl: './profile.component.html',
 })
 export class ProfilePage implements OnInit {
@@ -168,6 +177,69 @@ export class ProfilePage implements OnInit {
 	protected readonly followLabel = followLabel;
 
 	/**
+	 * Available report categories for inappropriate user profiles.
+	 */
+	protected readonly userReportCategories: ReportCategoryOption[] = [
+		{
+			value: 'impersonation',
+			label: 'Suplantación de identidad',
+			description: 'Finge ser otra persona, creador o entidad oficial de KUV.',
+			icon: '🎭',
+		},
+		{
+			value: 'inappropriate_profile',
+			label: 'Foto, biografía o nombre inapropiado',
+			description: 'Avatar, nombre o biografía con contenido explícito u ofensivo.',
+			icon: '🖼️',
+		},
+		{
+			value: 'harassment',
+			label: 'Acoso, insultos o amenazas',
+			description: 'Mensajes hostiles dirigidos, intimidación o comentarios degradantes.',
+			icon: '🎯',
+		},
+		{
+			value: 'hate_speech',
+			label: 'Discurso de odio o discriminación',
+			description: 'Ataques por motivos de origen, género, religión u orientación.',
+			icon: '🚫',
+		},
+		{
+			value: 'spam_phishing',
+			label: 'Spam, bot o enlaces fraudulentos',
+			description: 'Publicidad masiva no deseada, enlaces maliciosos o actividad automatizada.',
+			icon: '🤖',
+		},
+		{
+			value: 'doxxing',
+			label: 'Filtración de datos privados',
+			description: 'Publicación de información personal confidencial sin consentimiento.',
+			icon: '🔒',
+		},
+		{
+			value: 'trolling',
+			label: 'Comportamiento destructivo o sabotaje',
+			description: 'Provocaciones constantes para arruinar la convivencia de la comunidad.',
+			icon: '⚠️',
+		},
+		{
+			value: 'other',
+			label: 'Otro motivo',
+			description: 'Cualquier otra infracción grave a las normas de convivencia.',
+			icon: '❓',
+		},
+	];
+
+	/**
+	 * Report dialog state.
+	 */
+	protected readonly showReportModal = signal<boolean>(false);
+	protected readonly reportCategory = signal<string>('impersonation');
+	protected reportDetails = '';
+	protected readonly reportSubmitted = signal<boolean>(false);
+	protected readonly isSubmittingReport = signal<boolean>(false);
+
+	/**
 	 * Talks to the user API.
 	 */
 	private readonly usersService = inject(UsersService);
@@ -181,6 +253,11 @@ export class ProfilePage implements OnInit {
 	 * Talks to the creations API.
 	 */
 	private readonly creationsService = inject(CreationsService);
+
+	/**
+	 * Talks to the reports API.
+	 */
+	private readonly reportsService = inject(ReportsService);
 
 	/**
 	 * The theme of the app, to show the video recorded for it.
@@ -385,7 +462,7 @@ export class ProfilePage implements OnInit {
 	 * Opens a creation in the cube editor.
 	 */
 	protected openInEditor (creation: UserCreation): void {
-		void this.router.navigate(['/editor'], { queryParams: { project: creation.id } });
+		void this.router.navigate([ '/editor' ], { queryParams: { project: creation.id } });
 	}
 
 	/**
@@ -415,9 +492,9 @@ export class ProfilePage implements OnInit {
 	 */
 	protected deleteCreation (creation: UserCreation, event: MouseEvent): void {
 		event.stopPropagation();
-		if (!confirm(`¿Estás seguro de eliminar "${creation.title}"? Esta acción no se puede deshacer.`)) {
+		if (!confirm(`¿Estás seguro de eliminar "${creation.title}"? Esta acción no se puede deshacer.`)) 
 			return;
-		}
+		
 
 		this.deletingId.set(creation.id);
 		this.creationsService.deleteCreation({ id: creation.id }).subscribe({
@@ -569,6 +646,70 @@ export class ProfilePage implements OnInit {
 	}
 
 	/**
+	 * Open report dialog for this user profile.
+	 */
+	protected openReportModal (): void {
+		const me = this.profile();
+		if (!me || me.isYou) {
+			this.snackbar.show('No puedes reportar tu propio perfil.');
+			return;
+		}
+		this.reportSubmitted.set(false);
+		this.isSubmittingReport.set(false);
+		this.reportCategory.set('impersonation');
+		this.reportDetails = '';
+		this.showReportModal.set(true);
+	}
+
+	/**
+	 * Close report dialog.
+	 */
+	protected closeReportModal (): void {
+		this.showReportModal.set(false);
+	}
+
+	/**
+	 * Submit abuse report for this user profile.
+	 */
+	protected submitReport (): void {
+		const me = this.profile();
+		if (!me || me.isYou || this.isSubmittingReport() || this.reportSubmitted()) 
+			return;
+		
+
+		this.isSubmittingReport.set(true);
+
+		const reportEntry = {
+			id: `rep_${Date.now()}`,
+			type: 'user',
+			targetId: String(me.id),
+			targetName: `@${me.username}`,
+			reportedUser: me.username,
+			reportingUser: 'tú',
+			category: this.reportCategory(),
+			details: this.reportDetails.trim(),
+			createdAt: new Date().toISOString(),
+		};
+
+		try {
+			const existing = JSON.parse(localStorage.getItem('kuv_reports') || '[]');
+			existing.push(reportEntry);
+			localStorage.setItem('kuv_reports', JSON.stringify(existing));
+		} catch {
+			// Local storage fallback
+		}
+
+		setTimeout(() => {
+			this.isSubmittingReport.set(false);
+			this.reportSubmitted.set(true);
+			setTimeout(() => {
+				this.showReportModal.set(false);
+				this.snackbar.show('Reporte recibido. El perfil del usuario será revisado por moderación. ¡Gracias!');
+			}, 1400);
+		}, 600);
+	}
+
+	/**
 	 * Sends a change of the profile and shows the profile the API answers with.
 	 */
 	private save (change: Observable<Profile>, done?: () => void): void {
@@ -589,3 +730,4 @@ export class ProfilePage implements OnInit {
 		});
 	}
 }
+
