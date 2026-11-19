@@ -205,10 +205,10 @@ export async function recordPreviewVideos (
 function litCount (pixels: Uint32Array): number {
 	let count = 0;
 
-	for (const pixel of pixels) {
+	for (const pixel of pixels) 
 		if (0 !== pixel)
 			count += 1;
-	}
+	
 
 	return count;
 }
