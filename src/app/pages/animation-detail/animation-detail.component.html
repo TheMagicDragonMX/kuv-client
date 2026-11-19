@@ -37,6 +37,9 @@
 
 	<!-- Botones de Acción Flotantes en la esquina inferior derecha -->
 	<div class="absolute bottom-6 right-6 z-20 flex flex-wrap items-center gap-3">
+		<!-- Mostrarla en un cubo real: una creación guardada va por su id, el servidor manda el programa -->
+		<app-cube-send [creationId]="animation().numericId ?? null" [program]="animation().program" />
+
 		<!-- Controles de reproducción rápida -->
 		<div class="flex items-center gap-1.5 rounded-full border border-slate-400/20 bg-(--surface) p-1.5 shadow-[0_12px_30px_var(--shadow)] backdrop-blur-[10px]">
 			<button

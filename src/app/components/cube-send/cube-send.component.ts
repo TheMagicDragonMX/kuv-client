@@ -42,9 +42,11 @@ type Notice = {
 };
 
 /**
- * Sends the program of the editor to a real cube through the server: the user types the id of
- * the cube, connects, and the cube runs the program and its environment on its LED panels. It
- * uses the same link as the cube chat page.
+ * Shows a program on a real cube through the server: the user types the id of the cube,
+ * connects, and the cube runs it on its LED panels. A saved creation (`creationId`) is sent by its
+ * id and the server sends the cube its program, so it may be as big as it is; otherwise the
+ * program and environment themselves go (the editor's unsaved work), which only fits when small.
+ * It uses the same link as the cube chat page.
  */
 @Component({
 	selector: 'app-cube-send',
@@ -53,6 +55,12 @@ type Notice = {
 	templateUrl: './cube-send.component.html',
 })
 export class CubeSendComponent implements OnDestroy {
+	/**
+	 * The saved creation to show, or null when what is shown is not saved. When given, it is sent
+	 * instead of `program`.
+	 */
+	readonly creationId = input<number | null>(null);
+
 	/**
 	 * The program to send, or null while the blocks are not ready to run.
 	 */
@@ -119,9 +127,10 @@ export class CubeSendComponent implements OnDestroy {
 	protected readonly linkStates = LINK_STATES;
 
 	/**
-	 * True when a program can be sent: the cube is reachable and the blocks are ready.
+	 * True when something can be sent: the cube is reachable, and there is a saved creation or a
+	 * program ready to run.
 	 */
-	protected readonly canSend = computed(() => 'open' === this.linkState() && this.cubeOnline() && null !== this.program());
+	protected readonly canSend = computed(() => 'open' === this.linkState() && this.cubeOnline() && (null !== this.creationId() || null !== this.program()));
 
 	constructor () {
 		this.subscriptions.add(this.link.state$.subscribe((state) => {
@@ -189,10 +198,18 @@ export class CubeSendComponent implements OnDestroy {
 	}
 
 	/**
-	 * Sends the program and its environment for the cube to run.
+	 * Sends the saved creation, or else the program and its environment, for the cube to run.
 	 */
 	protected send (): void {
+		const creationId = this.creationId();
 		const program = this.program();
+
+		if (null !== creationId) {
+			const sent = this.link.runCreation(creationId);
+
+			this.say(sent ? 'Enviando…' : 'No hay conexión con el cubo.', !sent);
+			return;
+		}
 
 		if (!program)
 			return;

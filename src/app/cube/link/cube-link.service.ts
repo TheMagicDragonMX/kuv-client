@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '@environment';
 import { ProgramFile } from '../engine';
-import { COMMAND_MESSAGE, COMMAND_RUN_PROGRAM, COMMAND_STOP_PROGRAM, CubeMessage, LinkState, MAX_MESSAGE_BYTES } from './protocol';
+import { COMMAND_MESSAGE, COMMAND_RUN_CREATION, COMMAND_RUN_PROGRAM, COMMAND_STOP_PROGRAM, CubeMessage, LinkState, MAX_MESSAGE_BYTES } from './protocol';
 
 /**
  * Address of the API's WebSocket endpoints, derived from the API address of the current environment.
@@ -108,6 +108,14 @@ export class CubeLinkService implements OnDestroy {
 			return 'too-large';
 
 		return this.sendFrame(frame) ? 'sent' : 'closed';
+	}
+
+	/**
+	 * Asks the server to send a saved creation to the cube, which runs it. Returns false if the
+	 * socket is not open.
+	 */
+	runCreation (creationId: number): boolean {
+		return this.send(COMMAND_RUN_CREATION, { creationId });
 	}
 
 	/**

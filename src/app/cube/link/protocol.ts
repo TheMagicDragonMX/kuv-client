@@ -38,6 +38,14 @@ export const COMMAND_MESSAGE = 'message';
 export const COMMAND_RUN_PROGRAM = 'run_program';
 
 /**
+ * Command: show a saved creation on the cube. Payload: `{ creationId: number }`. The server reads
+ * the creation's program file and sends it to the cube as `run_program`, so a program of several MB
+ * never goes through the browser. Answered like `run_program`, or with an `error` whose code is
+ * `creation_unavailable` when the creation does not exist or the user may not see it.
+ */
+export const COMMAND_RUN_CREATION = 'run_creation';
+
+/**
  * Command: stop the program; the cube keeps what it shows. No payload. Answered with `program_status`.
  */
 export const COMMAND_STOP_PROGRAM = 'stop_program';
@@ -69,7 +77,7 @@ export const EVENT_ERROR = 'error';
 export type LinkState = 'closed' | 'connecting' | 'open';
 
 /**
- * Largest message the server and the cube take, in bytes (`MaxMessageBytes` in kuv-api's
- * `SocketLink`, the default of the cube's WebSocket library). A bigger one closes the socket.
+ * Largest message the server takes from a client, in bytes (`MaxMessageBytes` in kuv-api's
+ * `SocketLink`). A bigger one closes the socket; saved creations go with `run_creation` instead.
  */
 export const MAX_MESSAGE_BYTES = 1024 * 1024;
