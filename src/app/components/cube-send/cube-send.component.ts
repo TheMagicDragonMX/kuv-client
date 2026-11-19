@@ -2,11 +2,14 @@ import { ChangeDetectionStrategy, Component, OnDestroy, computed, inject, input,
 import { Subscription } from 'rxjs';
 import {
 	CubeLinkService,
+	EVENT_BRIGHTNESS,
 	EVENT_CUBE_STATUS,
 	EVENT_ERROR,
 	EVENT_PROGRAM_STATUS,
 	Environment,
 	LinkState,
+	MAX_BRIGHTNESS,
+	MIN_BRIGHTNESS,
 	Program,
 	createProgramFile,
 } from '../../cube';
@@ -117,6 +120,22 @@ export class CubeSendComponent implements OnDestroy {
 	protected readonly cubeRunning = signal(false);
 
 	/**
+	 * How bright the cube's LED panels are, in percent, as the cube last said; null until it has.
+	 * The slider moves it while it is dragged, and the cube's answer sets it again.
+	 */
+	protected readonly brightness = signal<number | null>(null);
+
+	/**
+	 * Lowest value of the brightness slider.
+	 */
+	protected readonly minBrightness = MIN_BRIGHTNESS;
+
+	/**
+	 * Highest value of the brightness slider.
+	 */
+	protected readonly maxBrightness = MAX_BRIGHTNESS;
+
+	/**
 	 * The last thing worth telling the user, or null.
 	 */
 	protected readonly notice = signal<Notice | null>(null);
@@ -146,9 +165,17 @@ export class CubeSendComponent implements OnDestroy {
 			if (EVENT_CUBE_STATUS === message.name) {
 				this.cubeOnline.set(true === payload['online']);
 
-				if (!this.cubeOnline())
+				if (this.cubeOnline())
+					this.link.getBrightness();
+
+				else {
 					this.cubeRunning.set(false);
+					this.brightness.set(null);
+				}
 			}
+
+			else if (EVENT_BRIGHTNESS === message.name && 'number' === typeof payload['percent'])
+				this.brightness.set(payload['percent']);
 
 			else if (EVENT_PROGRAM_STATUS === message.name) {
 				this.cubeRunning.set(true === payload['running']);
@@ -224,6 +251,22 @@ export class CubeSendComponent implements OnDestroy {
 
 		else
 			this.say('Enviando…', false);
+	}
+
+	/**
+	 * Follows the slider while it is dragged, without telling the cube yet.
+	 */
+	protected previewBrightness (value: number): void {
+		this.brightness.set(value);
+	}
+
+	/**
+	 * Sends the brightness the slider was let go at, so the cube is told once per change and not
+	 * for every step of the drag.
+	 */
+	protected applyBrightness (value: number): void {
+		if (!this.link.setBrightness(value))
+			this.say('No hay conexión con el cubo.', true);
 	}
 
 	/**

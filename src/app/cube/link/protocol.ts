@@ -51,6 +51,18 @@ export const COMMAND_RUN_CREATION = 'run_creation';
 export const COMMAND_STOP_PROGRAM = 'stop_program';
 
 /**
+ * Command: change how bright the LED panels are. Payload: `{ percent: number }`, a whole percent
+ * from `MIN_BRIGHTNESS` to `MAX_BRIGHTNESS`. The cube remembers it across reboots. Answered with
+ * `brightness`.
+ */
+export const COMMAND_SET_BRIGHTNESS = 'set_brightness';
+
+/**
+ * Command: ask how bright the LED panels are. No payload. Answered with `brightness`.
+ */
+export const COMMAND_GET_BRIGHTNESS = 'get_brightness';
+
+/**
  * Event: the cube answers a text. Payload: `{ text: string }`.
  */
 export const EVENT_REPLY = 'reply';
@@ -65,6 +77,22 @@ export const EVENT_PROGRAM_STATUS = 'program_status';
  * Notice from the server: the cube went online or offline. Payload: `{ online: boolean }`.
  */
 export const EVENT_CUBE_STATUS = 'cube_status';
+
+/**
+ * Event: how bright the LED panels are, after `set_brightness` or `get_brightness`. Payload:
+ * `{ percent: number }`. Every client of the cube gets it, so they all show the same value.
+ */
+export const EVENT_BRIGHTNESS = 'brightness';
+
+/**
+ * Lowest brightness of the panels a client may set, in percent (`MIN_BRIGHTNESS` in kuv-cube).
+ */
+export const MIN_BRIGHTNESS = 1;
+
+/**
+ * Highest brightness of the panels a client may set, in percent (`MAX_BRIGHTNESS` in kuv-cube).
+ */
+export const MAX_BRIGHTNESS = 100;
 
 /**
  * Event or notice: a command could not be done. Payload: `{ code: string, message: string }`.

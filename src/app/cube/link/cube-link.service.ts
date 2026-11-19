@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject, Observable, Subject } from 'rxjs';
 import { environment } from '@environment';
 import { ProgramFile } from '../engine';
-import { COMMAND_MESSAGE, COMMAND_RUN_CREATION, COMMAND_RUN_PROGRAM, COMMAND_STOP_PROGRAM, CubeMessage, LinkState, MAX_MESSAGE_BYTES } from './protocol';
+import { COMMAND_GET_BRIGHTNESS, COMMAND_MESSAGE, COMMAND_RUN_CREATION, COMMAND_RUN_PROGRAM, COMMAND_SET_BRIGHTNESS, COMMAND_STOP_PROGRAM, CubeMessage, LinkState, MAX_MESSAGE_BYTES } from './protocol';
 
 /**
  * Address of the API's WebSocket endpoints, derived from the API address of the current environment.
@@ -123,6 +123,22 @@ export class CubeLinkService implements OnDestroy {
 	 */
 	stopProgram (): boolean {
 		return this.send(COMMAND_STOP_PROGRAM);
+	}
+
+	/**
+	 * Changes how bright the cube's LED panels are, in percent. Returns false if the socket is not
+	 * open.
+	 */
+	setBrightness (percent: number): boolean {
+		return this.send(COMMAND_SET_BRIGHTNESS, { percent });
+	}
+
+	/**
+	 * Asks the cube how bright its LED panels are; the answer comes as a `brightness` event.
+	 * Returns false if the socket is not open.
+	 */
+	getBrightness (): boolean {
+		return this.send(COMMAND_GET_BRIGHTNESS);
 	}
 
 	/**
