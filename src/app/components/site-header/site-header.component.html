@@ -29,17 +29,17 @@
 			}
 		</div>
 
-		<!-- The page that is open has a pixel border and the arrow of the login menu pointing at it. -->
+		<!-- The page that is open has a pixel border and the arrow of the login menu pointing at it. The arrow only sways while the pointer is over it: an endless animation inside the blurred header would make the browser blur it again on every frame. -->
 		<nav class="hidden items-center gap-2 md:flex" aria-label="Navegación principal">
 			@for (item of items; track item.path) {
 				<a
 					[appWipeLink]="item.path"
 					[attr.aria-current]="isActive(item.path) ? 'page' : null"
-					class="inline-flex min-h-11 items-center gap-2 px-3.5 font-display text-[1.05rem] font-semibold no-underline transition-colors duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none"
+					class="group inline-flex min-h-11 items-center gap-2 px-3.5 font-display text-[1.05rem] font-semibold no-underline transition-colors duration-150 hover:bg-slate-400/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-(--login-focus) focus-visible:outline-dashed motion-reduce:transition-none"
 					[class]="isActive(item.path) ? 'pixel-frame bg-accent/10 text-accent [--frame-color:var(--accent)]' : 'text-slate-300 hover:text-slate-100'"
 				>
 					@if (isActive(item.path)) {
-						<svg class="h-3 w-2.5 motion-safe:animate-[login-sway_0.8s_linear_infinite]" viewBox="0 0 6 7" shape-rendering="crispEdges" aria-hidden="true">
+						<svg class="h-3 w-2.5 motion-safe:group-hover:animate-[login-sway_0.8s_linear_infinite]" viewBox="0 0 6 7" shape-rendering="crispEdges" aria-hidden="true">
 							<rect x="0" y="0" width="1" height="7" fill="currentColor" /><rect x="1" y="1" width="2" height="5" fill="currentColor" /><rect x="3" y="2" width="2" height="3" fill="currentColor" /><rect x="5" y="3" width="1" height="1" fill="currentColor" />
 						</svg>
 					}

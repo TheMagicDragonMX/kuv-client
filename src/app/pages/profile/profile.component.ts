@@ -15,6 +15,7 @@ import { UsersService } from '../../services/middle/users.service';
 import { FollowList, FollowSectionComponent, followLabel, relationOf } from './follow-section.component';
 import { PhotoCropperComponent } from './photo-cropper.component';
 import { Crop, openPicture, photoFileProblem, photoFromCrop } from './profile-photo';
+import { PlayWhenVisibleDirective } from '../../components/play-when-visible.directive';
 
 /**
  * The profile of a user (the signed-in user or another creator): their photo, name, email
@@ -32,7 +33,7 @@ export interface ReportCategoryOption {
 	selector: 'app-profile',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ AvatarComponent, FollowSectionComponent, FormsModule, PhotoCropperComponent, RouterLink ],
+	imports: [ AvatarComponent, FollowSectionComponent, FormsModule, PhotoCropperComponent, PlayWhenVisibleDirective, RouterLink ],
 	templateUrl: './profile.component.html',
 })
 export class ProfilePage implements OnInit {

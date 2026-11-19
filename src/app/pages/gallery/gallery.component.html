@@ -62,8 +62,8 @@
 							<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative shadow-inner">
 								@if (customVideoUrls()[project.id]; as url) {
 									<video
+										appPlayWhenVisible
 										[src]="url"
-										autoplay
 										loop
 										muted
 										playsinline
@@ -183,8 +183,8 @@
 						<div class="my-4 aspect-square w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center relative">
 							@if (thumbnails()[example.id]; as thumb) {
 								<video
+									appPlayWhenVisible
 									[src]="thumb.url"
-									autoplay
 									loop
 									muted
 									playsinline

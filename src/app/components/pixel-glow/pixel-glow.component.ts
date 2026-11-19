@@ -3,7 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRouteSnapshot, NavigationEnd, Router } from '@angular/router';
 import { filter, map } from 'rxjs';
 import { ThemeService } from '../../services/theme.service';
-import { CELL, glowCells } from './pixel-glow';
+import { CELL, RADIUS, glowCells } from './pixel-glow';
 
 /**
  * How fast the glow fades in and out: the part of the way to its target brightness each frame.
@@ -99,6 +99,17 @@ export class PixelGlowComponent {
 	 */
 	private frame: number | null = null;
 
+	/**
+	 * The part of the canvas the last glow was drawn on, in device pixels, or null when it is
+	 * clear. Only that part is cleared for the next frame, not the whole window.
+	 */
+	private drawn: { x: number; y: number; side: number } | null = null;
+
+	/**
+	 * The blend mode the canvas has, so it is only set when the theme changes it.
+	 */
+	private blend: string | null = null;
+
 	constructor () {
 		const destroyRef = inject(DestroyRef);
 
@@ -115,6 +126,13 @@ export class PixelGlowComponent {
 
 				this.target = { x: event.clientX, y: event.clientY };
 				this.position ??= { ...this.target };
+
+				/**
+				 * On pages with the cube the glow is off: nothing to draw until another page opens.
+				 */
+				if (!this.allowed())
+					return;
+
 				this.wanted = 1;
 				this.wake();
 			};
@@ -161,6 +179,11 @@ export class PixelGlowComponent {
 
 		canvas.width = Math.round(window.innerWidth * scale);
 		canvas.height = Math.round(window.innerHeight * scale);
+
+		/**
+		 * Resizing a canvas clears it.
+		 */
+		this.drawn = null;
 		this.wake();
 	}
 
@@ -193,7 +216,7 @@ export class PixelGlowComponent {
 	}
 
 	/**
-	 * Draws the glow where it is now, or nothing.
+	 * Draws the glow where it is now, or nothing. It only clears the square the last glow took.
 	 */
 	private draw (): void {
 		const canvas = this.canvas().nativeElement;
@@ -206,11 +229,30 @@ export class PixelGlowComponent {
 		const look = LOOKS[this.theme.theme()];
 
 		context.setTransform(1, 0, 0, 1, 0, 0);
-		context.clearRect(0, 0, canvas.width, canvas.height);
-		canvas.style.mixBlendMode = look.blend;
+
+		if (this.drawn) {
+			context.clearRect(this.drawn.x, this.drawn.y, this.drawn.side, this.drawn.side);
+			this.drawn = null;
+		}
+
+		if (look.blend !== this.blend) {
+			canvas.style.mixBlendMode = look.blend;
+			this.blend = look.blend;
+		}
 
 		if (!this.position || !this.allowed() || 0.01 > this.brightness)
 			return;
+
+		/**
+		 * The glow reaches `RADIUS` around the mouse, and a square on its edge can stick out by one
+		 * more square.
+		 */
+		const reach = RADIUS + CELL;
+		this.drawn = {
+			x: Math.floor((this.position.x - reach) * scale),
+			y: Math.floor((this.position.y - reach) * scale),
+			side: Math.ceil(2 * reach * scale) + 1,
+		};
 
 		context.setTransform(scale, 0, 0, scale, 0, 0);
 

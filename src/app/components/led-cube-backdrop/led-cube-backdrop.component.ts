@@ -34,6 +34,13 @@ const LED = TEXTURE / SCENE_SIZE;
 const FACE_STEP = 80;
 
 /**
+ * Milliseconds between two frames while the cube turns slowly at rest. It turns so little from one
+ * frame to the next that 30 frames a second look the same as the 60 to 144 of the screen, for a
+ * fraction of the work. While it hurries or glitches it draws every frame.
+ */
+const IDLE_FRAME = 1000 / 30;
+
+/**
  * Milliseconds the faces stay corrupted after a glitch.
  */
 const GLITCH_TIME = 420;
@@ -246,8 +253,13 @@ export class LedCubeBackdropComponent {
 
 		const step = (now: number): void => {
 			const pace = this.pace();
-			const passed = Math.min(0.05, (now - last) / 1000);
 			const glitching = now < this.glitchUntil;
+			frame = requestAnimationFrame(step);
+
+			if ('idle' === pace && !glitching && 0 !== lastFaces && now - last < IDLE_FRAME - 1)
+				return;
+
+			const passed = Math.min(0.05, (now - last) / 1000);
 			last = now;
 
 			if (!calm) {
@@ -271,7 +283,6 @@ export class LedCubeBackdropComponent {
 			}
 
 			renderer.render(scene, camera);
-			frame = requestAnimationFrame(step);
 		};
 
 		fit();

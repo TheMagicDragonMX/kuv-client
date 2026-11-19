@@ -11,11 +11,12 @@ import {
 	recordCubeVideo,
 } from '../../cube';
 import { CustomProject, ProjectStorageService } from '../../services/project-storage.service';
+import { PlayWhenVisibleDirective } from '../../components/play-when-visible.directive';
 
 @Component({
 	selector: 'app-gallery',
 	standalone: true,
-	imports: [ RouterLink, CubeComponent ],
+	imports: [ RouterLink, CubeComponent, PlayWhenVisibleDirective ],
 	templateUrl: './gallery.component.html',
 })
 export class GalleryPage implements OnInit {
