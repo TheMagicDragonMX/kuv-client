@@ -19,12 +19,13 @@ const SPEED: Record<CubePace, number> = { idle: 0.12, loading: 0.55, dive: 0.9 }
 const RATE: Record<CubePace, number> = { idle: 2.2, loading: 1.5, dive: 3.2 };
 
 /**
- * Side, in pixels, of the texture of a face: 8 pixels per LED.
+ * Side, in pixels, of the texture of the gaps between LEDs: 8 pixels per LED, so the lines are
+ * thin. The scenes themselves are uploaded at one pixel per LED.
  */
 const TEXTURE = 512;
 
 /**
- * Pixels of the texture per LED.
+ * Pixels of the texture of the gaps per LED.
  */
 const LED = TEXTURE / SCENE_SIZE;
 
@@ -89,14 +90,9 @@ type Face = {
 	still: HTMLCanvasElement | null;
 
 	/**
-	 * Where each frame is drawn, one pixel per LED.
+	 * Where each frame is drawn, one pixel per LED, which the texture shows.
 	 */
 	small: HTMLCanvasElement | null;
-
-	/**
-	 * The frame made bigger with the gaps between LEDs, which the texture shows.
-	 */
-	big: HTMLCanvasElement | null;
 
 	/**
 	 * The texture of the face, or null on the bottom face.
@@ -210,10 +206,21 @@ export class LedCubeBackdropComponent {
 		const group = new THREE.Group();
 		scene.add(group);
 
-		const grid = this.grid();
 		const faces = [ dinoScene(), pizzeriaScene(), levelScene(), null, nightScene(), meadowScene() ].map((art) => this.face(art, renderer));
 		const box = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), faces.map((face) => face.material));
 		group.add(box);
+
+		/**
+		 * The gaps between LEDs never change, so they are not drawn into each frame of the faces:
+		 * they are a see-through layer over the box, uploaded once, and the faces only upload their
+		 * 64 × 64 LEDs (64 times less than a big texture with the gaps on every update). The layer
+		 * is pulled toward the camera so it always wins over the face under it.
+		 */
+		const gridTexture = this.texture(this.grid(), renderer);
+		const gridMaterial = new THREE.MeshBasicMaterial({ map: gridTexture, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+		const bareMaterial = new THREE.MeshBasicMaterial({ visible: false });
+		const gaps = new THREE.Mesh(box.geometry, faces.map((face) => (face.scene ? gridMaterial : bareMaterial)));
+		group.add(gaps);
 
 		const base = new THREE.Mesh(new THREE.CylinderGeometry(1.75, 1.95, 0.3, 48), new THREE.MeshStandardMaterial({ color: 0x1a2230, metalness: 0.35, roughness: 0.55 }));
 		base.position.y = -1.16;
@@ -279,7 +286,7 @@ export class LedCubeBackdropComponent {
 
 			if ((!calm && now - lastFaces > FACE_STEP) || glitching || 0 === lastFaces) {
 				lastFaces = now;
-				faces.forEach((face) => this.paint(face, grid, time, glitching));
+				faces.forEach((face) => this.paint(face, time, glitching));
 			}
 
 			renderer.render(scene, camera);
@@ -297,6 +304,9 @@ export class LedCubeBackdropComponent {
 				face.material.dispose();
 			});
 			box.geometry.dispose();
+			gridTexture.dispose();
+			gridMaterial.dispose();
+			bareMaterial.dispose();
 			base.geometry.dispose();
 			base.material.dispose();
 			ring.geometry.dispose();
@@ -348,7 +358,7 @@ export class LedCubeBackdropComponent {
 	}
 
 	/**
-	 * The dark lines between the LEDs, drawn once and laid over every face. The gap between LEDs
+	 * The dark lines between the LEDs, on a see-through canvas, drawn once and laid over every face. The gap between LEDs
 	 * is 2 pixels, split in half on each side of a line; the lines on the edges only show their
 	 * inner half, so where two faces meet the halves add up to the same gap and the LEDs next to
 	 * the edges keep their full size.
@@ -376,7 +386,7 @@ export class LedCubeBackdropComponent {
 	 */
 	private face (scene: LedScene | null, renderer: THREE.WebGLRenderer): Face {
 		if (!scene)
-			return { scene, still: null, small: null, big: null, texture: null, material: new THREE.MeshBasicMaterial({ color: 0x0a0e13 }) };
+			return { scene, still: null, small: null, texture: null, material: new THREE.MeshBasicMaterial({ color: 0x0a0e13 }) };
 
 		const canvas = (side: number): HTMLCanvasElement => {
 			const made = document.createElement('canvas');
@@ -385,28 +395,34 @@ export class LedCubeBackdropComponent {
 		};
 		const still = canvas(SCENE_SIZE);
 		const small = canvas(SCENE_SIZE);
-		const big = canvas(TEXTURE);
 		const context = still.getContext('2d');
 
 		if (context)
 			scene.back(context);
 
-		const texture = new THREE.CanvasTexture(big);
-		texture.colorSpace = THREE.SRGBColorSpace;
-		texture.magFilter = THREE.NearestFilter;
-		texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-		return { scene, still, small, big, texture, material: new THREE.MeshBasicMaterial({ map: texture }) };
+		const texture = this.texture(small, renderer);
+		return { scene, still, small, texture, material: new THREE.MeshBasicMaterial({ map: texture }) };
 	}
 
 	/**
-	 * Draws a face at a moment: the still layer, the moving one, the glitch if any, and the LED
-	 * grid over the frame made bigger.
+	 * A texture that shows a canvas with sharp pixels, as a screen of LEDs.
 	 */
-	private paint (face: Face, grid: HTMLCanvasElement, time: number, glitching: boolean): void {
-		const small = face.small?.getContext('2d');
-		const big = face.big?.getContext('2d');
+	private texture (canvas: HTMLCanvasElement, renderer: THREE.WebGLRenderer): THREE.CanvasTexture {
+		const texture = new THREE.CanvasTexture(canvas);
+		texture.colorSpace = THREE.SRGBColorSpace;
+		texture.magFilter = THREE.NearestFilter;
+		texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+		return texture;
+	}
 
-		if (!face.scene || !face.still || !face.small || !face.texture || !small || !big)
+	/**
+	 * Draws a face at a moment, one pixel per LED: the still layer, the moving one and the glitch
+	 * if any. The gaps between LEDs are the layer over the box.
+	 */
+	private paint (face: Face, time: number, glitching: boolean): void {
+		const small = face.small?.getContext('2d');
+
+		if (!face.scene || !face.still || !face.texture || !small)
 			return;
 
 		small.drawImage(face.still, 0, 0);
@@ -415,9 +431,6 @@ export class LedCubeBackdropComponent {
 		if (glitching)
 			this.corrupt(small);
 
-		big.imageSmoothingEnabled = false;
-		big.drawImage(face.small, 0, 0, TEXTURE, TEXTURE);
-		big.drawImage(grid, 0, 0);
 		face.texture.needsUpdate = true;
 	}
 
