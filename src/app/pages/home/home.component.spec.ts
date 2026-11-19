@@ -138,7 +138,7 @@ describe('HomePage', () => {
 
 		(element.querySelector('app-animation-card button[aria-label^="Visualizar"]') as HTMLButtonElement).click();
 
-		expect(spy).toHaveBeenCalledWith([ '/animacion', '7' ]);
+		expect(spy).toHaveBeenCalledWith([ '/animation', '7' ]);
 	});
 
 	it('saves an animation and adds it to the favorites, and takes them back', () => {

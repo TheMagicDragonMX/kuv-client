@@ -11,7 +11,7 @@ import { SessionRenewal } from './session-renewal.service';
  * Where the app goes after signing in when no page asked for it, and where the login pages send
  * someone who is already signed in.
  */
-const HOME_PATH = '/inicio';
+const HOME_PATH = '/home';
 
 /**
  * Lets a page open only with a valid session. When the access token is missing or expired it

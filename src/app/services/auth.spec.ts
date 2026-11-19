@@ -96,14 +96,14 @@ describe('signedInGuard', () => {
 	it('sends to the login page, with the page to come back to, when nobody is signed in', async () => {
 		const { router } = setup();
 
-		expect(router.serializeUrl(await guard('/perfil') as UrlTree)).toBe('/login?returnUrl=%2Fperfil');
+		expect(router.serializeUrl(await guard('/profile') as UrlTree)).toBe('/login?returnUrl=%2Fprofile');
 	});
 
 	it('lets the page open when the access token is still valid', async () => {
 		const { session, server } = setup();
 		session.save({ ...TOKENS, accessToken: jwt(600) });
 
-		expect(await guard('/perfil')).toBe(true);
+		expect(await guard('/profile')).toBe(true);
 		server.expectNone(`${environment.apiUrl}/session/refresh`);
 	});
 
@@ -111,7 +111,7 @@ describe('signedInGuard', () => {
 		const { session, server } = setup();
 		session.save({ ...TOKENS, accessToken: jwt(-60) });
 
-		const answer = guard('/perfil');
+		const answer = guard('/profile');
 		const refresh = server.expectOne(`${environment.apiUrl}/session/refresh`);
 		expect(refresh.request.body).toEqual({ refreshToken: 'refresh-1' });
 		refresh.flush({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
@@ -124,7 +124,7 @@ describe('signedInGuard', () => {
 		const { session, server } = setup();
 		localStorage.setItem('refreshToken', 'refresh-1');
 
-		const answer = guard('/inicio');
+		const answer = guard('/home');
 		server.expectOne(`${environment.apiUrl}/session/refresh`).flush({ accessToken: 'access-2', refreshToken: 'refresh-2', expiresIn: 900 });
 
 		expect(await answer).toBe(true);
@@ -144,10 +144,10 @@ describe('signedInGuard', () => {
 	});
 
 	it('only comes back to pages of this app, and goes home otherwise', () => {
-		expect(returnPath('/perfil')).toBe('/perfil');
-		expect(returnPath(null)).toBe('/inicio');
-		expect(returnPath('https://elsewhere.example')).toBe('/inicio');
-		expect(returnPath('//elsewhere.example')).toBe('/inicio');
+		expect(returnPath('/profile')).toBe('/profile');
+		expect(returnPath(null)).toBe('/home');
+		expect(returnPath('https://elsewhere.example')).toBe('/home');
+		expect(returnPath('//elsewhere.example')).toBe('/home');
 	});
 });
 
@@ -169,7 +169,7 @@ describe('signedOutGuard', () => {
 		const { session, router } = setup();
 		session.save(TOKENS);
 
-		expect(router.serializeUrl(guard() as UrlTree)).toBe('/inicio');
+		expect(router.serializeUrl(guard() as UrlTree)).toBe('/home');
 	});
 });
 
@@ -242,7 +242,7 @@ describe('superAdminGuard', () => {
 		const answer = guard();
 		server.expectOne(`${environment.apiUrl}/users/me`).flush(me(false));
 
-		expect(router.serializeUrl(await answer as UrlTree)).toBe('/inicio');
+		expect(router.serializeUrl(await answer as UrlTree)).toBe('/home');
 	});
 
 	it('sends home when the profile cannot be read', async () => {
@@ -252,7 +252,7 @@ describe('superAdminGuard', () => {
 		const answer = guard();
 		server.expectOne(`${environment.apiUrl}/users/me`).flush(null, { status: 500, statusText: 'Server Error' });
 
-		expect(router.serializeUrl(await answer as UrlTree)).toBe('/inicio');
+		expect(router.serializeUrl(await answer as UrlTree)).toBe('/home');
 	});
 });
 

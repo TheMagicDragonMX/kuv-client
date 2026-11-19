@@ -8,7 +8,7 @@
 		[class]="scrolled() ? 'h-15 rounded-full border border-slate-400/25 pr-2 pl-4 shadow-[0_12px_32px_var(--shadow)] sm:pl-6' : 'h-full border-b border-slate-400/20 pr-18 pl-4 sm:pl-10'"
 	>
 		<div class="flex items-center gap-2 sm:gap-3">
-			<a routerLink="/inicio" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-accent" aria-label="Kü-V, inicio">
+			<a routerLink="/home" class="flex items-center gap-3 text-slate-100 no-underline focus-visible:outline-2 focus-visible:outline-accent" aria-label="Kü-V, inicio">
 				<app-cube-logo class="size-8.5" />
 				<span class="font-display text-3xl font-bold tracking-wide">Kü-V</span>
 			</a>
@@ -61,7 +61,7 @@
 				<span class="sr-only sm:not-sr-only">{{ status().label }}</span>
 			</a>
 			<a
-				routerLink="/perfil"
+				routerLink="/profile"
 				routerLinkActive="ring-2 ring-accent ring-offset-2 ring-offset-(--page)"
 				ariaCurrentWhenActive="page"
 				class="grid size-11 place-items-center overflow-hidden rounded-full border-2 border-white/40 bg-accent-pink text-on-accent-pink focus-visible:outline-2 focus-visible:outline-accent"

@@ -642,7 +642,7 @@ export class ProfilePage implements OnInit {
 	 */
 	protected signOut (): void {
 		this.session.clear();
-		void this.router.navigateByUrl('/inicio');
+		void this.router.navigateByUrl('/home');
 	}
 
 	/**

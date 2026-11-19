@@ -89,7 +89,7 @@ describe('GoogleButtonComponent', () => {
 		choose('id-token-1');
 		server.expectOne(`${environment.apiUrl}/session/google`).flush({ status: 'signedIn', tokens: TOKENS });
 
-		expect(navigate).toHaveBeenCalledWith('/inicio');
+		expect(navigate).toHaveBeenCalledWith('/home');
 	});
 
 	it('starts the signup of an account the API does not know yet, without signing in', () => {

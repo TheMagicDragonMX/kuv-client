@@ -291,7 +291,7 @@ describe('ProfilePage', () => {
 		page.signOut();
 
 		expect(session.signedIn()).toBe(false);
-		expect(navigate).toHaveBeenCalledWith('/inicio');
+		expect(navigate).toHaveBeenCalledWith('/home');
 	});
 });
 

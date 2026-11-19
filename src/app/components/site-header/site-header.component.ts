@@ -33,7 +33,7 @@ type NavItem = {
  * The places of the main navigation.
  */
 const ITEMS: NavItem[] = [
-	{ path: '/inicio', label: 'Inicio', icon: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10' },
+	{ path: '/home', label: 'Inicio', icon: 'M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10' },
 	{ path: '/editor', label: 'Editor', icon: 'M4 20l4-1 11-11-3-3L5 16l-1 4zM14 6l3 3' },
 	{ path: '/gallery', label: 'Galería', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z' },
 	{ path: '/test-cube', label: 'Ejemplos', icon: 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18zM10 8.5v7l6-3.5z' },

@@ -210,7 +210,7 @@ export class FollowSectionComponent {
 	 */
 	protected goToProfile (userId: number, event?: MouseEvent): void {
 		event?.preventDefault();
-		void this.router?.navigate([ '/perfil', userId ]);
+		void this.router?.navigate([ '/profile', userId ]);
 	}
 
 	/**

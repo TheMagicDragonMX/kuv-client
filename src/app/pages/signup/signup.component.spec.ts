@@ -236,7 +236,7 @@ describe('SignupPage', () => {
 		expect(session.accessToken()).toBe('access-1');
 		expect(signup.pending()).toBeNull();
 		expect(snackbar.messages()[0]?.text).toContain('zoe');
-		expect(navigate).toHaveBeenCalledWith('/inicio');
+		expect(navigate).toHaveBeenCalledWith('/home');
 	});
 
 	it('goes back to the page that asked for the login', () => {
@@ -324,7 +324,7 @@ describe('SignupPage', () => {
 
 		expect(session.accessToken()).toBe('access-1');
 		expect(signup.pending()).toBeNull();
-		expect(navigate).toHaveBeenCalledWith('/inicio');
+		expect(navigate).toHaveBeenCalledWith('/home');
 	});
 
 	it('says which one was taken when registering with a password fails, and keeps the signup', () => {

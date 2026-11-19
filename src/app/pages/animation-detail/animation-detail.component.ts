@@ -601,7 +601,7 @@ export class AnimationDetailPage implements OnInit {
 	 * Select an animation from suggestions and navigate/update.
 	 */
 	protected selectSuggested (item: CatalogAnimationItem): void {
-		this.router.navigate([ '/animacion', item.id ]);
+		this.router.navigate([ '/animation', item.id ]);
 	}
 
 	/**

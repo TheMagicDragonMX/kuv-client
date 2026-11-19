@@ -297,7 +297,7 @@ export class EditorPage implements OnInit {
 
 	protected goToProfile (): void {
 		this.showExportModal.set(false);
-		void this.router.navigate([ '/perfil' ]);
+		void this.router.navigate([ '/profile' ]);
 	}
 
 	protected goToGallery (): void {

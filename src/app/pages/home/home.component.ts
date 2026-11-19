@@ -99,7 +99,7 @@ export class HomePage {
 	 * Navigates to the detail and visualizer page for the chosen animation.
 	 */
 	protected view (id: string): void {
-		this.router.navigate([ '/animacion', id ]);
+		this.router.navigate([ '/animation', id ]);
 	}
 
 	/**
