@@ -11,9 +11,11 @@ import {
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AvatarComponent } from '../../components/avatar/avatar.component';
+import { CubeSendComponent } from '../../components/cube-send/cube-send.component';
 import {
 	CubeComponent,
 	EXAMPLE_PROGRAMS,
+	Environment,
 	ExampleProgram,
 	Face,
 	Program,
@@ -75,6 +77,11 @@ export interface AnimationDetailData {
 	category: string;
 	tags: string[];
 	program: Program;
+
+	/**
+	 * The stage the program runs on (pictures on the faces), when the creation has one.
+	 */
+	environment?: Environment;
 }
 
 @Component({
@@ -87,6 +94,7 @@ export interface AnimationDetailData {
 		RouterLink,
 		AvatarComponent,
 		CubeComponent,
+		CubeSendComponent,
 	],
 	templateUrl: './animation-detail.component.html',
 })
@@ -530,12 +538,10 @@ export class AnimationDetailPage implements OnInit {
 							category: 'Comunidad',
 							tags: [ '#Comunidad', '#LEDMatrix', '#Cube3D' ],
 							program: parsed.program,
+							environment: parsed.environment,
 						});
 
-						if (this.cubeRef) 
-							this.cubeRef.run(parsed.program);
-						
-
+						// The cube runs the new program by itself (autoplay), once its environment is in place.
 						// Fetch owner user profile to show real author name and avatar
 						this.usersService.profile({ id: detail.userId }).subscribe({
 							next: (profile) => {
@@ -588,10 +594,6 @@ export class AnimationDetailPage implements OnInit {
 				tags: found.tags,
 				program: found.exampleProgram.program,
 			});
-
-			if (this.cubeRef) 
-				this.cubeRef.run(found.exampleProgram.program);
-			
 		}
 
 		this.refreshComments(id, this.animation().authorUsername);

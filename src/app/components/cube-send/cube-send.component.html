@@ -1,0 +1,82 @@
+<div class="relative">
+	<button
+		type="button"
+		class="inline-flex cursor-pointer items-center gap-2.5 rounded-full border border-slate-400/30 bg-(--surface) px-5 py-3 text-[0.8rem] font-bold tracking-[0.04em] text-slate-100 uppercase shadow-[0_12px_30px_var(--shadow)] backdrop-blur-[8px] transition duration-200 hover:bg-slate-400/15 active:scale-95"
+		[attr.aria-expanded]="open()"
+		aria-controls="cube-send-card"
+		(click)="toggle()"
+		title="Ejecutar este programa en un cubo real"
+	>
+		<span class="size-2 rounded-full" [class]="cubeOnline() ? 'bg-emerald-400' : 'bg-slate-500'" aria-hidden="true"></span>
+		Cubo real
+	</button>
+
+	@if (open()) {
+		<section id="cube-send-card" class="absolute right-0 bottom-full mb-3 flex w-[min(20rem,calc(100vw-3rem))] flex-col gap-3 rounded-[22px] border border-slate-400/20 bg-slate-900/95 p-4 text-[0.76rem] text-slate-200 shadow-[0_20px_50px_var(--shadow)] backdrop-blur-[10px]" aria-label="Enviar al cubo">
+			<div class="flex items-center justify-between">
+				<h2 class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Cubo real</h2>
+				<span class="text-[0.7rem] text-slate-400">
+					{{ linkStates[linkState()] }}@if ('open' === linkState()) { · {{ cubeOnline() ? 'cubo en línea' : 'cubo fuera de línea' }} }
+				</span>
+			</div>
+
+			@if (!signedIn()) {
+				<p class="text-slate-300">Inicia sesión para enviar programas a tu cubo.</p>
+			} @else {
+				<label class="flex flex-col gap-1">
+					<span class="text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">Id del cubo</span>
+					<div class="flex gap-2">
+						<input
+							type="text"
+							class="min-w-0 flex-1 rounded-lg border border-slate-400/20 bg-slate-900/90 px-2 py-1.5 text-slate-50"
+							placeholder="mi-cubo"
+							[value]="cubeId()"
+							[disabled]="'closed' !== linkState()"
+							(input)="cubeId.set($any($event.target).value)"
+							(keydown.enter)="connect()"
+						/>
+						@if ('closed' === linkState()) {
+							<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 font-semibold text-slate-200 uppercase hover:bg-slate-400/10" (click)="connect()">Conectar</button>
+						} @else {
+							<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-3 py-1.5 font-semibold text-slate-300 uppercase hover:bg-slate-400/10" (click)="disconnect()">Salir</button>
+						}
+					</div>
+				</label>
+
+				<div class="flex gap-2">
+					<button type="button" class="flex-1 cursor-pointer rounded-full bg-[linear-gradient(135deg,#f9a8d4,#a5b4fc,#86efac)] px-4 py-2 font-bold tracking-[0.04em] text-[#0f172a] uppercase disabled:cursor-default disabled:opacity-40" [disabled]="!canSend()" (click)="send()">Enviar y ejecutar</button>
+					<button type="button" class="cursor-pointer rounded-full border border-slate-400/25 px-4 py-2 font-semibold text-slate-300 uppercase hover:bg-slate-400/10 disabled:cursor-default disabled:opacity-40" [disabled]="!cubeOnline() || !cubeRunning()" (click)="stop()">Detener</button>
+				</div>
+
+				@if (cubeOnline()) {
+					<label class="flex flex-col gap-1">
+						<span class="flex items-center justify-between text-[0.7rem] font-bold tracking-[0.08em] text-slate-400 uppercase">
+							<span>Brillo de los LEDs</span>
+							<span class="font-normal tracking-normal text-slate-300 normal-case">{{ null === brightness() ? '…' : brightness() + '%' }}</span>
+						</span>
+						<input
+							type="range"
+							class="w-full cursor-pointer accent-pink-300 disabled:cursor-default disabled:opacity-40"
+							[min]="minBrightness"
+							[max]="maxBrightness"
+							step="1"
+							[value]="brightness() ?? minBrightness"
+							[disabled]="null === brightness()"
+							aria-label="Brillo de los LEDs del cubo, en porcentaje"
+							(input)="previewBrightness($any($event.target).valueAsNumber)"
+							(change)="applyBrightness($any($event.target).valueAsNumber)"
+						/>
+					</label>
+				}
+
+				@if (null === creationId() && null === program()) {
+					<p class="text-slate-400">Termina los bloques para poder enviarlos.</p>
+				}
+			}
+
+			@if (notice(); as line) {
+				<p class="rounded-lg px-3 py-2" [class]="line.problem ? 'border border-rose-400/30 bg-rose-950/40 text-rose-200' : 'border border-slate-400/20 bg-slate-400/10 text-slate-200'" [attr.role]="line.problem ? 'alert' : 'status'">{{ line.text }}</p>
+			}
+		</section>
+	}
+</div>

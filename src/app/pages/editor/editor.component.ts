@@ -13,6 +13,7 @@ import {
 	RecordProgress,
 	recordPreviewVideos,
 } from '../../cube';
+import { CubeSendComponent } from '../../components/cube-send/cube-send.component';
 import { AuthSession } from '../../services/auth-session.service';
 import { CreationsService } from '../../services/middle/creations.service';
 import { ProjectStorageService } from '../../services/project-storage.service';
@@ -38,6 +39,7 @@ import { ProgramAreaComponent } from './program-area.component';
 		BackgroundPanelComponent,
 		BlocksTabComponent,
 		ObjectsPanelComponent,
+		CubeSendComponent,
 	],
 	templateUrl: './editor.component.html',
 })
