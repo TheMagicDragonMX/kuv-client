@@ -4,6 +4,7 @@ export * from './creations.requests';
 export * from './creations.types';
 export * from './feed.requests';
 export * from './feed.types';
+export * from './notifications.types';
 export * from './session.requests';
 export * from './session.types';
 export * from './users.requests';

@@ -2,6 +2,7 @@ import { Component, inject, OnDestroy, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { CubeLinkService, EVENT_CUBE_STATUS, EVENT_ERROR, EVENT_REPLY, LinkState } from '../../cube';
+import { NotificationsService } from '../../services/notifications.service';
 
 /**
  * Who wrote a line of the conversation.
@@ -57,6 +58,11 @@ export class CubeChatPage implements OnDestroy {
 	 * The live connection to the cube.
 	 */
 	private readonly link = inject(CubeLinkService);
+
+	/**
+	 * Records cube-chat replies and mentions as notifications.
+	 */
+	private readonly notifications = inject(NotificationsService);
 
 	/**
 	 * Listens to the link while the page is open.
@@ -118,8 +124,14 @@ export class CubeChatPage implements OnDestroy {
 				this.say('system', this.cubeOnline() ? 'El cubo está en línea.' : 'El cubo se desconectó.');
 			}
 
-			else if (EVENT_REPLY === message.name)
-				this.say('cube', String(payload['text'] ?? ''));
+			else if (EVENT_REPLY === message.name) {
+				const replyText = String(payload['text'] ?? '');
+
+				this.say('cube', replyText);
+
+				if (replyText.trim())
+					void this.notifications.recordCubeChat(replyText, this.connectForm.getRawValue().cubeId.trim());
+			}
 
 			else if (EVENT_ERROR === message.name)
 				this.say('system', String(payload['message'] ?? 'Error desconocido.'));
@@ -166,11 +178,16 @@ export class CubeChatPage implements OnDestroy {
 
 		const { text } = this.messageForm.getRawValue();
 
-		if (!this.link.sendText(text.trim()))
+		const trimmed = text.trim();
+
+		if (!this.link.sendText(trimmed))
 			return;
 
-		this.say('user', text.trim());
+		this.say('user', trimmed);
 		this.messageForm.reset();
+
+		if (trimmed.includes('@'))
+			void this.notifications.recordCubeChat(trimmed, this.connectForm.getRawValue().cubeId.trim());
 	}
 
 	/**

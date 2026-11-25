@@ -6,9 +6,11 @@ import { CubeLinkService, LinkState } from '../../cube';
 import { AuthSession } from '../../services/auth-session.service';
 import { CurrentUser } from '../../services/current-user.service';
 import { MenuSoundService } from '../../services/menu-sound.service';
+import { NotificationsService } from '../../services/notifications.service';
 import { UsersService } from '../../services/middle/users.service';
 import { AvatarComponent } from '../avatar/avatar.component';
 import { CubeLogoComponent } from '../cube-logo/cube-logo.component';
+import { NotificationsModalComponent } from '../notifications-modal/notifications-modal.component';
 import { SoundToggleComponent } from '../sound-toggle/sound-toggle.component';
 import { UserSearchModalComponent } from '../user-search.component';
 import { WipeLinkDirective } from '../wipe-link.directive';
@@ -77,7 +79,7 @@ const BUBBLE_AFTER = 8;
 	selector: 'app-site-header',
 	standalone: true,
 	changeDetection: ChangeDetectionStrategy.OnPush,
-	imports: [ AvatarComponent, CubeLogoComponent, SoundToggleComponent, UserSearchModalComponent, WipeLinkDirective ],
+	imports: [ AvatarComponent, CubeLogoComponent, NotificationsModalComponent, SoundToggleComponent, UserSearchModalComponent, WipeLinkDirective ],
 	host: { class: 'contents', '(window:scroll)': 'onScroll()' },
 	templateUrl: './site-header.component.html',
 })
@@ -91,6 +93,21 @@ export class SiteHeaderComponent {
 	 * State of the search modal.
 	 */
 	protected readonly searchOpen = signal(false);
+
+	/**
+	 * State of the notifications modal.
+	 */
+	protected readonly notificationsOpen = signal(false);
+
+	/**
+	 * Notification store for unread badge and modal state.
+	 */
+	private readonly notificationsService = inject(NotificationsService);
+
+	/**
+	 * Unread notification count shown in the header badge.
+	 */
+	protected readonly unreadCount = this.notificationsService.unreadCount;
 
 	/**
 	 * Where the link to the cube stands, as the service tells it.
@@ -153,6 +170,13 @@ export class SiteHeaderComponent {
 			if (this.signedIn() && !this.me())
 				untracked(() => this.usersService.me().subscribe({ error: () => undefined }));
 		});
+
+		effect(() => {
+			if (this.signedIn())
+				untracked(() => void this.notificationsService.refreshUnreadCount());
+			else
+				untracked(() => this.notificationsService.clear());
+		});
 	}
 
 	/**
@@ -171,6 +195,14 @@ export class SiteHeaderComponent {
 	protected openSearch (): void {
 		this.sound.move();
 		this.searchOpen.set(true);
+	}
+
+	/**
+	 * Opens the notifications panel, with the sound of the menu.
+	 */
+	protected openNotifications (): void {
+		this.sound.move();
+		this.notificationsOpen.set(true);
 	}
 
 	/**

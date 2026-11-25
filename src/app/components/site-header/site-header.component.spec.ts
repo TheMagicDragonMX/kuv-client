@@ -80,6 +80,7 @@ describe('SiteHeaderComponent', () => {
 		const { fixture, server, element } = createHeader('closed', true);
 
 		server.expectOne(`${environment.apiUrl}/users/me`).flush(ME);
+		server.expectOne(`${environment.apiUrl}/notifications/unread-count`).flush({ unreadCount: 0 });
 		fixture.detectChanges();
 		expect(element.querySelector('a[href="/admin"]')).toBeNull();
 
@@ -92,6 +93,7 @@ describe('SiteHeaderComponent', () => {
 		const { fixture, server, element } = createHeader('closed', true);
 
 		server.expectOne(`${environment.apiUrl}/users/me`).flush(ME);
+		server.expectOne(`${environment.apiUrl}/notifications/unread-count`).flush({ unreadCount: 0 });
 		fixture.detectChanges();
 
 		expect(element.querySelector('a[href="/profile"] app-avatar img')?.getAttribute('src')).toBe(`${environment.apiUrl}/users/1/photo?v=3`);
@@ -149,5 +151,31 @@ describe('SiteHeaderComponent', () => {
 		expect(plain.defaultPrevented).toBe(true);
 		expect(newTab.defaultPrevented).toBe(false);
 		expect(run).toHaveBeenCalledTimes(1);
+	});
+
+	it('shows the notifications bell with unread badge when signed in and opens the modal on click', async () => {
+		const { fixture, server, element } = createHeader('closed', true);
+
+		server.expectOne(`${environment.apiUrl}/users/me`).flush(ME);
+		server.expectOne(`${environment.apiUrl}/notifications/unread-count`).flush({ unreadCount: 3 });
+		await fixture.whenStable();
+		fixture.detectChanges();
+
+		const bell = element.querySelector('button[aria-label="Notificaciones"]') as HTMLButtonElement;
+		expect(bell).not.toBeNull();
+		expect(bell.textContent).toContain('3');
+
+		bell.click();
+		fixture.detectChanges();
+
+		server.expectOne(`${environment.apiUrl}/notifications?unreadOnly=false&limit=50`).flush({
+			unreadCount: 3,
+			items: [],
+		});
+		await fixture.whenStable();
+		fixture.detectChanges();
+
+		expect(element.querySelector('app-notifications-modal')).not.toBeNull();
+		server.verify();
 	});
 });
